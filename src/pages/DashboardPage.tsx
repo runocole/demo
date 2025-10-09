@@ -45,7 +45,7 @@ const DashboardPage = () => {
       <div className="space-y-6">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
+          <p className="text-gray-600"> {/* Changed from text-muted-foreground */}
             Overview of your rental management system
           </p>
         </div>
@@ -100,7 +100,15 @@ const DashboardPage = () => {
                       <TableCell>{rental.tool}</TableCell>
                       <TableCell>{rental.customer}</TableCell>
                       <TableCell>
-                        <StatusBadge status={rental.status} />
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          rental.status === 'active' 
+                            ? 'bg-green-100 text-green-800' 
+                            : rental.status === 'overdue'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {rental.status.charAt(0).toUpperCase() + rental.status.slice(1)}
+                        </span>
                       </TableCell>
                       <TableCell>{rental.amount}</TableCell>
                     </TableRow>
@@ -118,28 +126,28 @@ const DashboardPage = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StatusBadge status="available" />
-                  <span className="text-sm text-muted-foreground">Available</span>
+                  <span className="text-sm text-gray-600">Available</span> {/* Changed from text-muted-foreground */}
                 </div>
                 <span className="font-semibold">28</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StatusBadge status="rented" />
-                  <span className="text-sm text-muted-foreground">Rented</span>
+                  <span className="text-sm text-gray-600">Rented</span>
                 </div>
                 <span className="font-semibold">12</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StatusBadge status="maintenance" />
-                  <span className="text-sm text-muted-foreground">Maintenance</span>
+                  <span className="text-sm text-gray-600">Maintenance</span>
                 </div>
                 <span className="font-semibold">5</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StatusBadge status="disabled" />
-                  <span className="text-sm text-muted-foreground">Disabled</span>
+                  <span className="text-sm text-gray-600">Disabled</span>
                 </div>
                 <span className="font-semibold">3</span>
               </div>

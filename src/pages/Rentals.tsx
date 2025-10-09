@@ -60,6 +60,17 @@ const Rentals = () => {
     },
   ];
 
+  // Function to determine amount paid color
+  const getAmountPaidColor = (amountPaid: string, amountDue: string) => {
+    const paid = parseFloat(amountPaid.replace('$', ''));
+    const due = parseFloat(amountDue.replace('$', ''));
+    
+    if (paid === 0) return "text-red-600 font-medium";
+    if (paid < due) return "text-amber-600 font-medium";
+    if (paid === due) return "text-green-600 font-medium";
+    return "text-gray-600";
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -75,7 +86,7 @@ const Rentals = () => {
               <Download className="h-4 w-4" />
               Export
             </Button>
-            <Button className="gap-2">
+            <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
               <Plus className="h-4 w-4" />
               New Rental
             </Button>
@@ -115,7 +126,7 @@ const Rentals = () => {
                     <TableCell>{rental.startDate}</TableCell>
                     <TableCell>{rental.endDate}</TableCell>
                     <TableCell>{rental.amountDue}</TableCell>
-                    <TableCell className={rental.amountPaid === rental.amountDue ? "text-success" : "text-warning"}>
+                    <TableCell className={getAmountPaidColor(rental.amountPaid, rental.amountDue)}>
                       {rental.amountPaid}
                     </TableCell>
                     <TableCell>

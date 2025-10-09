@@ -47,26 +47,26 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
   return (
     <Sidebar
       collapsible="icon"
-      className={`border-r border-border bg-background transition-all duration-300 ease-in-out ${
+      className={`border-r border-blue-800/30 bg-blue-950 text-white transition-all duration-300 ease-in-out ${
         isOpen ? expandedWidth : collapsedWidth
       }`}
     >
       <SidebarContent>
         {/* --- Brand --- */}
-        <div className="flex items-center justify-center py-6 border-b border-border">
+        <div className="flex items-center justify-center py-6 border-b border-blue-800/40">
           {isOpen ? (
-            <h2 className="font-bold text-xl text-sidebar-foreground">
+            <h2 className="font-bold text-xl text-white">
               ToolRent Pro
             </h2>
           ) : (
-            <div className="text-sidebar-foreground font-bold text-xl">T</div>
+            <div className="text-white font-bold text-xl">T</div>
           )}
         </div>
 
         {/* --- Menu --- */}
         <SidebarGroup>
           {isOpen && (
-            <SidebarGroupLabel className="px-4 py-2 text-xs uppercase text-muted-foreground tracking-wide">
+            <SidebarGroupLabel className="px-4 py-2 text-xs uppercase text-blue-200/80 tracking-wide">
               Main Menu
             </SidebarGroupLabel>
           )}
@@ -83,8 +83,8 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
                           flex items-center gap-3 rounded-md px-3 py-2 transition-colors
                           ${
                             isActive
-                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                              : "text-muted-foreground hover:bg-sidebar-accent/40 hover:text-foreground"
+                              ? "bg-blue-700 text-white font-medium border-l-2 border-white"
+                              : "text-blue-100 hover:bg-blue-800 hover:text-white"
                           }
                         `
                       }

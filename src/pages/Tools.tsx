@@ -63,11 +63,11 @@ const Tools = () => {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Tools Inventory</h2>
-            <p className="text-muted-foreground">
+            <p className="text-gray-600"> {/* Changed from text-muted-foreground */}
               Manage your surveying equipment and tools
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2 bg-blue-600 hover:bg-blue-700"> {/* Changed to blue */}
             <Plus className="h-4 w-4" />
             Add Tool
           </Button>
@@ -75,7 +75,7 @@ const Tools = () => {
 
         <div className="flex gap-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" /> {/* Changed from text-muted-foreground */}
             <Input
               placeholder="Search tools by name or code..."
               className="pl-10"
@@ -95,7 +95,7 @@ const Tools = () => {
                   <div className="flex items-start justify-between">
                     <div className="space-y-1">
                       <h3 className="font-semibold text-lg">{tool.name}</h3>
-                      <p className="text-sm text-muted-foreground">{tool.code}</p>
+                      <p className="text-sm text-gray-600">{tool.code}</p> {/* Changed from text-muted-foreground */}
                     </div>
                     <StatusBadge status={tool.status} />
                   </div>
@@ -103,12 +103,12 @@ const Tools = () => {
                   <div className="pt-3 border-t">
                     <div className="flex justify-between items-center">
                       <div>
-                        <p className="text-xs text-muted-foreground">Category</p>
+                        <p className="text-xs text-gray-600">Category</p> {/* Changed from text-muted-foreground */}
                         <p className="text-sm font-medium">{tool.category}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-xs text-muted-foreground">Price/Day</p>
-                        <p className="text-sm font-bold text-primary">{tool.pricePerDay}</p>
+                        <p className="text-xs text-gray-600">Price/Day</p> {/* Changed from text-muted-foreground */}
+                        <p className="text-sm font-bold text-blue-600">{tool.pricePerDay}</p> {/* Changed from text-primary to blue */}
                       </div>
                     </div>
                   </div>
@@ -117,7 +117,11 @@ const Tools = () => {
                     <Button variant="outline" size="sm" className="flex-1">
                       View Details
                     </Button>
-                    <Button size="sm" className="flex-1" disabled={tool.status !== "available"}>
+                    <Button 
+                      size="sm" 
+                      className="flex-1 bg-blue-600 hover:bg-blue-700" 
+                      disabled={tool.status !== "available"}
+                    >
                       Rent Now
                     </Button>
                   </div>

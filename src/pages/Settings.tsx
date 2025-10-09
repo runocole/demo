@@ -46,7 +46,7 @@ const Settings = () => {
                   <Input id="company-address" defaultValue="123 Lagos Street" />
                 </div>
               </div>
-              <Button>Save Changes</Button>
+              <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">Save Changes</Button>
             </CardContent>
           </Card>
 
@@ -66,7 +66,7 @@ const Settings = () => {
                 <Label htmlFor="flutterwave-key">Flutterwave Secret Key</Label>
                 <Input id="flutterwave-key" type="password" placeholder="FLWSECK_TEST-..." />
               </div>
-              <Button>Update Keys</Button>
+              <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">Update Keys</Button>
             </CardContent>
           </Card>
 

@@ -62,7 +62,7 @@ const CustomersPage = () => {
               Manage customer information and rental history
             </p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2 bg-blue-600 hover:bg-blue-700 text-white">
             <Plus className="h-4 w-4" />
             Add Customer
           </Button>

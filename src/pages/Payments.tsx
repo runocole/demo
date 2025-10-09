@@ -55,6 +55,20 @@ const Payments = () => {
     },
   ];
 
+  // Function to determine status badge color
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "Completed":
+        return "bg-green-100 text-green-800 border border-green-200";
+      case "Pending":
+        return "bg-amber-100 text-amber-800 border border-amber-200";
+      case "Overdue":
+        return "bg-red-100 text-red-800 border border-red-200";
+      default:
+        return "bg-gray-100 text-gray-800 border border-gray-200";
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -80,7 +94,7 @@ const Payments = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">$12,450</div>
-              <p className="text-xs text-success mt-1">+18% from last month</p>
+              <p className="text-xs text-green-600 mt-1 font-medium">+18% from last month</p>
             </CardContent>
           </Card>
           
@@ -139,11 +153,7 @@ const Payments = () => {
                     <TableCell>{payment.method}</TableCell>
                     <TableCell>
                       <span
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          payment.status === "Completed"
-                            ? "bg-success/10 text-success"
-                            : "bg-warning/10 text-warning"
-                        }`}
+                        className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(payment.status)}`}
                       >
                         {payment.status}
                       </span>

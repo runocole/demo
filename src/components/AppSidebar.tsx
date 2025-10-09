@@ -1,0 +1,104 @@
+import {
+  LayoutDashboard,
+  Package,
+  Calendar,
+  DollarSign,
+  Users,
+  Settings,
+} from "lucide-react";
+import { NavLink } from "react-router-dom";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  useSidebar,
+} from "../components/ui/sidebar";
+
+// 🧩 Props
+interface AppSidebarProps {
+  isOpen?: boolean;
+}
+
+const menuItems = [
+  { title: "Dashboard", url: "/", icon: LayoutDashboard },
+  { title: "Tools", url: "/tools", icon: Package },
+  { title: "Rentals", url: "/rentals", icon: Calendar },
+  { title: "Payments", url: "/payments", icon: DollarSign },
+  { title: "Customers", url: "/customers", icon: Users },
+  { title: "Settings", url: "/settings", icon: Settings },
+];
+
+export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
+  const { state } = useSidebar();
+  const isSidebarExpanded = state === "expanded";
+
+  // ✅ prefer external state if provided, otherwise use context
+  const isOpen = externalIsOpen ?? isSidebarExpanded;
+
+  // 🎨 Control width values here
+  const expandedWidth = "w-64"; // Tailwind = 16rem → change to w-72 for 18rem, w-80 for 20rem
+  const collapsedWidth = "w-16"; // 4rem
+
+  return (
+    <Sidebar
+      collapsible="icon"
+      className={`border-r border-border bg-background transition-all duration-300 ease-in-out ${
+        isOpen ? expandedWidth : collapsedWidth
+      }`}
+    >
+      <SidebarContent>
+        {/* --- Brand --- */}
+        <div className="flex items-center justify-center py-6 border-b border-border">
+          {isOpen ? (
+            <h2 className="font-bold text-xl text-sidebar-foreground">
+              ToolRent Pro
+            </h2>
+          ) : (
+            <div className="text-sidebar-foreground font-bold text-xl">T</div>
+          )}
+        </div>
+
+        {/* --- Menu --- */}
+        <SidebarGroup>
+          {isOpen && (
+            <SidebarGroupLabel className="px-4 py-2 text-xs uppercase text-muted-foreground tracking-wide">
+              Main Menu
+            </SidebarGroupLabel>
+          )}
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild>
+                    <NavLink
+                      to={item.url}
+                      end
+                      className={({ isActive }) =>
+                        `
+                          flex items-center gap-3 rounded-md px-3 py-2 transition-colors
+                          ${
+                            isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                              : "text-muted-foreground hover:bg-sidebar-accent/40 hover:text-foreground"
+                          }
+                        `
+                      }
+                    >
+                      <item.icon className="h-4 w-4 shrink-0" />
+                      {isOpen && <span>{item.title}</span>}
+                    </NavLink>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+    </Sidebar>
+  );
+}

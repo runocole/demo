@@ -18,7 +18,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "../components/ui/sidebar";
-
+import logo from "../assets/image.png";
 // 🧩 Props
 interface AppSidebarProps {
   isOpen?: boolean;
@@ -52,16 +52,26 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
       }`}
     >
       <SidebarContent>
-        {/* --- Brand --- */}
-        <div className="flex items-center justify-center py-6 border-b border-blue-800/40">
-          {isOpen ? (
-            <h2 className="font-bold text-xl text-white">
-              ToolRent Pro
-            </h2>
-          ) : (
-            <div className="text-white font-bold text-xl">T</div>
-          )}
-        </div>
+      <div className="flex items-center justify-center py-6 border-b border-blue-800/40">
+    {isOpen ? (
+      <div className="flex items-center gap-3">
+        <img
+          src={logo}
+          alt="OTIC Logo"
+          className="h-8 w-8 object-contain"
+        />
+        <h2 className="font-bold text-xl text-white tracking-wide">
+          OTIC SURVEYS
+        </h2>
+      </div>
+    ) : (
+      <img
+        src={logo}
+        alt="OTIC Logo"
+        className="h-8 w-8 object-contain"
+      />
+    )}
+  </div>
 
         {/* --- Menu --- */}
         <SidebarGroup>

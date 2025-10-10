@@ -6,18 +6,39 @@ import { Label } from "../components/ui/label";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Package, Mail, Lock, ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
+import { loginUser } from "../services/api"; 
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login - in production, this would call your Django API
-    navigate("/");
-  };
+    console.log("Login button clicked");
 
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+      console.log("Login response:", data);
+
+      if (res.ok) {
+        localStorage.setItem("access", data.access);
+        localStorage.setItem("refresh", data.refresh);
+        navigate("/");
+      } else {
+        alert(data.error || "Login failed");
+      }
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Something went wrong");
+    }
+  };
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
       {/* Animated background */}
@@ -33,7 +54,7 @@ const Login = () => {
               <Package className="h-8 w-8 text-primary" />
             </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              ToolRent Pro
+             OTIC SURVEYS
             </h1>
           </div>
         </CardHeader>

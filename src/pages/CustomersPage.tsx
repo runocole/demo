@@ -5,7 +5,7 @@ import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
-import { registerCustomer, getCustomers } from "../services/api";
+import { registerCustomer, getCustomers, activateCustomer } from "../services/api";
 import {
   Table,
   TableBody,
@@ -16,49 +16,46 @@ import {
 } from "../components/ui/table";
 import { Search, Plus, Mail, Phone } from "lucide-react";
 
+// Define proper type for a customer
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  activeRentals: number;
+  totalRentals: number;
+  totalSpent: string;
+  is_activated: boolean; 
+}
+
+
 const CustomersPage = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [email, setEmail] = useState("");
   const [role, setRole] = useState("customer");
   const [loading, setLoading] = useState(false);
-  const [customers, setCustomers] = useState<any[]>([]);
-
-  // Receiver sale fields
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [state, setState] = useState("");
-  const [equipment, setEquipment] = useState("");
-  const [costSold, setCostSold] = useState("");
-  const [dateSold, setDateSold] = useState("");
-  const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [paymentPlan, setPaymentPlan] = useState("");
-  const [expiryDate, setExpiryDate] = useState("");
+  const [successMessage, setSuccessMessage] = useState(""); 
 
   useEffect(() => {
-    fetchCustomers();
+    void fetchCustomers();
   }, []);
 
-  const fetchCustomers = async () => {
-    try {
-      const data = await getCustomers();
-      setCustomers(data);
-    } catch (err) {
-      console.warn("Using static data (no backend connected).");
-      setCustomers([
-        {
-          id: "C001",
-          name: "John Doe",
-          email: "john.doe@example.com",
-          phone: "+234 801 234 5678",
-          activeRentals: 1,
-          totalRentals: 5,
-          totalSpent: "$1,250",
-        },
-      ]);
-    }
-  };
+  
 
-const handleAddCustomer = async () => {
+ const fetchCustomers = async () => {
+  try {
+    const data = await getCustomers();
+    setCustomers(data);
+  } catch (error) {
+    console.error("Failed to fetch customers:", error);
+    setCustomers([]);
+  }
+};
+
+ const handleAddCustomer = async () => {
   if (!email) {
     alert("Email is required");
     return;
@@ -66,75 +63,94 @@ const handleAddCustomer = async () => {
 
   try {
     setLoading(true);
-    
-    // 1. First register the customer
-    const newCustomer = await registerCustomer(email, role);
-    
-    // 2. If receiver sale fields are filled, create receiver sale
-    if (name || phone || equipment) {
-      await handleSubmitReceiverSale(newCustomer.id); // Pass the new customer ID
+    const newCustomer = await registerCustomer(name, email, phone);
+
+    if (!newCustomer?.id) {
+      throw new Error("Customer ID missing from response");
     }
-    
-    alert("Customer added successfully! An email with login credentials has been sent.");
+
+    const saleRecorded = await handleSubmitReceiverSale(newCustomer.id);
+
+    setSuccessMessage(
+      saleRecorded
+        ? `✅ Customer added and sale recorded successfully! Login credentials have been sent to ${email}`
+        : `⚠️ Customer added successfully, but sale record failed.`
+    );
+
     setShowAddModal(false);
-    
+
     // Reset all form fields
     setEmail("");
     setRole("customer");
     setName("");
     setPhone("");
-    setState("");
-    setEquipment("");
-    setCostSold("");
-    setDateSold("");
-    setInvoiceNumber("");
-    setPaymentPlan("");
-    setExpiryDate("");
-    
-    fetchCustomers();
-  } catch (err: any) {
-    alert("Failed to add customer. Check console.");
-    console.error(err);
+
+    await fetchCustomers();
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      alert(`Failed to add customer: ${err.message}`);
+      console.error("Customer addition failed:", err.message);
+    } else {
+      alert("An unknown error occurred while adding the customer.");
+      console.error("Unknown error:", err);
+    }
   } finally {
     setLoading(false);
   }
 };
 
-  const handleSubmitReceiverSale = async (customerId?: string) => {
-  // Use the newly created customer ID or fallback to existing logic
+
+
+ const handleSubmitReceiverSale = async (customerId?: string) => {
+  if (!customerId) {
+    console.error("Customer ID is missing");
+    return false;
+  }
+
   const payload = {
-    customer: customerId, // Use the new customer ID
+    customer: customerId,
     phone,
-    state,
-    equipment_type: equipment,
-    cost_sold: parseFloat(costSold) || 0,
-    date_sold: dateSold || new Date().toISOString().split('T')[0],
-    invoice_number: invoiceNumber,
-    payment_plan: paymentPlan,
-    receiver_expiry_date: expiryDate,
   };
 
   try {
     const token = localStorage.getItem("access");
     const response = await fetch("http://localhost:8000/api/receiver-sales/", {
       method: "POST",
-      headers: { 
+      headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) throw new Error("Failed to record sale");
+    if (!response.ok) {
+      const err = await response.text();
+      throw new Error(err || "Failed to record sale");
+    }
 
-    alert("Receiver sale recorded successfully!");
+    console.log("Sale recorded successfully");
     return true;
-  } catch (err) {
-    console.error(err);
-    alert("Failed to record sale.");
+  } catch (error) {
+    console.error("Sale recording failed:", error);
     return false;
   }
 };
+
+const handleActivateCustomer = async (customerId: number) => {
+  try {
+    const data = await activateCustomer(customerId);
+    alert(data.detail || "Customer account activated successfully!");
+    await fetchCustomers(); // Refresh list
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      alert(`Activation failed: ${err.message}`);
+    } else {
+      alert("Activation failed due to an unknown error.");
+    }
+  }
+};
+
+
 
   return (
     <DashboardLayout>
@@ -143,7 +159,9 @@ const handleAddCustomer = async () => {
         <div className="flex justify-between items-center">
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
-            <p className="text-muted-foreground">Manage customer information and rental history</p>
+            <p className="text-muted-foreground">
+              Manage customer information and rental history
+            </p>
           </div>
           <Button className="gap-2" onClick={() => setShowAddModal(true)}>
             <Plus className="h-4 w-4" /> Add Customer
@@ -180,38 +198,29 @@ const handleAddCustomer = async () => {
             <Input value={name} onChange={(e) => setName(e.target.value)} />
             <Label>Phone No.</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
-            <Label>State</Label>
-            <Input value={state} onChange={(e) => setState(e.target.value)} />
-            <Label>Equipment</Label>
-            <select value={equipment} onChange={(e) => setEquipment(e.target.value)} className="border rounded p-2 w-full">
-              <option value="Rover">Rover</option>
-              <option value="Base">Base</option>
-              <option value="Base and Rover">Base and Rover</option>
-              <option value="Base and Rover with External Radio">Base and Rover with External Radio</option>
-            </select>
-            <Label>Cost Sold</Label>
-            <Input type="number" value={costSold} onChange={(e) => setCostSold(e.target.value)} />
-            <Label>Date Sold</Label>
-            <Input type="date" value={dateSold} onChange={(e) => setDateSold(e.target.value)} />
-            <Label>Invoice/Receipt/Waybill No.</Label>
-            <Input value={invoiceNumber} onChange={(e) => setInvoiceNumber(e.target.value)} />
-            <Label>Payment Plan/History</Label>
-            <Input value={paymentPlan} onChange={(e) => setPaymentPlan(e.target.value)} />
-            <Label>Receiver Expiry Date</Label>
-            <Input type="date" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
 
-            <DialogFooter>
-              <Button onClick={handleAddCustomer} disabled={loading}>
-                {loading ? "Adding..." : "Add Customer"}
-              </Button>
-            </DialogFooter>
+           <DialogFooter className="flex flex-col gap-2">
+  <Button onClick={handleAddCustomer} disabled={loading}>
+    {loading ? "Adding..." : "Add Customer"}
+  </Button>
+
+  {successMessage && (
+    <p className="text-green-600 text-sm font-medium">
+      {successMessage}
+    </p>
+  )}
+</DialogFooter>
+
           </DialogContent>
         </Dialog>
 
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search customers by name, email, or phone..." className="pl-10" />
+          <Input
+            placeholder="Search customers by name, email, or phone..."
+            className="pl-10"
+          />
         </div>
 
         {/* Customer Table */}
@@ -250,15 +259,35 @@ const handleAddCustomer = async () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <span className={customer.activeRentals > 0 ? "text-primary font-medium" : ""}>
+                      <span
+                        className={
+                          customer.activeRentals > 0
+                            ? "text-primary font-medium"
+                            : ""
+                        }
+                      >
                         {customer.activeRentals}
                       </span>
                     </TableCell>
                     <TableCell>{customer.totalRentals}</TableCell>
-                    <TableCell className="font-semibold">{customer.totalSpent}</TableCell>
-                    <TableCell>
-                      <Button variant="ghost" size="sm">View Profile</Button>
+                    <TableCell className="font-semibold">
+                      {customer.totalSpent}
                     </TableCell>
+                    <TableCell className="flex gap-2">
+  <Button variant="ghost" size="sm">
+    View Profile
+  </Button>
+
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={() => handleActivateCustomer(Number(customer.id))}
+    disabled={customer.is_activated}
+  >
+    {customer.is_activated ? "Activated" : "Activate Account"}
+  </Button>
+</TableCell>
+
                   </TableRow>
                 ))}
               </TableBody>

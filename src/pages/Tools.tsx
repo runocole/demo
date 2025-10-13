@@ -80,25 +80,46 @@ const Tools = () => {
   }, []);
 
   // Add new tool
-  const handleAddTool = async () => {
-    if (!newTool.name || !newTool.code || !newTool.cost) return;
+ const handleAddTool = async () => {
+  // Validate required fields
+  if (!newTool.name || !newTool.code || !newTool.cost) {
+    alert("Please fill in all required fields: Name, Code, Cost.");
+    return;
+  }
 
-    try {
-      const created = await createTool(newTool);
-      setTools((prev) => [...prev, created]);
-      setOpen(false);
-      setNewTool({
-        name: "",
-        code: "",
-        cost: "",
-        description: "",
-        status: "available",
-      });
-    } catch (error) {
-      console.error("Error adding tool:", error);
-      alert("Failed to add tool. Make sure you're logged in as admin/staff.");
-    }
+  // Prepare payload to match API types
+  const payload = {
+    name: newTool.name,
+    code: newTool.code,
+    cost: newTool.cost.toString(), // Ensure it's a string
+    description: newTool.description || "",
+    status: newTool.status,
   };
+
+  try {
+    const created = await createTool(payload);
+    setTools((prev) => [...prev, created]);
+    setOpen(false);
+
+    // Reset form
+    setNewTool({
+      name: "",
+      code: "",
+      cost: "",
+      description: "",
+      status: "available",
+    });
+  } catch (error: any) {
+    console.error("Error adding tool:", error);
+    // Show more meaningful message if backend responds with validation errors
+    if (error.response?.data?.cost) {
+      alert(`Invalid cost: ${error.response.data.cost.join(", ")}`);
+    } else {
+      alert("Failed to add tool. Please check the fields and try again.");
+    }
+  }
+};
+
 
   // Update status
   const handleStatusChange = async (id: string, status: ToolStatus) => {

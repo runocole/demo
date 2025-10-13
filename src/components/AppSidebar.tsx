@@ -5,6 +5,7 @@ import {
   DollarSign,
   Users,
   Settings,
+  ShoppingCart,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -30,6 +31,7 @@ const menuItems = [
   { title: "Rentals", url: "/rentals", icon: Calendar },
   { title: "Payments", url: "/payments", icon: DollarSign },
   { title: "Customers", url: "/customers", icon: Users },
+  { title: "Sales", url: "/sales", icon: ShoppingCart },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
 

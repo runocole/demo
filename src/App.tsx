@@ -11,6 +11,7 @@ import Customers  from "./pages/CustomersPage";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFoundPage";
+import SalesPage from "./pages/SalesPage";
 
 const queryClient = new QueryClient();
 
@@ -28,7 +29,7 @@ const App = () => (
           <Route path="/payments" element={<Payments />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="*" element={<NotFound />} />
+          <Route path="/sales" element={<SalesPage />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

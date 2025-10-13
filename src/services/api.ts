@@ -89,3 +89,55 @@ export const activateCustomer = async (customerId: number) => {
   return await response.json();
 };
 
+// --- TOOLS ---
+export const getTools = async () => {
+  const token = localStorage.getItem("access");
+  const response = await axios.get(`${API_URL}/tools/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return response.data;
+};
+
+export const createTool = async (toolData: {
+  name: string;
+  description?: string;
+  code: string;
+  price_per_day: string;
+  status: string;
+}) => {
+  const token = localStorage.getItem("access");
+  const response = await axios.post(`${API_URL}/tools/`, toolData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+// --- UPDATE TOOL STATUS ---
+export const updateToolStatus = async (id: string, status: string) => {
+  const token = localStorage.getItem("access");
+  const response = await fetch(`${API_URL}/tools/${id}/`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!response.ok) throw new Error("Failed to update tool status");
+  return await response.json();
+};
+
+// --- DELETE TOOL ---
+export const deleteTool = async (id: string) => {
+  const token = localStorage.getItem("access");
+  const response = await fetch(`${API_URL}/tools/${id}/`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) throw new Error("Failed to delete tool");
+  return true;
+};

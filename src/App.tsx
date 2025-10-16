@@ -5,14 +5,14 @@ import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-import Dashboard from "./pages/DashboardPage"; // Staff dashboard
+import Dashboard from "./pages/StaffDashboard"; // Staff dashboard
 import Tools from "./pages/Tools";
 import Payments from "./pages/Payments";
 import StaffPage from "./pages/StaffPage";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import SalesPage from "./pages/SalesPage";
-import AdminDashboard from "./pages/AdminDashboard";
+import AdminDashboard from "./pages/DashboardPage";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +22,10 @@ interface PrivateRouteProps {
   allowedRoles?: string[];
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ element, allowedRoles }) => {
+const PrivateRoute: React.FC<PrivateRouteProps> = ({
+  element,
+  allowedRoles,
+}) => {
   const token = localStorage.getItem("access");
   const user = localStorage.getItem("user");
   const role = user ? JSON.parse(user).role : null;
@@ -33,8 +36,9 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({ element, allowedRoles }) =>
 
   // ✅ Role-based restriction
   if (allowedRoles && !allowedRoles.includes(role)) {
-    if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
-    if (role === "staff") return <Navigate to="/dashboard" replace />;
+    // Redirect user to their home dashboard
+    if (role === "admin") return <Navigate to="/dashboard" replace />;
+    if (role === "staff") return <Navigate to="/staff/dashboard" replace />;
     return <Navigate to="/login" replace />;
   }
 
@@ -53,34 +57,69 @@ const App = () => (
 
           {/* --- Staff Routes --- */}
           <Route
-            path="/dashboard"
-            element={<PrivateRoute element={<Dashboard />} allowedRoles={["staff"]} />}
+            path="/staff/dashboard"
+            element={
+              <PrivateRoute
+                element={<Dashboard />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
           />
           <Route
             path="/tools"
-            element={<PrivateRoute element={<Tools />} allowedRoles={["staff"]} />}
+            element={
+              <PrivateRoute
+                element={<Tools />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
           />
           <Route
             path="/payments"
-            element={<PrivateRoute element={<Payments />} allowedRoles={["staff"]} />}
+            element={
+              <PrivateRoute
+                element={<Payments />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
           />
           <Route
             path="/customers"
-            element={<PrivateRoute element={<StaffPage />} allowedRoles={["staff"]} />}
+            element={
+              <PrivateRoute
+                element={<StaffPage />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
           />
           <Route
             path="/sales"
-            element={<PrivateRoute element={<SalesPage />} allowedRoles={["staff"]} />}
+            element={
+              <PrivateRoute
+                element={<SalesPage />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
           />
           <Route
             path="/settings"
-            element={<PrivateRoute element={<Settings />} allowedRoles={["staff", "admin"]} />}
+            element={
+              <PrivateRoute
+                element={<Settings />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
           />
 
           {/* --- Admin Routes --- */}
           <Route
-            path="/admin/dashboard"
-            element={<PrivateRoute element={<AdminDashboard />} allowedRoles={["admin"]} />}
+            path="/dashboard"
+            element={
+              <PrivateRoute
+                element={<AdminDashboard />}
+                allowedRoles={["admin"]}
+              />
+            }
           />
 
           {/* --- Default redirect --- */}

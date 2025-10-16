@@ -1,64 +1,61 @@
 import { Navigate } from "react-router-dom";
-import { type ReactNode } from "react";
-import { jwtDecode } from "jwt-decode";
-import { REFRESH_TOKEN, ACCESS_TOKEN } from "../constants";  
 import { useState, useEffect } from "react";
+import type { ReactNode } from "react";
+import { jwtDecode } from "jwt-decode";
+
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 
 interface DecodedToken {
   exp: number;
-  // Add other token properties as needed
+  [key: string]: any;
 }
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // ✅ Attempt to refresh token if access has expired
   const refreshToken = async (): Promise<boolean> => {
-    const refreshToken = localStorage.getItem(REFRESH_TOKEN);
-    if (!refreshToken) {
-      return false;
-    }
+    const refresh = localStorage.getItem(REFRESH_TOKEN);
+    if (!refresh) return false;
 
     try {
       const response = await fetch(`${import.meta.env.VITE_API_URL}auth/refresh/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${refreshToken}`,
         },
+        body: JSON.stringify({ refresh }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        localStorage.setItem(ACCESS_TOKEN, data.access);
-        return true;
-      }
-      return false;
+      if (!response.ok) return false;
+
+      const data = await response.json();
+      localStorage.setItem(ACCESS_TOKEN, data.access);
+      return true;
     } catch (error) {
-      console.error("Error refreshing token:", error);
+      console.error("🔁 Token refresh error:", error);
       return false;
     }
   };
 
+  // ✅ Validate or refresh access token
   const checkAuth = async (): Promise<boolean> => {
     const token = localStorage.getItem(ACCESS_TOKEN);
-    
-    if (!token) {
-      return false;
-    }
+    if (!token) return false;
 
     try {
       const decoded: DecodedToken = jwtDecode(token);
-      const tokenExpired = decoded.exp * 1000 <= Date.now();
-      
-      if (tokenExpired) {
-        // Token expired, try to refresh
-        return await refreshToken();
+      const isExpired = decoded.exp * 1000 < Date.now();
+
+      if (isExpired) {
+        const refreshed = await refreshToken();
+        return refreshed;
       }
-      
+
       return true;
     } catch (error) {
-      console.error("Error decoding token:", error);
+      console.error("⚠️ Token decode error:", error);
       return false;
     }
   };
@@ -66,10 +63,10 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   useEffect(() => {
     const authenticate = async () => {
       try {
-        const authenticated = await checkAuth();
-        setIsAuthenticated(authenticated);
-      } catch (error) {
-        console.error("Authentication error:", error);
+        const valid = await checkAuth();
+        setIsAuthenticated(valid);
+      } catch (err) {
+        console.error("Auth error:", err);
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
@@ -80,7 +77,11 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   }, []);
 
   if (isLoading) {
-    return <div>Loading...</div>; // or a spinner component
+    return (
+      <div className="flex items-center justify-center min-h-screen text-white bg-blue-950">
+        <div className="animate-pulse text-lg">Verifying session...</div>
+      </div>
+    );
   }
 
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;

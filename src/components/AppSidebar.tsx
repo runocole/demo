@@ -19,19 +19,11 @@ import {
   useSidebar,
 } from "../components/ui/sidebar";
 import logo from "../assets/image.png";
+
 // 🧩 Props
 interface AppSidebarProps {
   isOpen?: boolean;
 }
-
-const menuItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Tools", url: "/tools", icon: Package },
-  { title: "Payments", url: "/payments", icon: DollarSign },
-  { title: "Users", url: "/customers", icon: Users },
-  { title: "Sales", url: "/sales", icon: ShoppingCart },
-  { title: "Settings", url: "/settings", icon: Settings },
-];
 
 export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
   const { state } = useSidebar();
@@ -41,8 +33,34 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
   const isOpen = externalIsOpen ?? isSidebarExpanded;
 
   // 🎨 Control width values here
-  const expandedWidth = "w-64"; // Tailwind = 16rem → change to w-72 for 18rem, w-80 for 20rem
+  const expandedWidth = "w-64"; // 16rem
   const collapsedWidth = "w-16"; // 4rem
+
+  // ✅ Get current role from localStorage
+  const user = localStorage.getItem("user");
+  const userRole = user ? JSON.parse(user).role : null;
+
+  // ✅ Role-based menu configuration
+  const menuByRole: Record<string, { title: string; url: string; icon: any }[]> = {
+    admin: [
+      { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Tools", url: "/tools", icon: Package },
+      { title: "Payments", url: "/payments", icon: DollarSign },
+      { title: "Users", url: "/customers", icon: Users },
+      { title: "Sales", url: "/sales", icon: ShoppingCart },
+      { title: "Settings", url: "/settings", icon: Settings },
+    ],
+    staff: [
+      { title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard },
+      { title: "Tools", url: "/tools", icon: Package },
+      { title: "Payments", url: "/payments", icon: DollarSign },
+      { title: "Users", url: "/customers", icon: Users },
+      { title: "Sales", url: "/sales", icon: ShoppingCart },
+      { title: "Settings", url: "/settings", icon: Settings },
+    ],
+  };
+
+  const menuItems = menuByRole[userRole] || [];
 
   return (
     <Sidebar
@@ -52,26 +70,19 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
       }`}
     >
       <SidebarContent>
-      <div className="flex items-center justify-center py-6 border-b border-blue-800/40">
-    {isOpen ? (
-      <div className="flex items-center gap-3">
-        <img
-          src={logo}
-          alt="OTIC Logo"
-          className="h-8 w-8 object-contain"
-        />
-        <h2 className="font-bold text-xl text-white tracking-wide">
-          OTIC SURVEYS
-        </h2>
-      </div>
-    ) : (
-      <img
-        src={logo}
-        alt="OTIC Logo"
-        className="h-8 w-8 object-contain"
-      />
-    )}
-  </div>
+        {/* --- Brand Header --- */}
+        <div className="flex items-center justify-center py-6 border-b border-blue-800/40">
+          {isOpen ? (
+            <div className="flex items-center gap-3">
+              <img src={logo} alt="OTIC Logo" className="h-8 w-8 object-contain" />
+              <h2 className="font-bold text-xl text-white tracking-wide">
+                OTIC SURVEYS
+              </h2>
+            </div>
+          ) : (
+            <img src={logo} alt="OTIC Logo" className="h-8 w-8 object-contain" />
+          )}
+        </div>
 
         {/* --- Menu --- */}
         <SidebarGroup>

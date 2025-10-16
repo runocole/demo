@@ -13,7 +13,7 @@ import {
 } from "../components/ui/table";
 import { useEffect, useState } from "react";
 
-const AdminDashboard = () => {
+const StaffDashboard = () => {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
@@ -160,4 +160,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default StaffDashboard;

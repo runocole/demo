@@ -1,7 +1,6 @@
 import {
   LayoutDashboard,
   Package,
-  Calendar,
   DollarSign,
   Users,
   Settings,
@@ -28,9 +27,8 @@ interface AppSidebarProps {
 const menuItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Tools", url: "/tools", icon: Package },
-  { title: "Rentals", url: "/rentals", icon: Calendar },
   { title: "Payments", url: "/payments", icon: DollarSign },
-  { title: "Customers", url: "/customers", icon: Users },
+  { title: "Users", url: "/customers", icon: Users },
   { title: "Sales", url: "/sales", icon: ShoppingCart },
   { title: "Settings", url: "/settings", icon: Settings },
 ];

@@ -6,7 +6,7 @@ import { Label } from "../components/ui/label";
 import { Card, CardContent, CardHeader } from "../components/ui/card";
 import { Package, Mail, Lock, ArrowRight } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { loginUser } from "../services/api"; 
+
 
 const Login = () => {
   const navigate = useNavigate();

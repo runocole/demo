@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -18,6 +18,7 @@ import {
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import { toast } from "../components/ui/use-toast";
 
 const API_URL = "http://localhost:8000/api/sales/";
 
@@ -32,16 +33,19 @@ interface Sale {
   invoice_no: string;
   payment_plan?: string;
   expiry_date?: string;
+  status?: string;
 }
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [newSale, setNewSale] = useState<Partial<Sale>>({});
   const [open, setOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const token = localStorage.getItem("access");
 
   // Fetch all sales
   const fetchSales = async () => {
-    const token = localStorage.getItem("access");
     const res = await axios.get(API_URL, {
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -52,15 +56,40 @@ export default function SalesPage() {
     fetchSales();
   }, []);
 
-  // Add a new sale
+  // Add a new sale + mock payment
   const handleAddSale = async () => {
-    const token = localStorage.getItem("access");
-    await axios.post(API_URL, newSale, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setOpen(false);
-    setNewSale({});
-    fetchSales();
+    try {
+      setIsProcessing(true);
+      const res = await axios.post(API_URL, newSale, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const createdSale = res.data;
+      toast({ title: "Sale created", description: "Processing payment..." });
+
+      // Simulate payment confirmation after 3s
+      setTimeout(async () => {
+        await axios.post(
+          `${API_URL}${createdSale.id}/confirm_payment/`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        toast({
+          title: "Payment Successful (Test Mode)",
+          description: `Sale for ${createdSale.client_name} marked as completed.`,
+        });
+
+        setIsProcessing(false);
+        setOpen(false);
+        setNewSale({});
+        fetchSales();
+      }, 3000);
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Error", description: "Failed to create sale." });
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -118,8 +147,19 @@ export default function SalesPage() {
               </div>
 
               <DialogFooter>
-                <Button onClick={handleAddSale} className="bg-blue-600">
-                  Save Sale
+                <Button
+                  onClick={handleAddSale}
+                  className="bg-blue-600"
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? (
+                    <>
+                      <Loader2 className="animate-spin mr-2 h-4 w-4" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Save & Process"
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -145,6 +185,7 @@ export default function SalesPage() {
                   "Invoice",
                   "Payment Plan",
                   "Expiry",
+                  "Status",
                 ].map((col) => (
                   <th key={col} className="p-2 text-gray-600 font-medium">
                     {col}
@@ -164,6 +205,15 @@ export default function SalesPage() {
                   <td className="p-2">{sale.invoice_no}</td>
                   <td className="p-2">{sale.payment_plan}</td>
                   <td className="p-2">{sale.expiry_date || "-"}</td>
+                  <td
+                    className={`p-2 font-medium ${
+                      sale.status === "completed"
+                        ? "text-green-600"
+                        : "text-yellow-600"
+                    }`}
+                  >
+                    {sale.status || "pending"}
+                  </td>
                 </tr>
               ))}
             </tbody>

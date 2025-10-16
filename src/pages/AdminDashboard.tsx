@@ -13,7 +13,7 @@ import {
 } from "../components/ui/table";
 import { useEffect, useState } from "react";
 
-const DashboardPage = () => {
+const AdminDashboard = () => {
   const [userName, setUserName] = useState("");
 
   useEffect(() => {
@@ -160,4 +160,4 @@ const DashboardPage = () => {
   );
 };
 
-export default DashboardPage;
+export default AdminDashboard;

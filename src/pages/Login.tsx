@@ -122,21 +122,27 @@ return (
     <Card className="w-full max-w-6xl bg-[#0f1f3d]/95 rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.7)] overflow-hidden flex flex-col lg:flex-row border border-[#1b2d55] relative z-10 backdrop-blur-md transform transition-all hover:scale-[1.01] hover:shadow-[0_0_50px_rgba(0,115,255,0.3)]">
 
       {/* Left side hero */}
-      <div className="lg:w-1/2 relative bg-gradient-to-br from-[#13274b] to-[#1b2d55] shadow-inner shadow-[inset_0_0_25px_rgba(0,0,0,0.6)]">
-        <img
-          src={authHero}
-          alt="Authentication"
-          className="w-full h-64 lg:h-full object-cover opacity-50 mix-blend-overlay"
-        />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6 bg-gradient-to-b from-transparent via-[#0a1836]/40 to-[#0a1836]/80">
-          <h1 className="text-4xl lg:text-5xl font-bold mb-3 drop-shadow-[0_2px_8px_rgba(0,115,255,0.4)]">
-            Welcome Back
-          </h1>
-          <p className="text-lg text-blue-200 drop-shadow-[0_2px_5px_rgba(0,115,255,0.3)]">
-            Secure access to your account
-          </p>
-        </div>
-      </div>
+        <div className="lg:w-1/2 relative bg-gradient-to-br from-[#13274b] to-[#1b2d55] shadow-inner shadow-[inset_0_0_25px_rgba(0,0,0,0.6)]">
+       <img
+      src={authHero}
+    alt="Authentication"
+    className="w-full h-64 lg:h-full object-cover opacity-50 mix-blend-overlay"
+  />
+  <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6 bg-gradient-to-b from-transparent via-[#0a1836]/40 to-[#0a1836]/80">
+    <div className="space-y-3">
+      <p className="text-3xl lg:text-4xl font-semibold text-blue-100 animate-fadeInLine1 drop-shadow-[0_0_10px_rgba(0,115,255,0.5)]">
+        Manage your tools.
+      </p>
+      <p className="text-3xl lg:text-4xl font-semibold text-blue-200 animate-fadeInLine2 drop-shadow-[0_0_10px_rgba(0,115,255,0.4)]">
+        Track your sales.
+      </p>
+      <p className="text-3xl lg:text-4xl font-semibold text-blue-300 animate-fadeInLine3 drop-shadow-[0_0_15px_rgba(0,115,255,0.4)]">
+        Stay in control.
+      </p>
+    </div>
+  </div>
+</div>
+
 
       {/* Right side form */}
       <div className="lg:w-1/2 p-8 lg:p-12 text-white relative z-20 shadow-[0_0_30px_rgba(0,115,255,0.15)]">

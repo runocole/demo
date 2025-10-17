@@ -44,6 +44,39 @@ export const registerStaff = async (
   return await response.json();
 };
 
+// --- FETCH STAFF LIST ---
+export const getStaff = async () => {
+  const token = localStorage.getItem("access");
+  const response = await fetch(`${API_URL}/auth/staff/`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Failed to fetch staff");
+  return await response.json();
+};
+
+export const registerCustomer = async (
+  name: string,
+  email: string,
+  phone: string
+) => {
+  const token = localStorage.getItem("access");
+
+  const response = await fetch(`${API_URL}/customers/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name, email, phone }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Failed to register customer: ${error}`);
+  }
+
+  return await response.json();
+};
 
 // --- CONFIRM REGISTRATION (unused for now) ---
 export const confirmRegistration = async (email: string, otp: string) => {
@@ -61,33 +94,36 @@ export const confirmRegistration = async (email: string, otp: string) => {
   return response.data;
 };
 
-// --- STAFF MANAGEMENT 
-// --- FETCH STAFF LIST ---
-export const getStaff = async () => {
+// --- FETCH CUSTOMERS ---
+export const getCustomers = async () => {
   const token = localStorage.getItem("access");
-  const response = await fetch(`${API_URL}/auth/staff/`, {
+  const response = await axios.get(`${API_URL}/customers/`, {
     headers: { Authorization: `Bearer ${token}` },
   });
-  if (!response.ok) throw new Error("Failed to fetch staff");
-  return await response.json();
+  return response.data;
 };
 
-// --- ACTIVATE STAFF ACCOUNT ---
-export const activateStaff = async (staffId: number) => {
+// --- ACTIVATE CUSTOMER ---
+export const activateCustomer = async (customerId: number) => {
   const token = localStorage.getItem("access");
-  const response = await fetch(`${API_URL}/auth/staff/${staffId}/activate/`, {
+  const response = await fetch(`${API_URL}/customers/activate/${customerId}/`, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     },
   });
-  if (!response.ok) throw new Error("Failed to activate staff");
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`Failed to activate customer: ${err}`);
+  }
+
   return await response.json();
 };
 
-
 // --- TOOLS ---
+// Get all tools
 export const getTools = async () => {
   const token = localStorage.getItem("access");
   const response = await axios.get(`${API_URL}/tools/`, {
@@ -96,12 +132,16 @@ export const getTools = async () => {
   return response.data;
 };
 
+// Create a new tool
 export const createTool = async (toolData: {
   name: string;
   description?: string;
   code: string;
   cost: string;
   status: string;
+  category?: string;
+  stock?: number;
+  supplier?: string;
 }) => {
   const token = localStorage.getItem("access");
   const response = await axios.post(`${API_URL}/tools/`, toolData, {
@@ -112,7 +152,32 @@ export const createTool = async (toolData: {
   });
   return response.data;
 };
-// --- UPDATE TOOL STATUS ---
+
+// Update an existing tool (full edit)
+export const updateTool = async (
+  id: string,
+  updatedData: Partial<{
+    name: string;
+    description: string;
+    code: string;
+    cost: string;
+    status: string;
+    category: string;
+    stock: number;
+    supplier: string;
+  }>
+) => {
+  const token = localStorage.getItem("access");
+  const response = await axios.patch(`${API_URL}/tools/${id}/`, updatedData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+// Update only tool status
 export const updateToolStatus = async (id: string, status: string) => {
   const token = localStorage.getItem("access");
   const response = await fetch(`${API_URL}/tools/${id}/`, {
@@ -128,7 +193,7 @@ export const updateToolStatus = async (id: string, status: string) => {
   return await response.json();
 };
 
-// --- DELETE TOOL ---
+// Delete a tool
 export const deleteTool = async (id: string) => {
   const token = localStorage.getItem("access");
   const response = await fetch(`${API_URL}/tools/${id}/`, {
@@ -139,50 +204,20 @@ export const deleteTool = async (id: string) => {
   if (!response.ok) throw new Error("Failed to delete tool");
   return true;
 };
-
 // --- DASHBOARD METRICS ---
-export const fetchDashboardData = async () => { 
+export const fetchDashboardData = async () => {
   const token = localStorage.getItem("access");
-
   const headers = { Authorization: `Bearer ${token}` };
 
-  const [toolsRes, paymentsRes, StaffRes] = await Promise.all([
-    axios.get(`${API_URL}/tools/`, { headers }),
-    axios.get(`${API_URL}/payments/`, { headers }),
-    axios.get(`${API_URL}/Staff/`, { headers }),
-  ]);
-
-  const tools = toolsRes.data;
-  const payments = paymentsRes.data;
-  const Staff = StaffRes.data;
-
-  // --- Aggregations ---
-  const totalTools = tools.length;
-  const totalStaff = Staff.length;
-
-  // MTD (month-to-date) revenue
-  const currentMonth = new Date().getMonth() + 1;
-  const mtdRevenue = payments
-    .filter((p: any) => p.status === "completed")
-    .filter(
-      (p: any) => new Date(p.created_at).getMonth() + 1 === currentMonth
-    )
-    .reduce((sum: number, p: any) => sum + parseFloat(p.amount), 0);
-
-  // Tool status overview
-  const toolStatusCounts = tools.reduce(
-    (acc: any, t: any) => {
-      acc[t.status] = (acc[t.status] || 0) + 1;
-      return acc;
-    },
-    { available: 0, rented: 0, maintenance: 0, disabled: 0 }
-  );
+  const response = await axios.get(`${API_URL}/dashboard/summary/`, { headers });
+  const data = response.data;
 
   return {
-    totalTools,
-    totalStaff,
-    mtdRevenue,
-    toolStatusCounts,
+    totalTools: data.total_tools,
+    totalStaff: data.total_staff,
+    totalRevenue: data.total_revenue,
+    toolStatusCounts: data.tool_status_counts,
+    recentSales: data.recent_sales,
   };
 };
 

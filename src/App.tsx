@@ -13,6 +13,9 @@ import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import SalesPage from "./pages/SalesPage";
 import AdminDashboard from "./pages/DashboardPage";
+import CustomersPage from "./pages/CustomersPage";
+import ToolsSummary from "./pages/ToolsSummary";
+
 
 const queryClient = new QueryClient();
 
@@ -84,10 +87,29 @@ const App = () => (
             }
           />
           <Route
-            path="/customers"
+  path="/tools-summary"
+  element={
+    <PrivateRoute
+      element={<ToolsSummary />}
+      allowedRoles={["staff", "admin"]}
+    />
+  }
+/>
+
+          <Route
+            path="/staff"
             element={
               <PrivateRoute
                 element={<StaffPage />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
+          />
+          <Route
+            path="/customers"
+            element={
+              <PrivateRoute
+                element={<CustomersPage />}
                 allowedRoles={["staff", "admin"]}
               />
             }

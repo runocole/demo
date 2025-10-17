@@ -5,6 +5,7 @@ import {
   Users,
   Settings,
   ShoppingCart,
+  FileText,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -29,24 +30,24 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
   const { state } = useSidebar();
   const isSidebarExpanded = state === "expanded";
 
-  // ✅ prefer external state if provided, otherwise use context
+  // prefer external state if provided, otherwise use context
   const isOpen = externalIsOpen ?? isSidebarExpanded;
 
-  // 🎨 Control width values here
+  // Control width values here
   const expandedWidth = "w-64"; // 16rem
   const collapsedWidth = "w-16"; // 4rem
 
-  // ✅ Get current role from localStorage
+  // Get current role from localStorage
   const user = localStorage.getItem("user");
   const userRole = user ? JSON.parse(user).role : null;
 
-  // ✅ Role-based menu configuration
+  // Role-based menu configuration
   const menuByRole: Record<string, { title: string; url: string; icon: any }[]> = {
     admin: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-      { title: "Tools", url: "/tools", icon: Package },
       { title: "Payments", url: "/payments", icon: DollarSign },
-      { title: "Users", url: "/customers", icon: Users },
+      { title: "Staff", url: "/staff", icon: Users },
+      { title: "Tools Summary", url: "/tools-summary", icon: FileText },
       { title: "Sales", url: "/sales", icon: ShoppingCart },
       { title: "Settings", url: "/settings", icon: Settings },
     ],
@@ -54,9 +55,9 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
       { title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard },
       { title: "Tools", url: "/tools", icon: Package },
       { title: "Payments", url: "/payments", icon: DollarSign },
-      { title: "Users", url: "/customers", icon: Users },
+      { title: "Tools Summary", url: "/tools-summary", icon: FileText }, 
+     // { title: "Customers", url: "/customers", icon: Users },
       { title: "Sales", url: "/sales", icon: ShoppingCart },
-      { title: "Settings", url: "/settings", icon: Settings },
     ],
   };
 

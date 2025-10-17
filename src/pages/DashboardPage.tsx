@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
 import { Package, DollarSign, Users, AlertCircle } from "lucide-react";
@@ -11,11 +12,18 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { useEffect, useState } from "react";
+import { fetchDashboardData, getCustomers } from "../services/api";
+import axios from "axios";
 
+const API_URL = "http://localhost:8000/api";
 const DashboardPage = () => {
   const [userName, setUserName] = useState("");
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [customersCount, setCustomersCount] = useState(0);
+  const [recentSales, setRecentSales] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
+  // --- Load username from local storage ---
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -28,16 +36,53 @@ const DashboardPage = () => {
     }
   }, []);
 
-  const recentRentals = [
-    { id: "R001", tool: "Total Station", customer: "John Doe", startDate: "2025-10-01", status: "active" as const, amount: "$150.00" },
-    { id: "R002", tool: "GPS Receiver", customer: "Jane Smith", startDate: "2025-09-28", status: "overdue" as const, amount: "$200.00" },
-    { id: "R003", tool: "Theodolite", customer: "Bob Johnson", startDate: "2025-09-25", status: "completed" as const, amount: "$120.00" },
-  ];
+  // --- Load dashboard data, customers, and sales ---
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
+        const [dashboardRes, customersRes, salesRes] = await Promise.all([
+          fetchDashboardData(), // ← fetches /dashboard/summary/
+          getCustomers(),
+          axios.get(`${API_URL}/sales/`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("access")}` },
+          }),
+        ]);
+
+        setDashboardData(dashboardRes);
+        setCustomersCount(customersRes.length);
+        setRecentSales(salesRes.data.slice(0, 5));
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // --- Currency formatting helper ---
+  const formatCurrency = (amount: number) =>
+    `₦${amount?.toLocaleString("en-NG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-64 text-gray-500">
+          Loading dashboard...
+        </div>
+      </DashboardLayout>
+    );
+  }
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Personalized Header */}
+        {/* Header */}
         <div>
           <h2 className="text-3xl font-bold tracking-tight">
             Hello, {userName} 👋
@@ -51,35 +96,32 @@ const DashboardPage = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard
             title="Total Tools"
-            value="48"
+            value={dashboardData?.totalTools || 0}
             icon={Package}
-            trend={{ value: "+3 this month", isPositive: true }}
-          />
-          <StatsCard
-            title="Active Rentals"
-            value="12"
-            icon={AlertCircle}
-            trend={{ value: "+2 from last week", isPositive: true }}
           />
           <StatsCard
             title="Revenue (MTD)"
-            value="$12,450"
+            value={formatCurrency(dashboardData?.mtdRevenue || 0)}
             icon={DollarSign}
-            trend={{ value: "+18% from last month", isPositive: true }}
+          />
+          <StatsCard
+            title="Total Staff"
+            value={dashboardData?.totalStaff || 0}
+            icon={AlertCircle}
           />
           <StatsCard
             title="Active Customers"
-            value="34"
+            value={customersCount || 0}
             icon={Users}
-            trend={{ value: "+5 new customers", isPositive: true }}
           />
         </div>
 
-        {/* Rentals and Tools Overview */}
+        {/* Sales + Tools Overview */}
         <div className="grid gap-4 md:grid-cols-2">
+          {/* Recent Sales */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Rentals</CardTitle>
+              <CardTitle>Recent Sales</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -93,66 +135,81 @@ const DashboardPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentRentals.map((rental) => (
-                    <TableRow key={rental.id}>
-                      <TableCell className="font-medium">{rental.id}</TableCell>
-                      <TableCell>{rental.tool}</TableCell>
-                      <TableCell>{rental.customer}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            rental.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : rental.status === "overdue"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-500"
-                          }`}
-                        >
-                          {rental.status.charAt(0).toUpperCase() + rental.status.slice(1)}
-                        </span>
+                  {recentSales.length > 0 ? (
+                    recentSales.map((sale) => {
+                      const safeStatus =
+                        sale.status === "completed" ||
+                        sale.status === "pending" ||
+                        sale.status === "overdue" ||
+                        sale.status === "active"
+                          ? sale.status
+                          : "completed";
+
+                      return (
+                        <TableRow key={sale.id}>
+                          <TableCell className="font-medium">
+                            {sale.id}
+                          </TableCell>
+                          <TableCell>{sale.tool?.name || "—"}</TableCell>
+                          <TableCell>{sale.customer?.name || "—"}</TableCell>
+                          <TableCell>
+                            <StatusBadge status={safeStatus} />
+                          </TableCell>
+                          <TableCell>
+                            {formatCurrency(Number(sale.amount) || 0)}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  ) : (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-gray-500"
+                      >
+                        No recent sales
                       </TableCell>
-                      <TableCell>{rental.amount}</TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Tools Status Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="available" />
-                  <span className="text-sm text-gray-600">Available</span>
-                </div>
-                <span className="font-semibold">28</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="rented" />
-                  <span className="text-sm text-gray-600">Rented</span>
-                </div>
-                <span className="font-semibold">12</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="maintenance" />
-                  <span className="text-sm text-gray-600">Maintenance</span>
-                </div>
-                <span className="font-semibold">5</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="disabled" />
-                  <span className="text-sm text-gray-600">Disabled</span>
-                </div>
-                <span className="font-semibold">3</span>
-              </div>
-            </CardContent>
+  {/* Tools Status Overview */}
+<Card>
+  <CardHeader>
+    <CardTitle>Tools Status Overview</CardTitle>
+  </CardHeader>
+  <CardContent className="space-y-3">
+    {Object.entries(dashboardData?.toolStatusCounts || {}).map(
+      ([status, count]) => (
+        <div
+          key={status}
+          className="flex items-center justify-between border-b pb-2 last:border-none"
+        >
+          <div className="flex items-center gap-2">
+            <StatusBadge
+              status={
+                status as
+                  | "available"
+                  | "rented"
+                  | "maintenance"
+                  | "disabled"
+                  | "active"
+                  | "overdue"
+                  | "pending"
+              }
+            />
+            <span className="capitalize text-gray-700">{status}</span>
+          </div>
+          <span className="font-semibold text-gray-900">
+            {count as React.ReactNode}
+          </span>
+        </div>
+      )
+    )}
+  </CardContent>
           </Card>
         </div>
       </div>

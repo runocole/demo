@@ -35,18 +35,20 @@ const StaffDashboard = () => {
   ];
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        {/* Personalized Header */}
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">
-            Hello, {userName} 👋
-          </h2>
-          <p className="text-gray-600">
-            Welcome back! Here’s a quick overview of your activity.
-          </p>
-        </div>
-
+   <DashboardLayout>
+  <div className="space-y-6">
+    {/* Header */}
+    <div>
+      <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
+        Welcome Back,
+        <span className="ml-2 text-3xl italic text-blue-200 font-medium">
+          {userName}
+        </span>
+      </h3>
+      <p className="text-gray-400 mt-2">
+        Here’s an overview of your company’s tools and sales.
+      </p>
+    </div>
         {/* Stats Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard

@@ -45,6 +45,7 @@ const StaffDashboard = () => {
       try {
         setLoading(true);
         const res = await fetchDashboardData();
+        console.log("📊 Dashboard Data:", res); 
         setDashboardData(res);
       } catch (err) {
         console.error("Error fetching dashboard:", err);
@@ -166,7 +167,7 @@ const StaffDashboard = () => {
                 <TableBody>
                   {dashboardData?.lowStockItems?.length > 0 ? (
                     dashboardData.lowStockItems.map((tool: any) => (
-                      <TableRow key={tool.code}>
+                      <TableRow key={tool.id}>
                         <TableCell>{tool.code}</TableCell>
                         <TableCell>{tool.name}</TableCell>
                         <TableCell>{tool.category}</TableCell>
@@ -179,6 +180,7 @@ const StaffDashboard = () => {
                                 | "rented"
                                 | "maintenance"
                                 | "disabled"
+                                | "sold"
                             }
                           />
                         </TableCell>
@@ -200,30 +202,57 @@ const StaffDashboard = () => {
         {/* Inventory Breakdown + Top Selling Tools */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Inventory Breakdown */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Inventory Breakdown</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={dashboardData?.inventoryBreakdown || []}  // ✅ updated
-                    dataKey="count"
-                    nameKey="category"
-                    outerRadius={90}
-                    label
-                  >
-                    {(dashboardData?.inventoryBreakdown || []).map((_: any, i: number) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+<Card>
+  <CardHeader>
+    <CardTitle>Inventory Breakdown</CardTitle>
+  </CardHeader>
+  <CardContent>
+    <div className="flex flex-col md:flex-row items-center justify-between">
+      {/* Pie Chart */}
+      <ResponsiveContainer width="100%" height={250} className="md:w-2/3">
+        <PieChart>
+          <Pie
+  data={dashboardData?.inventoryBreakdown || []}
+  dataKey="count"
+  nameKey="category"
+  outerRadius={90}
+  label={true} 
+>
+  {(dashboardData?.inventoryBreakdown || []).map((_: any, i: number) => (
+    <Cell key={i} fill={COLORS[i % COLORS.length]} />
+  ))}
+</Pie>
 
+          <Tooltip
+            formatter={(value: number, _name: string, props: any) => {
+              const total = (dashboardData?.inventoryBreakdown || []).reduce(
+                (sum: number, item: any) => sum + item.count,
+                0
+              );
+              const percentage = ((value / total) * 100).toFixed(1);
+              return [`${value} tools (${percentage}%)`, "Count"];
+            }}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+
+      {/* Legend */}
+      <div className="mt-4 md:mt-0 md:ml-6 space-y-2 text-sm">
+        {(dashboardData?.inventoryBreakdown || []).map((item: any, i: number) => (
+          <div key={i} className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: COLORS[i % COLORS.length] }}
+            ></div>
+            <span className="text-gray-300">
+              {item.category}: <span className="font-semibold">{item.count}</span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </CardContent>
+</Card>
           {/* Top Selling Tools */}
           <Card>
             <CardHeader>

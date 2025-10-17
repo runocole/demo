@@ -12,33 +12,22 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { fetchDashboardData, getCustomers, getTools } from "../services/api";
-import axios from "axios";
+import { fetchDashboardData } from "../services/api";
 import {
   ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
   Tooltip,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
 } from "recharts";
-
-const API_URL = "http://localhost:8000/api";
 
 const DashboardPage = () => {
   const [userName, setUserName] = useState("");
   const [dashboardData, setDashboardData] = useState<any>(null);
-  const [customersCount, setCustomersCount] = useState(0);
-  const [recentTools, setRecentTools] = useState<any[]>([]);
-  const [categoryBreakdown, setCategoryBreakdown] = useState<any[]>([]);
-  const [salesTrend, setSalesTrend] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // --- Load username ---
+  const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#6366F1", "#A855F7"];
+
   useEffect(() => {
     const userData = localStorage.getItem("user");
     if (userData) {
@@ -51,58 +40,21 @@ const DashboardPage = () => {
     }
   }, []);
 
-  // --- Load all dashboard data ---
   useEffect(() => {
-    const fetchData = async () => {
+    const loadDashboard = async () => {
       try {
         setLoading(true);
-
-        const [dashboardRes, customersRes, toolsRes, salesRes] =
-          await Promise.all([
-            fetchDashboardData(),
-            getCustomers(),
-            getTools(),
-            axios.get(`${API_URL}/sales/`, {
-              headers: { Authorization: `Bearer ${localStorage.getItem("access")}` },
-            }),
-          ]);
-
-        // Tools & Category breakdown
-        const categoryCount = Object.values(
-          toolsRes.reduce((acc: any, tool: any) => {
-            acc[tool.category] = acc[tool.category] || { name: tool.category, value: 0 };
-            acc[tool.category].value += 1;
-            return acc;
-          }, {})
-        );
-
-        // Fake monthly sales trend (replace with real data when ready)
-        const monthly = salesRes.data.reduce((acc: any, sale: any) => {
-          const month = new Date(sale.created_at).toLocaleString("default", { month: "short" });
-          acc[month] = (acc[month] || 0) + Number(sale.amount);
-          return acc;
-        }, {});
-        const trend = Object.entries(monthly).map(([month, amount]) => ({
-          month,
-          amount,
-        }));
-
-        setDashboardData(dashboardRes);
-        setCustomersCount(customersRes.length);
-        setRecentTools(toolsRes.slice(0, 5));
-        setCategoryBreakdown(categoryCount);
-        setSalesTrend(trend);
-      } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        const res = await fetchDashboardData();
+        console.log("📊 Dashboard Data:", res); // 👈 helps confirm backend connection
+        setDashboardData(res);
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
+    loadDashboard();
   }, []);
-
-  const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#6366F1", "#A855F7"];
 
   const formatCurrency = (amount: number) =>
     `₦${amount?.toLocaleString("en-NG", {
@@ -121,90 +73,73 @@ const DashboardPage = () => {
   }
 
   return (
-  <DashboardLayout>
-  <div className="space-y-6">
-    {/* Header */}
-    <div>
-      <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
-        Welcome Back,
-        <span className="ml-2 text-3xl italic text-blue-200 font-medium">
-          {userName}
-        </span>
-      </h3>
-      <p className="text-gray-400 mt-2">
-        Here’s an overview of your company’s tools and sales.
-      </p>
-    </div>
-        {/* Stats Section */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Total Tools"
-            value={dashboardData?.totalTools || 0}
-            icon={Package}
-            trend={{ value: "+5 this month", isPositive: true }}
-          />
-          <StatsCard
-            title="Revenue (MTD)"
-            value={formatCurrency(dashboardData?.mtdRevenue || 0)}
-            icon={DollarSign}
-            trend={{ value: "+8% from last month", isPositive: true }}
-          />
-          <StatsCard
-            title="Total Staff"
-            value={dashboardData?.totalStaff || 0}
-            icon={AlertCircle}
-          />
-          <StatsCard
-            title="Active Customers"
-            value={customersCount || 0}
-            icon={Users}
-            trend={{ value: "+3 new", isPositive: true }}
-          />
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
+            Welcome Back,
+            <span className="ml-2 text-3xl italic text-blue-200 font-medium">
+              {userName}
+            </span>
+          </h3>
+          <p className="text-gray-400 mt-2">
+            Here’s an overview of your company’s performance.
+          </p>
         </div>
 
-        {/* Recent Tools + Inventory Breakdown */}
+        {/* Stats Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatsCard title="Total Tools" value={dashboardData?.totalTools || 0} icon={Package} />
+          <StatsCard title="Revenue (MTD)" value={formatCurrency(dashboardData?.mtdRevenue || 0)} icon={DollarSign} />
+          <StatsCard title="Total Staff" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
+          <StatsCard title="Active Customers" value={dashboardData?.activeCustomers || 0} icon={Users} />
+        </div>
+
+        {/* Recent Sales + Low Stock Items */}
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Recent Tools */}
+          {/* Recent Sales */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Tools</CardTitle>
+              <CardTitle>Recent Sales</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Category</TableHead>
+                    <TableHead>Invoice</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead>Tool</TableHead>
+                    <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Stock</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentTools.length > 0 ? (
-                    recentTools.map((tool) => (
-                      <TableRow key={tool.id}>
-                        <TableCell>{tool.code}</TableCell>
-                        <TableCell>{tool.name}</TableCell>
-                        <TableCell>{tool.category}</TableCell>
+                  {dashboardData?.recentSales?.length > 0 ? (
+                    dashboardData.recentSales.map((sale: any) => (
+                      <TableRow key={sale.invoice_number}>
+                        <TableCell>{sale.invoice_number}</TableCell>
+                        <TableCell>{sale.name}</TableCell>
+                        <TableCell>{sale.equipment}</TableCell>
+                        <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
                         <TableCell>
                           <StatusBadge
                             status={
-                              tool.status as
-                                | "available"
-                                | "rented"
-                                | "maintenance"
-                                | "disabled"
+                              sale.payment_status === "failed"
+                                ? "disabled"
+                                : (sale.payment_status as
+                                    | "completed"
+                                    | "pending"
+                                    | "active")
                             }
                           />
                         </TableCell>
-                        <TableCell>{tool.stock}</TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
                       <TableCell colSpan={5} className="text-center text-gray-500">
-                        No tools found
+                        No recent sales
                       </TableCell>
                     </TableRow>
                   )}
@@ -213,85 +148,118 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          {/* Category Breakdown */}
+          {/* Low Stock Items */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Low Stock Items</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboardData?.lowStockItems?.length > 0 ? (
+                    dashboardData.lowStockItems.map((tool: any) => (
+                      <TableRow key={tool.id}>
+                        <TableCell>{tool.code}</TableCell>
+                        <TableCell>{tool.name}</TableCell>
+                        <TableCell>{tool.category}</TableCell>
+                        <TableCell>{tool.stock}</TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            status={
+                              tool.status as
+                                | "available"
+                                | "rented"
+                                | "maintenance"
+                                | "disabled"
+                                | "sold"
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-gray-500">
+                        No low stock items
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Inventory Breakdown + Top Selling Tools */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Inventory Breakdown */}
           <Card>
             <CardHeader>
               <CardTitle>Inventory Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={categoryBreakdown}
-                    dataKey="value"
-                    nameKey="name"
-                    outerRadius={90}
-                    label
-                  >
-                    {categoryBreakdown.map((_, i) => (
-                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              {dashboardData?.inventoryBreakdown?.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250}>
+                  <PieChart>
+                    <Pie
+                      data={dashboardData.inventoryBreakdown}
+                      dataKey="count"
+                      nameKey="category"
+                      outerRadius={90}
+                      label
+                    >
+                      {dashboardData.inventoryBreakdown.map((_: any, i: number) => (
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p className="text-gray-500 text-center">No inventory data available</p>
+              )}
             </CardContent>
           </Card>
-        </div>
 
-        {/* Sales Trend + Tool Status Overview */}
-        <div className="grid gap-4 md:grid-cols-2">
-          {/* Sales Trend */}
+          {/* Top Selling Tools */}
           <Card>
             <CardHeader>
-              <CardTitle>Sales Trend</CardTitle>
+              <CardTitle>Top Selling Tools</CardTitle>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={250}>
-                <LineChart data={salesTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="amount" stroke="#4F46E5" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Tool Status Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Tools Status Overview</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {Object.entries(dashboardData?.toolStatusCounts || {}).map(
-                ([status, count]) => (
-                  <div
-                    key={status}
-                    className="flex items-center justify-between border-b pb-2 last:border-none"
-                  >
-                    <div className="flex items-center gap-2">
-                      <StatusBadge
-                        status={
-                          status as
-                            | "available"
-                            | "rented"
-                            | "maintenance"
-                            | "disabled"
-                            | "active"
-                            | "overdue"
-                            | "pending"
-                        }
-                      />
-                      <span className="capitalize text-gray-700">{status}</span>
-                    </div>
-                    <span className="font-semibold text-gray-900">
-                      {count as React.ReactNode}
-                    </span>
-                  </div>
-                )
-              )}
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tool</TableHead>
+                    <TableHead>Sales Count</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboardData?.topSellingTools?.length > 0 ? (
+                    dashboardData.topSellingTools.map((tool: any) => (
+                      <TableRow key={tool.tool__name}>
+                        <TableCell>{tool.tool__name}</TableCell>
+                        <TableCell>{tool.total_sold}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center text-gray-500">
+                        No sales data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>

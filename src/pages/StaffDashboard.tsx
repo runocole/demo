@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
 import { Package, DollarSign, Users, AlertCircle } from "lucide-react";
@@ -11,10 +12,21 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { useEffect, useState } from "react";
+import { fetchDashboardData } from "../services/api";
+import {
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+} from "recharts";
 
 const StaffDashboard = () => {
   const [userName, setUserName] = useState("");
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#6366F1", "#A855F7"];
 
   useEffect(() => {
     const userData = localStorage.getItem("user");
@@ -28,132 +40,220 @@ const StaffDashboard = () => {
     }
   }, []);
 
-  const recentRentals = [
-    { id: "R001", tool: "Total Station", customer: "John Doe", startDate: "2025-10-01", status: "active" as const, amount: "$150.00" },
-    { id: "R002", tool: "GPS Receiver", customer: "Jane Smith", startDate: "2025-09-28", status: "overdue" as const, amount: "$200.00" },
-    { id: "R003", tool: "Theodolite", customer: "Bob Johnson", startDate: "2025-09-25", status: "completed" as const, amount: "$120.00" },
-  ];
+  useEffect(() => {
+    const loadDashboard = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchDashboardData();
+        setDashboardData(res);
+      } catch (err) {
+        console.error("Error fetching dashboard:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadDashboard();
+  }, []);
+
+  const formatCurrency = (amount: number) =>
+    `₦${amount?.toLocaleString("en-NG", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex justify-center items-center h-64 text-gray-500">
+          Loading dashboard...
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
-   <DashboardLayout>
-  <div className="space-y-6">
-    {/* Header */}
-    <div>
-      <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
-        Welcome Back,
-        <span className="ml-2 text-3xl italic text-blue-200 font-medium">
-          {userName}
-        </span>
-      </h3>
-      <p className="text-gray-400 mt-2">
-        Here’s an overview of your company’s tools and sales.
-      </p>
-    </div>
-        {/* Stats Section */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard
-            title="Total Tools"
-            value="48"
-            icon={Package}
-            trend={{ value: "+3 this month", isPositive: true }}
-          />
-          <StatsCard
-            title="Active Rentals"
-            value="12"
-            icon={AlertCircle}
-            trend={{ value: "+2 from last week", isPositive: true }}
-          />
-          <StatsCard
-            title="Revenue (MTD)"
-            value="$12,450"
-            icon={DollarSign}
-            trend={{ value: "+18% from last month", isPositive: true }}
-          />
-          <StatsCard
-            title="Active Customers"
-            value="34"
-            icon={Users}
-            trend={{ value: "+5 new customers", isPositive: true }}
-          />
+    <DashboardLayout>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
+            Welcome Back,
+            <span className="ml-2 text-3xl italic text-blue-200 font-medium">
+              {userName}
+            </span>
+          </h3>
+          <p className="text-gray-400 mt-2">
+            Here’s an overview of your company’s performance.
+          </p>
         </div>
 
-        {/* Rentals and Tools Overview */}
+        {/* Stats Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatsCard title="Total Tools" value={dashboardData?.totalTools || 0} icon={Package} />
+          <StatsCard title="Revenue (MTD)" value={formatCurrency(dashboardData?.mtdRevenue || 0)} icon={DollarSign} />
+          <StatsCard title="Total Staff" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
+          <StatsCard title="Active Customers" value={dashboardData?.activeCustomers || 0} icon={Users} />
+        </div>
+
+        {/* Recent Sales + Low Stock Items */}
         <div className="grid gap-4 md:grid-cols-2">
+          {/* Recent Sales */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Rentals</CardTitle>
+              <CardTitle>Recent Sales</CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Tool</TableHead>
+                    <TableHead>Invoice</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Tool</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {recentRentals.map((rental) => (
-                    <TableRow key={rental.id}>
-                      <TableCell className="font-medium">{rental.id}</TableCell>
-                      <TableCell>{rental.tool}</TableCell>
-                      <TableCell>{rental.customer}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            rental.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : rental.status === "overdue"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-500"
-                          }`}
-                        >
-                          {rental.status.charAt(0).toUpperCase() + rental.status.slice(1)}
-                        </span>
+                  {dashboardData?.recentSales?.length > 0 ? (
+                    dashboardData.recentSales.map((sale: any) => (
+                      <TableRow key={sale.invoice_number}>
+                        <TableCell>{sale.invoice_number}</TableCell>
+                        <TableCell>{sale.name}</TableCell>
+                        <TableCell>{sale.equipment}</TableCell>
+                        <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            status={
+                              sale.payment_status === "failed"
+                                ? "disabled"
+                                : (sale.payment_status as
+                                    | "completed"
+                                    | "pending"
+                                    | "active")
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-gray-500">
+                        No recent sales
                       </TableCell>
-                      <TableCell>{rental.amount}</TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
 
+          {/* Low Stock Items */}
           <Card>
             <CardHeader>
-              <CardTitle>Tools Status Overview</CardTitle>
+              <CardTitle>Low Stock Items</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="available" />
-                  <span className="text-sm text-gray-600">Available</span>
-                </div>
-                <span className="font-semibold">28</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="rented" />
-                  <span className="text-sm text-gray-600">Rented</span>
-                </div>
-                <span className="font-semibold">12</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="maintenance" />
-                  <span className="text-sm text-gray-600">Maintenance</span>
-                </div>
-                <span className="font-semibold">5</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <StatusBadge status="disabled" />
-                  <span className="text-sm text-gray-600">Disabled</span>
-                </div>
-                <span className="font-semibold">3</span>
-              </div>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Code</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboardData?.lowStockItems?.length > 0 ? (
+                    dashboardData.lowStockItems.map((tool: any) => (
+                      <TableRow key={tool.code}>
+                        <TableCell>{tool.code}</TableCell>
+                        <TableCell>{tool.name}</TableCell>
+                        <TableCell>{tool.category}</TableCell>
+                        <TableCell>{tool.stock}</TableCell>
+                        <TableCell>
+                          <StatusBadge
+                            status={
+                              tool.status as
+                                | "available"
+                                | "rented"
+                                | "maintenance"
+                                | "disabled"
+                            }
+                          />
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center text-gray-500">
+                        No low stock items
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Inventory Breakdown + Top Selling Tools */}
+        <div className="grid gap-4 md:grid-cols-2">
+          {/* Inventory Breakdown */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Inventory Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie
+                    data={dashboardData?.inventoryBreakdown || []}  // ✅ updated
+                    dataKey="count"
+                    nameKey="category"
+                    outerRadius={90}
+                    label
+                  >
+                    {(dashboardData?.inventoryBreakdown || []).map((_: any, i: number) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Top Selling Tools */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Selling Tools</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tool</TableHead>
+                    <TableHead>Sales Count</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {dashboardData?.topSellingTools?.length > 0 ? (
+                    dashboardData.topSellingTools.map((tool: any) => (
+                      <TableRow key={tool.tool__name}>
+                        <TableCell>{tool.tool__name}</TableCell>
+                        <TableCell>{tool.total_sold}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={2} className="text-center text-gray-500">
+                        No sales data available
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>

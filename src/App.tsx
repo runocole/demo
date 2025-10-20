@@ -16,7 +16,7 @@ import AdminDashboard from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
 import ToolsSummary from "./pages/ToolsSummary";
 import AdminSalesPage from "./pages/AdminSalesPage";
-
+import CustomerDashboard from "./pages/CustomerDashboard";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +43,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     // Redirect user to their home dashboard
     if (role === "admin") return <Navigate to="/dashboard" replace />;
     if (role === "staff") return <Navigate to="/staff/dashboard" replace />;
+    if (role === "customer") return <Navigate to= "/customer/dashboard" replace />;
     return <Navigate to="/login" replace />;
   }
 
@@ -145,6 +146,16 @@ const App = () => (
             }
           />
 
+          {/* ---Customer Dashboard ---*/}
+          <Route
+            path="/customer/dashboard"
+            element={
+              <PrivateRoute
+                element={<CustomerDashboard/>}
+                allowedRoles={["customer"]}
+              />
+            }
+          />
           {/* New Admin Sales Page Route */}
           <Route
             path="/admin/sales"

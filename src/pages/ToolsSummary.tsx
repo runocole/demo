@@ -267,7 +267,7 @@ const ToolsSummary: React.FC = () => {
             <thead className="bg-slate-900 text-white sticky top-0">
               <tr>
                 <th className="px-4 py-3 text-left w-56">Category</th>
-                <th className="px-4 py-3 text-left">Tool Name</th>
+                <th className="px-4 py-3 text-left">Item Name</th>
                 <th className="px-4 py-3 text-left w-44">Serial Numbers</th>
                 <th className="px-4 py-3 text-center w-28">Quantity</th>
                 <th className="px-4 py-3 text-left w-40">Supplier</th>

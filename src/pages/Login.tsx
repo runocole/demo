@@ -139,7 +139,7 @@ return (
   <div className="absolute inset-0 flex flex-col items-center justify-center text-center text-white px-6 bg-gradient-to-b from-transparent via-[#0a1836]/40 to-[#0a1836]/80">
     <div className="space-y-3">
       <p className="text-3xl lg:text-4xl font-semibold text-blue-100 animate-fadeInLine1 drop-shadow-[0_0_10px_rgba(0,115,255,0.5)]">
-        Manage your tools.
+        Manage your inventory.
       </p>
       <p className="text-3xl lg:text-4xl font-semibold text-blue-200 animate-fadeInLine2 drop-shadow-[0_0_10px_rgba(0,115,255,0.4)]">
         Track your sales.

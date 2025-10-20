@@ -24,24 +24,44 @@ import axios from "axios";
 
 interface Sale {
   id: number;
-  client_name: string;
+  customer_id?: number;
+  tool_id?: number;
+  name: string;
   phone: string;
   state: string;
   equipment: string;
   cost_sold: string;
   date_sold: string;
-  import_invoice_no: string;
-  customer_invoice_no: string;
+  invoice_number?: string;
   payment_plan?: string;
   expiry_date?: string;
-  status: string;
+  payment_status?: string;
+}
+
+interface Customer {
+  id: number;
+  name: string;
+  phone: string;
+  email: string;
+  state: string;
+}
+
+interface Tool {
+  id: number;
+  name: string;
+  category: string;
 }
 
 const API_URL = "http://localhost:8000/api";
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [tools, setTools] = useState<Tool[]>([]);
   const [newSale, setNewSale] = useState<Partial<Sale>>({});
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null
+  );
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -54,19 +74,25 @@ export default function SalesPage() {
     },
   };
 
-  // ✅ Fetch staff-specific sales
+  // ✅ Fetch sales, customers & tools
   useEffect(() => {
-    const fetchSales = async () => {
+    const fetchAll = async () => {
       try {
-        const res = await axios.get(`${API_URL}/sales/`, axiosConfig);
-        setSales(res.data);
+        const [salesRes, custRes, toolsRes] = await Promise.all([
+          axios.get(`${API_URL}/sales/`, axiosConfig),
+          axios.get(`${API_URL}/customers/`, axiosConfig),
+          axios.get(`${API_URL}/tools/`, axiosConfig),
+        ]);
+        setSales(salesRes.data);
+        setCustomers(custRes.data);
+        setTools(toolsRes.data);
       } catch (error) {
-        console.error("Error fetching sales:", error);
+        console.error("Error fetching data:", error);
       } finally {
         setLoading(false);
       }
     };
-    fetchSales();
+    fetchAll();
   }, []);
 
   const calculateStatus = (sale: Partial<Sale>): string => {
@@ -84,35 +110,71 @@ export default function SalesPage() {
 
   const resetForm = () => {
     setNewSale({});
+    setSelectedCustomer(null);
     setOpen(false);
     setIsSubmitting(false);
   };
 
+  // ✅ Email sending
+  const sendEmail = async (email: string, name: string) => {
+    try {
+      await axios.post(`${API_URL}/send-sale-email/`, {
+        to_email: email,
+        subject: "Your Payment Link",
+        message: `Hello ${name}, your payment link will be available soon.`,
+      });
+    } catch (error) {
+      console.error("Error sending email:", error);
+    }
+  };
+
+  // ✅ Handle Sale actions
   const handleAction = async (action: "cancel" | "draft" | "send") => {
     if (action === "cancel") return resetForm();
+
+    if (!selectedCustomer) {
+      alert("Please select a customer first.");
+      return;
+    }
+
+    if (!newSale.tool_id) {
+      alert("Please select a tool.");
+      return;
+    }
 
     if (action === "draft" || action === "send") {
       setIsSubmitting(true);
       try {
-        const status =
-          action === "draft" ? "Draft" : calculateStatus(newSale);
-
         const payload = {
-          ...newSale,
-          status,
+          customer_id: selectedCustomer.id,
+          tool_id: newSale.tool_id,
+          name: newSale.name || selectedCustomer.name,
+          phone: newSale.phone || selectedCustomer.phone,
+          state: newSale.state || selectedCustomer.state,
+          equipment: newSale.equipment || "",
+          cost_sold: newSale.cost_sold,
+          payment_plan: newSale.payment_plan || "",
+          expiry_date: newSale.expiry_date || null,
         };
 
         const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
         setSales((prev) => [res.data, ...prev]);
+
+        if (action === "send") {
+          await sendEmail(selectedCustomer.email, selectedCustomer.name);
+        }
+
         resetForm();
       } catch (error) {
         console.error("Error adding sale:", error);
+        alert("Failed to save sale. Check if tool/customer exists.");
       } finally {
         setIsSubmitting(false);
       }
     }
   };
 
+  // ✅ Export to PDF
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("My Sales Records", 14, 15);
@@ -126,25 +188,23 @@ export default function SalesPage() {
           "Equipment",
           "Cost",
           "Date Sold",
-          "Import Invoice",
-          "Customer Invoice",
-          "Plan",
+          "Invoice",
+          "Payment Plan",
           "Expiry",
           "Status",
         ],
       ],
       body: sales.map((s) => [
-        s.client_name,
+        s.name,
         s.phone,
         s.state,
         s.equipment,
         s.cost_sold,
         s.date_sold,
-        s.import_invoice_no,
-        s.customer_invoice_no,
+        s.invoice_number || "-",
         s.payment_plan || "-",
         s.expiry_date || "-",
-        s.status,
+        s.payment_status || "-",
       ]),
       styles: { fontSize: 8 },
     });
@@ -180,16 +240,77 @@ export default function SalesPage() {
                   <DialogTitle>Add New Sale</DialogTitle>
                 </DialogHeader>
 
+                {/* Customer Selection */}
                 <div className="grid grid-cols-2 gap-4 py-3">
+                  <div className="col-span-2">
+                    <Label className="text-white">Select Customer</Label>
+                    <select
+                      className="border rounded-md p-2 w-full bg-black text-white"
+                      value={selectedCustomer?.id || ""}
+                      onChange={(e) => {
+                        const cust = customers.find(
+                          (c) => c.id === Number(e.target.value)
+                        );
+                        setSelectedCustomer(cust || null);
+                        if (cust) {
+                          setNewSale((prev) => ({
+                            ...prev,
+                            name: cust.name,
+                            phone: cust.phone,
+                            state: cust.state,
+                          }));
+                        }
+                      }}
+                    >
+                      <option value="">-- Select --</option>
+                      {customers.map((cust) => (
+                        <option key={cust.id} value={cust.id}>
+                          {cust.name} ({cust.email})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Tool Selection */}
+                  <div className="col-span-2">
+                    <Label className="text-white">Select Tool</Label>
+                    <select
+                      className="border rounded-md p-2 w-full bg-black text-white"
+                      value={newSale.tool_id || ""}
+                      onChange={(e) =>
+                        setNewSale((prev) => ({
+                          ...prev,
+                          tool_id: Number(e.target.value),
+                        }))
+                      }
+                    >
+                      <option value="">-- Select Tool --</option>
+                      {tools.map((tool) => (
+                        <option key={tool.id} value={tool.id}>
+                          {tool.name} ({tool.category})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Auto-filled fields */}
+                  <div>
+                    <Label>Client Name</Label>
+                    <Input value={newSale.name || ""} readOnly />
+                  </div>
+                  <div>
+                    <Label>Phone</Label>
+                    <Input value={newSale.phone || ""} readOnly />
+                  </div>
+                  <div>
+                    <Label>State</Label>
+                    <Input value={newSale.state || ""} readOnly />
+                  </div>
+
+                  {/* Editable fields */}
                   {[
-                    ["client_name", "Client Name", "text"],
-                    ["phone", "Phone Number", "text"],
-                    ["state", "State", "text"],
                     ["equipment", "Equipment", "text"],
                     ["cost_sold", "Cost Sold", "number"],
-                    ["date_sold", "Date Sold", "date"],
-                    ["import_invoice_no", "Import Invoice No", "text"],
-                    ["customer_invoice_no", "Customer Invoice No", "text"],
                     ["payment_plan", "Payment Plan", "text"],
                     ["expiry_date", "Expiry Date", "date"],
                   ].map(([key, label, type]) => (
@@ -208,12 +329,14 @@ export default function SalesPage() {
                       />
                     </div>
                   ))}
+
+                  {/* Status */}
                   <div>
-                    <Label>Status</Label>
+                    <Label className="text-white">Status</Label>
                     <Input
                       readOnly
                       value={calculateStatus(newSale)}
-                      className="bg-gray-100"
+                      className="bg-black text-white"
                     />
                   </div>
                 </div>
@@ -247,6 +370,7 @@ export default function SalesPage() {
           </div>
         </div>
 
+        {/* Sales Table */}
         <Card>
           <CardHeader>
             <CardTitle>Sales Overview</CardTitle>
@@ -266,8 +390,7 @@ export default function SalesPage() {
                         "Equipment",
                         "Cost",
                         "Date Sold",
-                        "Import Invoice",
-                        "Customer Invoice",
+                        "Invoice",
                         "Payment Plan",
                         "Expiry",
                         "Status",
@@ -282,7 +405,7 @@ export default function SalesPage() {
                     {sales.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={11}
+                          colSpan={10}
                           className="text-center p-4 text-gray-400"
                         >
                           No records yet. Add a sale to begin.
@@ -294,29 +417,28 @@ export default function SalesPage() {
                           key={sale.id}
                           className="border-b hover:bg-gray-50"
                         >
-                          <td className="p-2">{sale.client_name}</td>
+                          <td className="p-2">{sale.name}</td>
                           <td className="p-2">{sale.phone}</td>
                           <td className="p-2">{sale.state}</td>
                           <td className="p-2 capitalize">{sale.equipment}</td>
                           <td className="p-2">₦{sale.cost_sold}</td>
                           <td className="p-2">{sale.date_sold}</td>
-                          <td className="p-2">{sale.import_invoice_no}</td>
-                          <td className="p-2">{sale.customer_invoice_no}</td>
+                          <td className="p-2">{sale.invoice_number || "-"}</td>
                           <td className="p-2">{sale.payment_plan || "-"}</td>
                           <td className="p-2">{sale.expiry_date || "-"}</td>
                           <td className="p-2">
                             <span
                               className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                sale.status === "Completed"
+                                sale.payment_status === "completed"
                                   ? "bg-green-100 text-green-800"
-                                  : sale.status === "Installment"
+                                  : sale.payment_status === "installment"
                                   ? "bg-blue-100 text-blue-800"
-                                  : sale.status === "Expired"
+                                  : sale.payment_status === "failed"
                                   ? "bg-red-100 text-red-800"
                                   : "bg-gray-100 text-gray-800"
                               }`}
                             >
-                              {sale.status}
+                              {sale.payment_status || "pending"}
                             </span>
                           </td>
                         </tr>

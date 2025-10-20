@@ -48,7 +48,7 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
       { title: "Payments", url: "/payments", icon: DollarSign },
       { title: "Staff", url: "/staff", icon: Users },
       { title: "Tools Summary", url: "/tools-summary", icon: FileText },
-      { title: "Sales", url: "/sales", icon: ShoppingCart },
+      { title: "Sales", url: "/admin/sales", icon: ShoppingCart },
       { title: "Settings", url: "/settings", icon: Settings },
     ],
     staff: [
@@ -59,6 +59,10 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
       { title: "Customers", url: "/customers", icon: Users },
       { title: "Sales", url: "/sales", icon: ShoppingCart },
     ],
+    customer: [
+      { title: "Dashboard", url: "/customer/dashboard", icon: LayoutDashboard },
+      { title: "Payments", url: "/customer/payments", icon: DollarSign },
+    ]
   };
 
   const menuItems = menuByRole[userRole] || [];

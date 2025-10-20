@@ -225,7 +225,7 @@ const DashboardPage = () => {
 </Pie>
 
           <Tooltip
-            formatter={(value: number, _name: string, props: any) => {
+            formatter={(value: number, _name: string) => {
               const total = (dashboardData?.inventoryBreakdown || []).reduce(
                 (sum: number, item: any) => sum + item.count,
                 0

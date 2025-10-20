@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center gap-4">
               <SidebarTrigger onClick={() => setIsSidebarOpen(!isSidebarOpen)} />
               <h1 className="text-lg font-semibold text-white tracking-wide">
-                Inventory & Rental Management
+                Inventory Management
               </h1>
             </div>
 

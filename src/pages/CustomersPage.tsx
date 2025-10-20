@@ -15,135 +15,111 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { Search, Plus, Mail, Phone } from "lucide-react";
+import { toast } from "../components/ui/use-toast";
 
-// Define proper type for a customer
+// ------------------------------
+// INTERFACE
+// ------------------------------
 interface Customer {
   id: string;
   name: string;
   email: string;
   phone: string;
   state: string;
-  activeRentals: number;
-  totalRentals: number;
-  totalSpent: string;
-  is_activated: boolean; 
+  is_active: boolean;
+  activeRentals?: number;
+  totalRentals?: number;
+  totalSpent?: string;
 }
 
-
+// ------------------------------
+// COMPONENT
+// ------------------------------
 const CustomersPage = () => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState("customer");
-  const [loading, setLoading] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [state, setState] = useState("");
-  const [successMessage, setSuccessMessage] = useState(""); 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    void fetchCustomers();
-  }, []);
+  // Add Customer Fields
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    state: "",
+  });
 
-  
-
- const fetchCustomers = async () => {
-  try {
-    const data = await getCustomers();
-    setCustomers(data);
-  } catch (error) {
-    console.error("Failed to fetch customers:", error);
-    setCustomers([]);
-  }
-};
-
- const handleAddCustomer = async () => {
-  if (!email) {
-    alert("Email is required");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    const newCustomer = await registerCustomer(name, email, phone);
-
-    if (!newCustomer?.id) {
-      throw new Error("Customer ID missing from response");
+  // ------------------------------
+  // Fetch Customers
+  // ------------------------------
+  const fetchCustomers = async () => {
+    try {
+      const data = await getCustomers();
+      setCustomers(data);
+    } catch (error) {
+      console.error("Failed to fetch customers:", error);
+      toast({ title: "Error", description: "Could not fetch customers." });
     }
-
-    // Reset all form fields
-    setEmail("");
-    setRole("customer");
-    setName("");
-    setPhone("");
-    setState("");
-    await fetchCustomers();
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      alert(`Failed to add customer: ${err.message}`);
-      console.error("Customer addition failed:", err.message);
-    } else {
-      alert("An unknown error occurred while adding the customer.");
-      console.error("Unknown error:", err);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
- const handleSubmitReceiverSale = async (customerId?: string) => {
-  if (!customerId) {
-    console.error("Customer ID is missing");
-    return false;
-  }
-
-  const payload = {
-    customer: customerId,
-    phone,
   };
 
-  try {
-    const token = localStorage.getItem("access");
-    const response = await fetch("http://localhost:8000/api/receiver-sales/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
 
-    if (!response.ok) {
-      const err = await response.text();
-      throw new Error(err || "Failed to record sale");
+  // ------------------------------
+  // Add Customer
+  // ------------------------------
+  const handleAddCustomer = async () => {
+    const { name, email, phone, state } = formData;
+
+    if (!email || !name) {
+      toast({ title: "Missing Info", description: "Name and Email are required." });
+      return;
     }
 
-    console.log("Sale recorded successfully");
-    return true;
-  } catch (error) {
-    console.error("Sale recording failed:", error);
-    return false;
-  }
-};
-
-const handleActivateCustomer = async (customerId: number) => {
-  try {
-    const data = await activateCustomer(customerId);
-    alert(data.detail || "Customer account activated successfully!");
-    await fetchCustomers(); // Refresh list
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      alert(`Activation failed: ${err.message}`);
-    } else {
-      alert("Activation failed due to an unknown error.");
+    try {
+      setLoading(true);
+      await registerCustomer(name, email, phone, state);
+      toast({ title: "Success", description: "Customer added successfully!" });
+      setFormData({ name: "", email: "", phone: "", state: "" });
+      setShowAddModal(false);
+      fetchCustomers();
+    } catch (error) {
+      console.error("Add customer failed:", error);
+      toast({ title: "Error", description: "Failed to add customer." });
+    } finally {
+      setLoading(false);
     }
-  }
-};
+  };
 
+  // ------------------------------
+  // Activate Customer
+  // ------------------------------
+  const handleActivateCustomer = async (id: number) => {
+    try {
+      await activateCustomer(id);
+      toast({ title: "Activated", description: "Customer account activated." });
+      fetchCustomers();
+    } catch (error) {
+      toast({ title: "Error", description: "Activation failed." });
+    }
+  };
 
+  // ------------------------------
+  // Filter Customers (Search)
+  // ------------------------------
+  const filteredCustomers = customers.filter((customer) => {
+    const term = searchTerm.toLowerCase();
+    return (
+      customer.name.toLowerCase().includes(term) ||
+      customer.email.toLowerCase().includes(term) ||
+      customer.phone.toLowerCase().includes(term)
+    );
+  });
 
+  // ------------------------------
+  // RENDER
+  // ------------------------------
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -152,7 +128,7 @@ const handleActivateCustomer = async (customerId: number) => {
           <div>
             <h2 className="text-3xl font-bold tracking-tight">Customers</h2>
             <p className="text-muted-foreground">
-              Manage customer information and rental history
+              Manage customer information and account status
             </p>
           </div>
           <Button className="gap-2" onClick={() => setShowAddModal(true)}>
@@ -167,59 +143,55 @@ const handleActivateCustomer = async (customerId: number) => {
               <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
 
-            <Label>Email</Label>
-            <Input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="customer@example.com"
-              required
-            />
+            <div className="space-y-3">
+              <Label>Name</Label>
+              <Input
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="Customer name"
+                required
+              />
 
-            <Label>State</Label>
-            <Input
-              value={state}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g: Lagos"
-              required
-            />
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="customer@example.com"
+                required
+              />
 
-            <Label>Role</Label>
-            <select
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              className="border rounded p-2 w-full"
-            >
-              <option value="customer">Customer</option>
-              <option value="staff">Staff</option>
-            </select>
+              <Label>Phone</Label>
+              <Input
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="e.g. 08012345678"
+              />
 
-            {/* Receiver Sale Info */}
-            <Label>Name</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} />
-            <Label>Phone No.</Label>
-            <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Label>State</Label>
+              <Input
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                placeholder="e.g. Lagos"
+              />
+            </div>
 
-           <DialogFooter className="flex flex-col gap-2">
-  <Button onClick={handleAddCustomer} disabled={loading}>
-    {loading ? "Adding..." : "Add Customer"}
-  </Button>
-
-  {successMessage && (
-    <p className="text-green-600 text-sm font-medium">
-      {successMessage}
-    </p>
-  )}
-</DialogFooter>
-
+            <DialogFooter>
+              <Button onClick={handleAddCustomer} disabled={loading}>
+                {loading ? "Adding..." : "Add Customer"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* Search */}
+        {/* Search Input */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search customers by name, email, or phone..."
             className="pl-10"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
@@ -235,43 +207,63 @@ const handleActivateCustomer = async (customerId: number) => {
                   <TableHead>Customer ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Contact</TableHead>
+                  <TableHead>State</TableHead>
+                  <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {customers.map((customer) => (
-                  <TableRow key={customer.id}>
-                    <TableCell className="font-medium">{customer.id}</TableCell>
-                    <TableCell className="font-semibold">{customer.name}</TableCell>
-                    <TableCell>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Mail className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">{customer.email}</span>
+                {filteredCustomers.length > 0 ? (
+                  filteredCustomers.map((customer) => (
+                    <TableRow key={customer.id}>
+                      <TableCell className="font-medium text-sm">
+                        {String(customer.id).slice(0, 8).toUpperCase()}
+                      </TableCell>
+                      <TableCell className="font-semibold">{customer.name}</TableCell>
+
+                      <TableCell>
+                        <div className="space-y-1 text-sm">
+                          <div className="flex items-center gap-2">
+                            <Mail className="h-3 w-3 text-muted-foreground" />
+                            <span>{customer.email}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            <span>{customer.phone}</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">{customer.phone}</span>
-                        </div>
-                      </div>
+                      </TableCell>
+
+                      <TableCell>{customer.state || "—"}</TableCell>
+
+                      <TableCell>
+                        {customer.is_active ? (
+                          <span className="text-green-600 font-medium">Active</span>
+                        ) : (
+                          <span className="text-yellow-600 font-medium">Inactive</span>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleActivateCustomer(Number(customer.id))}
+                          disabled={customer.is_active}
+                        >
+                          {customer.is_active ? "Activated" : "Activate"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      No customers found.
                     </TableCell>
-                    <TableCell className="flex gap-2">
-  <Button variant="ghost" size="sm">
-    View Profile
-  </Button>
-
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => handleActivateCustomer(Number(customer.id))}
-    disabled={customer.is_activated}
-  >
-    {customer.is_activated ? "Activated" : "Activate Account"}
-  </Button>
-</TableCell>
-
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </CardContent>

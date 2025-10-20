@@ -37,7 +37,7 @@ interface Sale {
   status: string;
 }
 
-const API_URL = "http://localhost:8000/api"; // update if needed
+const API_URL = "http://localhost:8000/api";
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -46,7 +46,7 @@ export default function SalesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem("access"); // assuming JWT stored here
+  const token = localStorage.getItem("access");
 
   const axiosConfig = {
     headers: {
@@ -88,7 +88,6 @@ export default function SalesPage() {
     setIsSubmitting(false);
   };
 
-  // ✅ Add sale (POST to backend)
   const handleAction = async (action: "cancel" | "draft" | "send") => {
     if (action === "cancel") return resetForm();
 
@@ -104,7 +103,7 @@ export default function SalesPage() {
         };
 
         const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
-        setSales((prev) => [...prev, res.data]);
+        setSales((prev) => [res.data, ...prev]);
         resetForm();
       } catch (error) {
         console.error("Error adding sale:", error);
@@ -114,38 +113,6 @@ export default function SalesPage() {
     }
   };
 
-  const getStatusBadgeClass = (status: string) => {
-    const base = "px-2 py-1 rounded-full text-xs font-medium";
-    switch (status) {
-      case "Completed":
-        return `${base} bg-green-100 text-green-800`;
-      case "Installment":
-        return `${base} bg-blue-100 text-blue-800`;
-      case "Expired":
-        return `${base} bg-red-100 text-red-800`;
-      case "Draft":
-        return `${base} bg-gray-100 text-gray-800`;
-      case "Pending":
-        return `${base} bg-yellow-100 text-yellow-800`;
-      default:
-        return `${base} bg-gray-100 text-gray-800`;
-    }
-  };
-
-  const formFields = [
-    ["client_name", "Client Name", "text"],
-    ["phone", "Phone Number", "text"],
-    ["state", "State", "text"],
-    ["equipment", "Equipment", "text"],
-    ["cost_sold", "Cost Sold", "number"],
-    ["date_sold", "Date Sold", "date"],
-    ["import_invoice_no", "Import Invoice No", "text"],
-    ["customer_invoice_no", "Customer Invoice No", "text"],
-    ["payment_plan", "Payment Plan", "text"],
-    ["expiry_date", "Expiry Date", "date"],
-  ] as const;
-
-  // ✅ Export visible table as PDF
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("My Sales Records", 14, 15);
@@ -187,7 +154,6 @@ export default function SalesPage() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Header */}
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-800">
             My Sales Records
@@ -215,7 +181,18 @@ export default function SalesPage() {
                 </DialogHeader>
 
                 <div className="grid grid-cols-2 gap-4 py-3">
-                  {formFields.map(([key, label, type]) => (
+                  {[
+                    ["client_name", "Client Name", "text"],
+                    ["phone", "Phone Number", "text"],
+                    ["state", "State", "text"],
+                    ["equipment", "Equipment", "text"],
+                    ["cost_sold", "Cost Sold", "number"],
+                    ["date_sold", "Date Sold", "date"],
+                    ["import_invoice_no", "Import Invoice No", "text"],
+                    ["customer_invoice_no", "Customer Invoice No", "text"],
+                    ["payment_plan", "Payment Plan", "text"],
+                    ["expiry_date", "Expiry Date", "date"],
+                  ].map(([key, label, type]) => (
                     <div key={key}>
                       <Label htmlFor={key}>{label}</Label>
                       <Input
@@ -270,7 +247,6 @@ export default function SalesPage() {
           </div>
         </div>
 
-        {/* Table */}
         <Card>
           <CardHeader>
             <CardTitle>Sales Overview</CardTitle>
@@ -296,10 +272,7 @@ export default function SalesPage() {
                         "Expiry",
                         "Status",
                       ].map((col) => (
-                        <th
-                          key={col}
-                          className="p-2 text-gray-600 font-medium"
-                        >
+                        <th key={col} className="p-2 text-gray-600 font-medium">
                           {col}
                         </th>
                       ))}
@@ -327,20 +300,22 @@ export default function SalesPage() {
                           <td className="p-2 capitalize">{sale.equipment}</td>
                           <td className="p-2">₦{sale.cost_sold}</td>
                           <td className="p-2">{sale.date_sold}</td>
+                          <td className="p-2">{sale.import_invoice_no}</td>
+                          <td className="p-2">{sale.customer_invoice_no}</td>
+                          <td className="p-2">{sale.payment_plan || "-"}</td>
+                          <td className="p-2">{sale.expiry_date || "-"}</td>
                           <td className="p-2">
-                            {sale.import_invoice_no}
-                          </td>
-                          <td className="p-2">
-                            {sale.customer_invoice_no}
-                          </td>
-                          <td className="p-2">
-                            {sale.payment_plan || "-"}
-                          </td>
-                          <td className="p-2">
-                            {sale.expiry_date || "-"}
-                          </td>
-                          <td className="p-2">
-                            <span className={getStatusBadgeClass(sale.status)}>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                sale.status === "Completed"
+                                  ? "bg-green-100 text-green-800"
+                                  : sale.status === "Installment"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : sale.status === "Expired"
+                                  ? "bg-red-100 text-red-800"
+                                  : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
                               {sale.status}
                             </span>
                           </td>

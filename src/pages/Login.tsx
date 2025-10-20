@@ -57,19 +57,26 @@ const Login = () => {
       localStorage.setItem("user", JSON.stringify(data.user));
       localStorage.setItem("userRole", data.user.role);
 
-      setTimeout(() => {
-        const role = data.user.role;
-        if (role === "admin") navigate("/dashboard", { replace: true });
-        else if (role === "staff") navigate("/staff/dashboard", { replace: true });
-        else navigate("/login", { replace: true });
-      }, 100);
-    } catch (err) {
-      console.error("Login error:", err);
-      alert("Something went wrong during login.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+     setTimeout(() => {
+  const role = data.user.role;
+
+  if (role === "admin") {
+    navigate("/dashboard", { replace: true });
+  } else if (role === "staff") {
+    navigate("/staff/dashboard", { replace: true });
+  } else if (role === "customer") {
+    navigate("/customer/dashboard", { replace: true });
+  } else {
+    navigate("/login", { replace: true });
+  }
+}, 100);
+} catch (err) {
+  console.error("Login error:", err);
+  alert("Something went wrong during login.");
+} finally {
+  setIsLoading(false);
+}
+};
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();

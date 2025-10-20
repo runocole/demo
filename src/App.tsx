@@ -15,6 +15,7 @@ import SalesPage from "./pages/SalesPage";
 import AdminDashboard from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
 import ToolsSummary from "./pages/ToolsSummary";
+import AdminSalesPage from "./pages/AdminSalesPage";
 
 
 const queryClient = new QueryClient();
@@ -139,6 +140,17 @@ const App = () => (
             element={
               <PrivateRoute
                 element={<AdminDashboard />}
+                allowedRoles={["admin"]}
+              />
+            }
+          />
+
+          {/* New Admin Sales Page Route */}
+          <Route
+            path="/admin/sales"
+            element={ 
+              <PrivateRoute
+                element={<AdminSalesPage />}
                 allowedRoles={["admin"]}
               />
             }

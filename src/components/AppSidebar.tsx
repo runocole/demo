@@ -56,7 +56,7 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
       { title: "Tools", url: "/tools", icon: Package },
       { title: "Payments", url: "/payments", icon: DollarSign },
       { title: "Tools Summary", url: "/tools-summary", icon: FileText }, 
-     // { title: "Customers", url: "/customers", icon: Users },
+      { title: "Customers", url: "/customers", icon: Users },
       { title: "Sales", url: "/sales", icon: ShoppingCart },
     ],
   };

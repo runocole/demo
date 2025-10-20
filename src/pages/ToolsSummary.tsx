@@ -1,4 +1,3 @@
-// src/pages/ToolsSummary.tsx
 import React, { useEffect, useMemo, useState } from "react";
 import { getTools } from "../services/api";
 import { Button } from "../components/ui/button";
@@ -13,6 +12,9 @@ interface Tool {
   stock: number;
   supplier?: string;
   category?: string;
+  invoice_no?: string;
+  date_added?: string;
+  updated_at?: string;
 }
 
 const ToolsSummary: React.FC = () => {
@@ -20,6 +22,9 @@ const ToolsSummary: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [serialSearch, setSerialSearch] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -31,9 +36,12 @@ const ToolsSummary: React.FC = () => {
           id: t.id,
           name: t.name,
           code: t.code,
-          stock: typeof t.stock === "number" ? t.stock : Number(t.stock || 0),
+          stock: Number(t.stock || 0),
           supplier: t.supplier || "",
           category: t.category || "Uncategorized",
+          invoice_no: t.invoice_no || "",
+          date_added: t.date_added,
+          updated_at: t.updated_at,
         }));
         setTools(normalized);
       } catch (err) {
@@ -47,14 +55,27 @@ const ToolsSummary: React.FC = () => {
     };
   }, []);
 
-  // build category list for filter dropdown
+  // latest update date
+  const lastUpdated = useMemo(() => {
+    if (tools.length === 0) return null;
+    const sorted = [...tools]
+      .filter((t) => t.updated_at)
+      .sort(
+        (a, b) =>
+          new Date(b.updated_at || "").getTime() -
+          new Date(a.updated_at || "").getTime()
+      );
+    return sorted[0]?.updated_at || null;
+  }, [tools]);
+
+  // build category list
   const categories = useMemo(() => {
     const set = new Set<string>();
     tools.forEach((t) => set.add(t.category || "Uncategorized"));
     return ["all", ...Array.from(set).sort()];
   }, [tools]);
 
-  // filtered and grouped tools
+  // filtered + grouped
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
 
@@ -67,15 +88,14 @@ const ToolsSummary: React.FC = () => {
       const qMatch =
         !q ||
         t.name.toLowerCase().includes(q) ||
-        t.code.toLowerCase().includes(q) ||
         (t.supplier || "").toLowerCase().includes(q);
-      return categoryMatch && qMatch;
+      const lowStockMatch = !lowStockOnly || t.stock < 5;
+      return categoryMatch && qMatch && lowStockMatch;
     });
 
-    // group by category → tool name
     const map = new Map<
       string,
-      { name: string; serials: string[]; totalStock: number; suppliers: string[] }[]
+      { name: string; totalStock: number; suppliers: string[]; serials: Tool[] }[]
     >();
 
     for (const t of filtered) {
@@ -86,17 +106,16 @@ const ToolsSummary: React.FC = () => {
       const existing = toolGroup.find((x) => x.name === t.name);
 
       if (existing) {
-        existing.serials.push(t.code);
-        existing.totalStock += t.stock || 0;
-        if (t.supplier && !existing.suppliers.includes(t.supplier)) {
+        existing.totalStock += t.stock;
+        if (t.supplier && !existing.suppliers.includes(t.supplier))
           existing.suppliers.push(t.supplier);
-        }
+        existing.serials.push(t);
       } else {
         toolGroup.push({
           name: t.name,
-          serials: [t.code],
-          totalStock: t.stock || 0,
+          totalStock: t.stock,
           suppliers: t.supplier ? [t.supplier] : [],
+          serials: [t],
         });
       }
     }
@@ -105,7 +124,7 @@ const ToolsSummary: React.FC = () => {
       category,
       tools,
     }));
-  }, [tools, search, categoryFilter]);
+  }, [tools, search, categoryFilter, lowStockOnly]);
 
   const totalStock = useMemo(
     () =>
@@ -129,9 +148,8 @@ const ToolsSummary: React.FC = () => {
     grouped.forEach((cat) => {
       cat.tools.forEach((t, i) => {
         body.push([
-          i === 0 ? cat.category : "", // show category once
+          i === 0 ? cat.category : "",
           t.name,
-          t.serials.join("\n"), // vertical list
           String(t.totalStock ?? 0),
           t.suppliers.join(" / ") || "—",
         ]);
@@ -139,29 +157,30 @@ const ToolsSummary: React.FC = () => {
     });
 
     autoTable(doc, {
-      head: [["Category", "Tool Name", "Serial Numbers", "Quantity", "Supplier"]],
+      head: [["Category", "Tool Name", "Quantity", "Supplier"]],
       body,
       startY: 28,
       styles: { fontSize: 9, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [15, 23, 42] },
-     didDrawPage: () => {
-  const pageCount =
-    (doc.internal as any).getNumberOfPages?.() || 1;
-  doc.setFontSize(8);
-  doc.text(
-    `Page ${pageCount}`,
-    (doc.internal as any).pageSize.getWidth() - 20,
-    (doc.internal as any).pageSize.getHeight() - 10
-  );
+      didDrawPage: () => {
+        const pageCount =
+          (doc.internal as any).getNumberOfPages?.() || 1;
+        doc.setFontSize(8);
+        doc.text(
+          `Page ${pageCount}`,
+          (doc.internal as any).pageSize.getWidth() - 20,
+          (doc.internal as any).pageSize.getHeight() - 10
+        );
       },
     });
 
     doc.save(`inventory_summary_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  // --- UI rendering ---
-  const renderRows = () => {
-    if (grouped.length === 0) {
+  // --- RENDERING ---
+
+  const renderMainTable = () => {
+    if (grouped.length === 0)
       return (
         <tr>
           <td colSpan={8} className="p-6 text-center text-gray-500">
@@ -169,7 +188,6 @@ const ToolsSummary: React.FC = () => {
           </td>
         </tr>
       );
-    }
 
     const rows: React.ReactNode[] = [];
     grouped.forEach((cat) => {
@@ -179,23 +197,15 @@ const ToolsSummary: React.FC = () => {
             key={`${cat.category}-${t.name}-${i}`}
             className="border-b last:border-b-0 hover:bg-slate-50/5"
           >
-            <td
-              className={`px-4 py-3 align-top ${
-                i === 0 ? "font-semibold" : ""
-              }`}
-              style={{ width: 220 }}
-            >
+            <td className={`px-4 py-3 align-top ${i === 0 ? "font-semibold" : ""}`}>
               {i === 0 ? cat.category : ""}
             </td>
 
-            <td className="px-4 py-3 align-top">
-              <div className="font-medium">{t.name}</div>
-            </td>
-
-            <td className="px-4 py-3 align-top">
-              {t.serials.map((s, idx) => (
-                <div key={idx}>{s}</div>
-              ))}
+            <td
+              className="px-4 py-3 align-top text-blue-400 cursor-pointer hover:underline"
+              onClick={() => setSelectedTool(t.serials[0])}
+            >
+              {t.name}
             </td>
 
             <td className="px-4 py-3 text-center align-top">
@@ -221,6 +231,64 @@ const ToolsSummary: React.FC = () => {
     return rows;
   };
 
+  const renderToolDetails = () => {
+    if (!selectedTool) return null;
+
+    const toolGroup = tools.filter((t) => t.name === selectedTool.name);
+    const filteredSerials = toolGroup.filter((t) =>
+      t.code.toLowerCase().includes(serialSearch.toLowerCase())
+    );
+
+    return (
+      <div className="mt-6 border rounded-lg p-4 bg-slate-900">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-xl font-semibold">
+            {selectedTool.name} — Details
+          </h2>
+          <Button
+            className="bg-slate-700 hover:bg-slate-600"
+            onClick={() => setSelectedTool(null)}
+          >
+            Back
+          </Button>
+        </div>
+
+        <input
+          type="text"
+          placeholder="Filter by serial number"
+          value={serialSearch}
+          onChange={(e) => setSerialSearch(e.target.value)}
+          className="px-3 py-2 mb-3 bg-slate-800 text-white rounded-md w-80"
+        />
+
+        <div className="overflow-auto border rounded-md">
+          <table className="min-w-full text-white">
+            <thead className="bg-slate-800">
+              <tr>
+                <th className="px-4 py-2 text-left">Serial Number</th>
+                <th className="px-4 py-2 text-left">Invoice No</th>
+                <th className="px-4 py-2 text-left">Date Added</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredSerials.map((s, idx) => (
+                <tr key={idx} className="border-b border-slate-700">
+                  <td className="px-4 py-2">{s.code}</td>
+                  <td className="px-4 py-2">{s.invoice_no || "—"}</td>
+                  <td className="px-4 py-2">
+                    {s.date_added
+                      ? new Date(s.date_added).toLocaleDateString()
+                      : "—"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <DashboardLayout>
       <div className="p-6">
@@ -228,17 +296,22 @@ const ToolsSummary: React.FC = () => {
           <div>
             <h1 className="text-2xl font-semibold">Inventory Summary</h1>
             <p className="text-sm text-gray-500">
-              Grouped by category and tool name. 
+              Grouped by category and tool name.
             </p>
+            {lastUpdated && (
+              <p className="text-xs text-gray-400 mt-1">
+                Last updated: {new Date(lastUpdated).toLocaleString()}
+              </p>
+            )}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <input
               type="text"
-              placeholder="Search by name / serial / supplier"
+              placeholder="Search by name / supplier"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="px-3 py-2 bg-slate-800 text-white rounded-md w-80"
+              className="px-3 py-2 bg-slate-800 text-white rounded-md w-64"
             />
 
             <select
@@ -253,6 +326,15 @@ const ToolsSummary: React.FC = () => {
               ))}
             </select>
 
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={lowStockOnly}
+                onChange={(e) => setLowStockOnly(e.target.checked)}
+              />
+              Low stock only
+            </label>
+
             <Button
               className="bg-slate-700 hover:bg-slate-600"
               onClick={exportPDF}
@@ -262,31 +344,34 @@ const ToolsSummary: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-auto border rounded-lg">
-          <table className="min-w-full table-fixed">
-            <thead className="bg-slate-900 text-white sticky top-0">
-              <tr>
-                <th className="px-4 py-3 text-left w-56">Category</th>
-                <th className="px-4 py-3 text-left">Item Name</th>
-                <th className="px-4 py-3 text-left w-44">Serial Numbers</th>
-                <th className="px-4 py-3 text-center w-28">Quantity</th>
-                <th className="px-4 py-3 text-left w-40">Supplier</th>
-              </tr>
-            </thead>
-
-            <tbody className="text-white bg-blue-950">
-              {loading ? (
+        {!selectedTool ? (
+          <div className="overflow-auto border rounded-lg">
+            <table className="min-w-full table-fixed">
+              <thead className="bg-slate-900 text-white sticky top-0">
                 <tr>
-                  <td colSpan={8} className="p-6 text-center">
-                    Loading...
-                  </td>
+                  <th className="px-4 py-3 text-left w-56">Category</th>
+                  <th className="px-4 py-3 text-left">Item Name</th>
+                  <th className="px-4 py-3 text-center w-28">Quantity</th>
+                  <th className="px-4 py-3 text-left w-40">Supplier</th>
                 </tr>
-              ) : (
-                renderRows()
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+
+              <tbody className="text-white bg-blue-950">
+                {loading ? (
+                  <tr>
+                    <td colSpan={8} className="p-6 text-center">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : (
+                  renderMainTable()
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          renderToolDetails()
+        )}
 
         <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
           <div>

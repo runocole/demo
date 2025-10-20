@@ -274,7 +274,7 @@ const ToolsSummary: React.FC = () => {
               </tr>
             </thead>
 
-            <tbody className="bg-white text-slate-900">
+            <tbody className="text-white bg-blue-950">
               {loading ? (
                 <tr>
                   <td colSpan={8} className="p-6 text-center">

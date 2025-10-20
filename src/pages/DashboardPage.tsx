@@ -99,7 +99,7 @@ const DashboardPage = () => {
         {/* Recent Sales + Low Stock Items */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Recent Sales */}
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Recent Sales</CardTitle>
             </CardHeader>
@@ -149,7 +149,7 @@ const DashboardPage = () => {
           </Card>
 
           {/* Low Stock Items */}
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Low Stock Items</CardTitle>
             </CardHeader>
@@ -203,7 +203,7 @@ const DashboardPage = () => {
         <div className="grid gap-4 md:grid-cols-2">
           {/* Inventory Breakdown */}
             {/* Inventory Breakdown */}
-<Card>
+<Card className="border-border bg-blue-950">
   <CardHeader>
     <CardTitle>Inventory Breakdown</CardTitle>
   </CardHeader>
@@ -256,7 +256,7 @@ const DashboardPage = () => {
           </Card>
 
           {/* Top Selling Tools */}
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Top Selling Tools</CardTitle>
             </CardHeader>

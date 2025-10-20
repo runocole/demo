@@ -86,7 +86,7 @@ const Payments = () => {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Total Revenue
@@ -98,7 +98,7 @@ const Payments = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Pending Payments
@@ -110,7 +110,7 @@ const Payments = () => {
             </CardContent>
           </Card>
           
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground">
                 Overdue Amount
@@ -123,7 +123,7 @@ const Payments = () => {
           </Card>
         </div>
 
-        <Card>
+        <Card className="border-border bg-blue-950">
           <CardHeader>
             <CardTitle>Payment History</CardTitle>
           </CardHeader>

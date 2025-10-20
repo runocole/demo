@@ -18,8 +18,9 @@ import {
 } from "../components/ui/select";
 import authHero from "@/assets/auth-hero.jpg";
 import { useNavigate } from "react-router-dom";
-import { Package, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
+import logo from "../assets/image.png";
 
 type UserRole = "customer" | "staff" | "admin";
 
@@ -155,7 +156,7 @@ return (
       <div className="lg:w-1/2 p-8 lg:p-12 text-white relative z-20 shadow-[0_0_30px_rgba(0,115,255,0.15)]">
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="p-3 bg-[#18356c] rounded-xl shadow-md">
-            <Package className="h-8 w-8 text-blue-400" />
+            <img src={logo} alt="OTIC Logo" className="h-8 w-8 object-contain" />
           </div>
           <h2 className="text-2xl font-bold text-blue-200 tracking-tight">
             OTIC SURVEYS

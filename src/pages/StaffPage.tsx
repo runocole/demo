@@ -139,7 +139,7 @@ const StaffPage = () => {
         </div>
 
         {/* Staff Table */}
-        <Card>
+        <Card className="border-border bg-blue-950">
           <CardHeader>
             <CardTitle>All Staff</CardTitle>
           </CardHeader>
@@ -171,10 +171,10 @@ const StaffPage = () => {
                       </div>
                     </TableCell>
                     <TableCell className="flex gap-2">
-  <Button variant="ghost" size="sm">
-    View Profile
-  </Button>
-</TableCell>
+                      <Button variant="ghost" size="sm">
+                        View Profile
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>

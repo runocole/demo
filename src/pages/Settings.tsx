@@ -18,7 +18,7 @@ const Settings = () => {
         </div>
 
         <div className="grid gap-6">
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Company Information</CardTitle>
               <CardDescription>
@@ -50,7 +50,7 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Payment Gateway Configuration</CardTitle>
               <CardDescription>
@@ -70,7 +70,7 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border bg-blue-950"> 
             <CardHeader>
               <CardTitle>System Preferences</CardTitle>
               <CardDescription>
@@ -110,7 +110,7 @@ const Settings = () => {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>IoT Integration</CardTitle>
               <CardDescription>

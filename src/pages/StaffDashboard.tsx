@@ -149,7 +149,7 @@ const StaffDashboard = () => {
           </Card>
 
           {/* Low Stock Items */}
-          <Card>
+          <Card className="grid gap-4 md:grid-cols-2">
             <CardHeader>
               <CardTitle>Low Stock Items</CardTitle>
             </CardHeader>

@@ -3,7 +3,6 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
 import { Package, DollarSign, Users, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { StatusBadge } from "../components/StatusBadge";
 import {
   Table,
   TableBody,
@@ -111,7 +110,6 @@ const StaffDashboard = () => {
                     <TableHead>Customer</TableHead>
                     <TableHead>Tool</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -122,18 +120,6 @@ const StaffDashboard = () => {
                         <TableCell>{sale.name}</TableCell>
                         <TableCell>{sale.equipment}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={
-                              sale.payment_status === "failed"
-                                ? "disabled"
-                                : (sale.payment_status as
-                                    | "completed"
-                                    | "pending"
-                                    | "active")
-                            }
-                          />
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
@@ -161,7 +147,6 @@ const StaffDashboard = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Stock</TableHead>
-                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -172,18 +157,6 @@ const StaffDashboard = () => {
                         <TableCell>{tool.name}</TableCell>
                         <TableCell>{tool.category}</TableCell>
                         <TableCell>{tool.stock}</TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={
-                              tool.status as
-                                | "available"
-                                | "rented"
-                                | "maintenance"
-                                | "disabled"
-                                | "sold"
-                            }
-                          />
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (

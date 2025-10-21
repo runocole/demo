@@ -39,7 +39,7 @@ const ToolsSummary: React.FC = () => {
           stock: Number(t.stock || 0),
           supplier: t.supplier || "",
           category: t.category || "Uncategorized",
-          invoice_no: t.invoice_no || "",
+          invoice_no: t.invoice_number || "",
           date_added: t.date_added,
           updated_at: t.updated_at,
         }));

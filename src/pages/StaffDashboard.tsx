@@ -70,8 +70,7 @@ const StaffDashboard = () => {
       </DashboardLayout>
     );
   }
-
-  return (
+return (
     <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
@@ -98,7 +97,7 @@ const StaffDashboard = () => {
         {/* Recent Sales + Low Stock Items */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Recent Sales */}
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Recent Sales</CardTitle>
             </CardHeader>
@@ -135,7 +134,7 @@ const StaffDashboard = () => {
           </Card>
 
           {/* Low Stock Items */}
-          <Card className="grid gap-4 md:grid-cols-2">
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Low Stock Items</CardTitle>
             </CardHeader>
@@ -175,7 +174,8 @@ const StaffDashboard = () => {
         {/* Inventory Breakdown + Top Selling Tools */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Inventory Breakdown */}
-<Card>
+            {/* Inventory Breakdown */}
+<Card className="border-border bg-blue-950">
   <CardHeader>
     <CardTitle>Inventory Breakdown</CardTitle>
   </CardHeader>
@@ -184,7 +184,7 @@ const StaffDashboard = () => {
       {/* Pie Chart */}
       <ResponsiveContainer width="100%" height={250} className="md:w-2/3">
         <PieChart>
-          <Pie
+             <Pie
   data={dashboardData?.inventoryBreakdown || []}
   dataKey="count"
   nameKey="category"
@@ -225,9 +225,10 @@ const StaffDashboard = () => {
       </div>
     </div>
   </CardContent>
-</Card>
+          </Card>
+
           {/* Top Selling Tools */}
-          <Card>
+          <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Top Selling Tools</CardTitle>
             </CardHeader>

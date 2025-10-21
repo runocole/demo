@@ -192,6 +192,22 @@ export const deleteTool = async (id: string) => {
 };
 
 // ----------------------------
+// RECEIVER TYPES
+// ----------------------------
+export const getReceiverTypes = async () => {
+  try {
+    const response = await axios.get(`${API_URL}/receiver-types/`, {
+      headers: authHeader(),
+    });
+    return response.data; // Example: [ { id: 1, name: "Base" }, { id: 2, name: "Rover" } ]
+  } catch (error) {
+    console.warn("Could not fetch receiver types, continuing without types.", error);
+    return []; // return empty list if not found
+  }
+};
+
+
+// ----------------------------
 // DASHBOARD
 // ----------------------------
 export const fetchDashboardData = async () => {

@@ -3,7 +3,6 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
 import { Package, DollarSign, Users, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { StatusBadge } from "../components/StatusBadge";
 import {
   Table,
   TableBody,
@@ -88,9 +87,10 @@ const DashboardPage = () => {
           </p>
         </div>
 
+        
         {/* Stats Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard title="Total Tools" value={dashboardData?.totalTools || 0} icon={Package} />
+          <StatsCard title="Total Stock" value={dashboardData?.totalTools || 0} icon={Package} />
           <StatsCard title="Revenue (MTD)" value={formatCurrency(dashboardData?.mtdRevenue || 0)} icon={DollarSign} />
           <StatsCard title="Total Staff" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
           <StatsCard title="Active Customers" value={dashboardData?.activeCustomers || 0} icon={Users} />
@@ -111,7 +111,6 @@ const DashboardPage = () => {
                     <TableHead>Customer</TableHead>
                     <TableHead>Tool</TableHead>
                     <TableHead>Amount</TableHead>
-                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -122,18 +121,6 @@ const DashboardPage = () => {
                         <TableCell>{sale.name}</TableCell>
                         <TableCell>{sale.equipment}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={
-                              sale.payment_status === "failed"
-                                ? "disabled"
-                                : (sale.payment_status as
-                                    | "completed"
-                                    | "pending"
-                                    | "active")
-                            }
-                          />
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
@@ -161,7 +148,6 @@ const DashboardPage = () => {
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Stock</TableHead>
-                    <TableHead>Status</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -172,18 +158,6 @@ const DashboardPage = () => {
                         <TableCell>{tool.name}</TableCell>
                         <TableCell>{tool.category}</TableCell>
                         <TableCell>{tool.stock}</TableCell>
-                        <TableCell>
-                          <StatusBadge
-                            status={
-                              tool.status as
-                                | "available"
-                                | "rented"
-                                | "maintenance"
-                                | "disabled"
-                                | "sold"
-                            }
-                          />
-                        </TableCell>
                       </TableRow>
                     ))
                   ) : (

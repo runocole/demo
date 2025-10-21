@@ -23,13 +23,10 @@ import { toast } from "../components/ui/use-toast";
 interface Customer {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
   phone: string;
   state: string;
-  is_active: boolean;
-  activeRentals?: number;
-  totalRentals?: number;
-  totalSpent?: string;
+  is_activated: boolean;
 }
 
 // ------------------------------
@@ -106,16 +103,21 @@ const CustomersPage = () => {
   };
 
   // ------------------------------
-  // Filter Customers (Search)
-  // ------------------------------
-  const filteredCustomers = customers.filter((customer) => {
-    const term = searchTerm.toLowerCase();
-    return (
-      customer.name.toLowerCase().includes(term) ||
-      customer.email.toLowerCase().includes(term) ||
-      customer.phone.toLowerCase().includes(term)
-    );
-  });
+// Filter Customers (Search)
+// ------------------------------
+const filteredCustomers = customers.filter((customer) => {
+  const term = searchTerm.toLowerCase();
+
+  const name = customer.name?.toLowerCase() || "";
+  const email = customer.email?.toLowerCase() || "";
+  const phone = customer.phone?.toLowerCase() || "";
+
+  return (
+    name.includes(term) ||
+    email.includes(term) ||
+    phone.includes(term)
+  );
+});
 
   // ------------------------------
   // RENDER
@@ -143,7 +145,7 @@ const CustomersPage = () => {
               <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-3">
+            <div className="space-y-3 ">
               <Label>Name</Label>
               <Input
                 value={formData.name}
@@ -201,7 +203,7 @@ const CustomersPage = () => {
             <CardTitle>All Customers</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className="border-border bg-blue-950">
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer ID</TableHead>
@@ -226,7 +228,7 @@ const CustomersPage = () => {
                         <div className="space-y-1 text-sm">
                           <div className="flex items-center gap-2">
                             <Mail className="h-3 w-3 text-muted-foreground" />
-                            <span>{customer.email}</span>
+                            <span>{customer.email ?? "No email"}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <Phone className="h-3 w-3 text-muted-foreground" />
@@ -238,7 +240,7 @@ const CustomersPage = () => {
                       <TableCell>{customer.state || "—"}</TableCell>
 
                       <TableCell>
-                        {customer.is_active ? (
+                        {customer.is_activated ? (
                           <span className="text-green-600 font-medium">Active</span>
                         ) : (
                           <span className="text-yellow-600 font-medium">Inactive</span>
@@ -250,9 +252,9 @@ const CustomersPage = () => {
                           variant="outline"
                           size="sm"
                           onClick={() => handleActivateCustomer(Number(customer.id))}
-                          disabled={customer.is_active}
+                          disabled={customer.is_activated}
                         >
-                          {customer.is_active ? "Activated" : "Activate"}
+                          {customer.is_activated ? "Activated" : "Inactive"}
                         </Button>
                       </TableCell>
                     </TableRow>

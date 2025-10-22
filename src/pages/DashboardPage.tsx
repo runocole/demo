@@ -87,7 +87,6 @@ const DashboardPage = () => {
           </p>
         </div>
 
-        
         {/* Stats Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard title="Total Stock" value={dashboardData?.totalTools || 0} icon={Package} />

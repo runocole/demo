@@ -12,7 +12,7 @@ interface StatsCardProps {
 
 export function StatsCard({ title, value, icon: Icon, trend }: StatsCardProps) {
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card className="hover:shadow-lg transition-shadow bg-blue-950">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-gray-600"> {/* Changed from text-muted-foreground */}
           {title}

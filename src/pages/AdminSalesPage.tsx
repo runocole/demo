@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Download } from "lucide-react";
+import { DashboardLayout } from "../components/DashboardLayout";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
 
@@ -99,6 +100,7 @@ const AdminSalesPage: React.FC = () => {
   };
 
   return (
+    <DashboardLayout>
     <div className="p-6 space-y-4">
       <Card>
         <CardHeader className="flex flex-col md:flex-row items-center justify-between">
@@ -198,6 +200,7 @@ const AdminSalesPage: React.FC = () => {
         </CardContent>
       </Card>
     </div>
+    </DashboardLayout>
   );
 };
 

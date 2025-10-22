@@ -2,7 +2,31 @@ import axios from "axios";
 
 const API_URL = "http://localhost:8000/api";
 
-// Helper to get the auth header
+// ----------------------------
+// TYPES
+// ----------------------------
+export interface ReceiverType {
+  id: string;
+  name: string;
+  default_cost: string;
+  description?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+// ----------------------------
+// AUTH HEADER
+// ----------------------------
 const authHeader = () => ({
   Authorization: `Bearer ${localStorage.getItem("access")}`,
 });
@@ -13,7 +37,7 @@ const authHeader = () => ({
 export const loginUser = async (email: string, password: string) => {
   try {
     const response = await axios.post(`${API_URL}/auth/login/`, { email, password });
-    return response.data; // { access, refresh, user }
+    return response.data;
   } catch (error) {
     if (axios.isAxiosError(error)) {
       console.error("Login error:", error.response?.data || error.message);
@@ -192,22 +216,6 @@ export const deleteTool = async (id: string) => {
 };
 
 // ----------------------------
-// RECEIVER TYPES
-// ----------------------------
-export const getReceiverTypes = async () => {
-  try {
-    const response = await axios.get(`${API_URL}/receiver-types/`, {
-      headers: authHeader(),
-    });
-    return response.data; // Example: [ { id: 1, name: "Base" }, { id: 2, name: "Rover" } ]
-  } catch (error) {
-    console.warn("Could not fetch receiver types, continuing without types.", error);
-    return []; // return empty list if not found
-  }
-};
-
-
-// ----------------------------
 // DASHBOARD
 // ----------------------------
 export const fetchDashboardData = async () => {
@@ -227,4 +235,102 @@ export const fetchDashboardData = async () => {
     topSellingTools: data.topSellingTools ?? data.top_selling_tools ?? [],
     recentSales: data.recentSales ?? data.recent_sales ?? [],
   };
+};
+
+// ----------------------------
+// RECEIVER TYPES
+// ----------------------------
+export const getReceiverTypes = async () => {
+  const response = await axios.get(`${API_URL}/receiver-types/`, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const createReceiverType = async (receiverTypeData: {
+  name: string;
+  default_cost: string;
+  description?: string;
+}) => {
+  const response = await axios.post(`${API_URL}/receiver-types/`, receiverTypeData, {
+    headers: {
+      ...authHeader(),
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+export const updateReceiverType = async (
+  id: string,
+  receiverTypeData: Partial<{
+    name: string;
+    default_cost: string;
+    description?: string;
+  }>
+) => {
+  const response = await axios.patch(`${API_URL}/receiver-types/${id}/`, receiverTypeData, {
+    headers: {
+      ...authHeader(),
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+export const deleteReceiverType = async (id: string) => {
+  const response = await axios.delete(`${API_URL}/receiver-types/${id}/`, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+// ----------------------------
+// SUPPLIERS
+// ----------------------------
+export const getSuppliers = async () => {
+  const response = await axios.get(`${API_URL}/suppliers/`, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const createSupplier = async (supplierData: {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}) => {
+  const response = await axios.post(`${API_URL}/suppliers/`, supplierData, {
+    headers: {
+      ...authHeader(),
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+export const updateSupplier = async (
+  id: string,
+  supplierData: Partial<{
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+  }>
+) => {
+  const response = await axios.patch(`${API_URL}/suppliers/${id}/`, supplierData, {
+    headers: {
+      ...authHeader(),
+      "Content-Type": "application/json",
+    },
+  });
+  return response.data;
+};
+
+export const deleteSupplier = async (id: string) => {
+  const response = await axios.delete(`${API_URL}/suppliers/${id}/`, {
+    headers: authHeader(),
+  });
+  return response.data;
 };

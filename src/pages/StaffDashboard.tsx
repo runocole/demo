@@ -107,7 +107,7 @@ return (
                   <TableRow>
                     <TableHead>Invoice</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Tool</TableHead>
+                    <TableHead>Equipment</TableHead>
                     <TableHead>Amount</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -230,13 +230,13 @@ return (
           {/* Top Selling Tools */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
-              <CardTitle>Top Selling Tools</CardTitle>
+              <CardTitle>Top Selling Equipments </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tool</TableHead>
+                    <TableHead>Equipment</TableHead>
                     <TableHead>Sales Count</TableHead>
                   </TableRow>
                 </TableHeader>

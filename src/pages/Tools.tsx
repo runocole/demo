@@ -26,6 +26,7 @@ import {
   updateTool,
   deleteTool,
   getReceiverTypes,
+  getSuppliers,
 } from "../services/api";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -37,20 +38,25 @@ interface Tool {
   code: string;
   cost: string | number;
   stock: number;
-  description?: string; // box type
+  description?: string;
   supplier?: string;
   category?: string;
   invoice_number?: string;
   date_added?: string;
-  serials?: string[]; // normalized as array
-  receiver_type?: string | null; // string name (e.g. "Base")
-  receiver_type_id?: number | string | null; // optional id
+  serials?: string[];
+  receiver_type?: string | null;
+  receiver_type_id?: number | string | null;
 }
 
 interface ReceiverType {
   id: number | string;
   name: string;
   default_cost?: string | number;
+}
+
+interface Supplier {
+  id: number | string;
+  name: string;
 }
 
 /* ---------------- Constants ---------------- */
@@ -63,20 +69,6 @@ const CATEGORY_OPTIONS = [
   "EcoSounder",
   "Laser Scanner",
   "Other",
-];
-
-const SUPPLIER_OPTIONS = [
-  "COMNAV TECHNOLOGY",
-  "GINTEC",
-  "AMAZE MULTILINKS",
-  "HARRYMORE",
-  "LEICA GHANA",
-  "QUEST",
-  "ADA SWISS-SURVEY",
-  "IVY ZENGYU",
-  "FOIF",
-  "SANGRAO HAODI",
-  "OTHER",
 ];
 
 /* ---------------- Component ---------------- */
@@ -97,6 +89,10 @@ const Tools: React.FC = () => {
   const [receiverTypes, setReceiverTypes] = useState<ReceiverType[]>([]);
   const [isLoadingReceiverTypes, setIsLoadingReceiverTypes] = useState(false);
 
+  // Suppliers
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+
   // Exchange rate
   const [exchangeRate, setExchangeRate] = useState({
     rate: 1560.75,
@@ -110,12 +106,11 @@ const Tools: React.FC = () => {
     code: "",
     cost: "",
     stock: "1",
-    description: "", // box type
+    description: "",
     supplier: "",
     category: "",
     invoice_number: "",
-    serials: [""], // array of serial strings
-    // receiver type: we store both id and name for flexibility
+    serials: [""],
     receiver_type_id: "",
     receiver_type: "",
   });
@@ -123,22 +118,18 @@ const Tools: React.FC = () => {
   /* ---------------- Effects ---------------- */
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchTools = async () => {
       try {
         const data = await getTools();
         const normalized: Tool[] = (data || []).map((t: any) => {
-          // Normalize serials to array
           let serialsArr: string[] = [];
           if (Array.isArray(t.serials)) {
             serialsArr = t.serials;
           } else if (t.serials && typeof t.serials === "object") {
-            // object -> array of values
             serialsArr = Object.keys(t.serials)
               .sort()
               .map((k) => t.serials[k])
               .filter(Boolean);
-          } else {
-            serialsArr = [];
           }
 
           return {
@@ -158,10 +149,10 @@ const Tools: React.FC = () => {
       }
     };
 
-    fetch();
+    fetchTools();
   }, []);
 
-  // fetch exchange rate
+  // Fetch exchange rate
   const fetchExchangeRate = async () => {
     setExchangeRate((p) => ({ ...p, isLoading: true }));
     try {
@@ -183,19 +174,38 @@ const Tools: React.FC = () => {
     fetchExchangeRate();
   }, []);
 
-  // fetch receiver types when needed
+  // Fetch receiver types
   const fetchReceiverTypes = async () => {
     setIsLoadingReceiverTypes(true);
     try {
       const data = await getReceiverTypes();
       setReceiverTypes(data || []);
     } catch (err) {
-      console.warn("Could not fetch receiver types, continuing without types.", err);
+      console.warn("Could not fetch receiver types:", err);
       setReceiverTypes([]);
     } finally {
       setIsLoadingReceiverTypes(false);
     }
   };
+
+  // Fetch suppliers
+  const fetchSuppliers = async () => {
+    setIsLoadingSuppliers(true);
+    try {
+      const data = await getSuppliers();
+      setSuppliers(data || []);
+    } catch (err) {
+      console.warn("Could not fetch suppliers:", err);
+      setSuppliers([]);
+    } finally {
+      setIsLoadingSuppliers(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReceiverTypes();
+    fetchSuppliers();
+  }, []);
 
   /* ---------------- Helpers ---------------- */
 
@@ -222,22 +232,20 @@ const Tools: React.FC = () => {
   };
 
   const openEditModal = (tool: Tool) => {
-    // normalize serials
     const serials = Array.isArray(tool.serials) && tool.serials.length ? tool.serials : [""];
     setForm({
       name: tool.name || "",
       code: tool.code || "",
       cost: String(tool.cost ?? ""),
-      stock: tool.stock?.toString() || "1",
+      stock: String(tool.stock ?? "1"),
       description: tool.description || "",
       supplier: tool.supplier || "",
       category: tool.category || "",
       invoice_number: tool.invoice_number || "",
       serials,
-      receiver_type_id: tool.receiver_type_id ?? "",
-      receiver_type: tool.receiver_type ?? "",
+      receiver_type_id: tool.receiver_type_id || "",
+      receiver_type: tool.receiver_type || "",
     });
-
     setIsEditMode(true);
     setEditingToolId(tool.id ?? null);
 
@@ -645,7 +653,7 @@ const Tools: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <Label>Serial / Code</Label>
+                <Label>Serial  Number</Label>
                 <Input
                   value={form.code}
                   onChange={(e) => setForm({ ...form, code: e.target.value })}
@@ -784,19 +792,28 @@ const Tools: React.FC = () => {
                 <Input value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="1" />
               </div>
               <div>
-                <Label>Supplier</Label>
-                <Select value={form.supplier} onValueChange={(val) => setForm({ ...form, supplier: val })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black text-white max-h-60 overflow-y-auto">
-                    {SUPPLIER_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s} className="text-white">
-                        {s}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+  <Label>Supplier</Label>
+  <Select
+    value={form.supplier}
+    onValueChange={(val) => setForm({ ...form, supplier: val })}
+  >
+    <SelectTrigger>
+      <SelectValue placeholder="Select supplier" />
+    </SelectTrigger>
+    <SelectContent className="bg-black text-white max-h-60 overflow-y-auto">
+      {isLoadingSuppliers ? (
+        <SelectItem value="" disabled>Loading suppliers...</SelectItem>
+      ) : suppliers.length > 0 ? (
+        suppliers.map((s) => (
+          <SelectItem key={s.id} value={s.name} className="text-white">
+            {s.name}
+          </SelectItem>
+        ))
+      ) : (
+        <SelectItem value="" disabled>No suppliers found</SelectItem>
+      )}
+    </SelectContent>
+  </Select>
               </div>
               <div>
                 <Label>Invoice Number</Label>

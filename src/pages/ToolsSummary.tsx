@@ -5,18 +5,32 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
+// --------------------
+// INTERFACE
+// --------------------
 interface Tool {
   id: string;
   name: string;
-  code: string; // serial number
+  code: string; // Serial or main identifier
   stock: number;
   supplier?: string;
+  supplier_name?: string;
   category?: string;
   invoice_no?: string;
   date_added?: string;
   updated_at?: string;
+  description?: string;
+  box_type?: string; // Base / Rover / Single Box
+  serials?: {
+    receiver?: string;
+    data_logger?: string;
+    external_radio?: string;
+  }; // For Receivers only
 }
 
+// --------------------
+// MAIN COMPONENT
+// --------------------
 const ToolsSummary: React.FC = () => {
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +40,9 @@ const ToolsSummary: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [serialSearch, setSerialSearch] = useState("");
 
+  // --------------------
+  // LOAD TOOLS
+  // --------------------
   useEffect(() => {
     let mounted = true;
     (async () => {
@@ -38,11 +55,15 @@ const ToolsSummary: React.FC = () => {
           code: t.code,
           stock: Number(t.stock || 0),
           supplier: t.supplier || "",
+          supplier_name: t.supplier_name || "",
           category: t.category || "Uncategorized",
           invoice_no: t.invoice_number || "",
           date_added: t.date_added,
           updated_at: t.updated_at,
+          box_type: t.box_type || t.description || "",
+          serials: t.serials || {},
         }));
+
         setTools(normalized);
       } catch (err) {
         console.error("Failed to load tools:", err);
@@ -55,7 +76,9 @@ const ToolsSummary: React.FC = () => {
     };
   }, []);
 
-  // latest update date
+  // --------------------
+  // LAST UPDATED
+  // --------------------
   const lastUpdated = useMemo(() => {
     if (tools.length === 0) return null;
     const sorted = [...tools]
@@ -68,14 +91,18 @@ const ToolsSummary: React.FC = () => {
     return sorted[0]?.updated_at || null;
   }, [tools]);
 
-  // build category list
+  // --------------------
+  // CATEGORY LIST
+  // --------------------
   const categories = useMemo(() => {
     const set = new Set<string>();
     tools.forEach((t) => set.add(t.category || "Uncategorized"));
     return ["all", ...Array.from(set).sort()];
   }, [tools]);
 
-  // filtered + grouped
+  // --------------------
+  // GROUPED DATA
+  // --------------------
   const grouped = useMemo(() => {
     const q = search.trim().toLowerCase();
 
@@ -107,14 +134,14 @@ const ToolsSummary: React.FC = () => {
 
       if (existing) {
         existing.totalStock += t.stock;
-        if (t.supplier && !existing.suppliers.includes(t.supplier))
-          existing.suppliers.push(t.supplier);
+        if (t.supplier_name && !existing.suppliers.includes(t.supplier_name))
+          existing.suppliers.push(t.supplier_name);
         existing.serials.push(t);
       } else {
         toolGroup.push({
           name: t.name,
           totalStock: t.stock,
-          suppliers: t.supplier ? [t.supplier] : [],
+          suppliers: t.supplier_name ? [t.supplier_name] : [],
           serials: [t],
         });
       }
@@ -126,17 +153,22 @@ const ToolsSummary: React.FC = () => {
     }));
   }, [tools, search, categoryFilter, lowStockOnly]);
 
+  // --------------------
+  // TOTAL STOCK
+  // --------------------
   const totalStock = useMemo(
     () =>
       grouped.reduce(
         (s, g) =>
-          s +
-          g.tools.reduce((sum, t) => sum + (t.totalStock || 0), 0),
+          s + g.tools.reduce((sum, t) => sum + (t.totalStock || 0), 0),
         0
       ),
     [grouped]
   );
 
+  // --------------------
+  // EXPORT TO PDF
+  // --------------------
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.setFontSize(14);
@@ -177,8 +209,9 @@ const ToolsSummary: React.FC = () => {
     doc.save(`inventory_summary_${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  // --- RENDERING ---
-
+  // --------------------
+  // RENDER MAIN TABLE
+  // --------------------
   const renderMainTable = () => {
     if (grouped.length === 0)
       return (
@@ -231,64 +264,110 @@ const ToolsSummary: React.FC = () => {
     return rows;
   };
 
-  const renderToolDetails = () => {
-    if (!selectedTool) return null;
+  // --------------------
+  // RENDER TOOL DETAILS
+  // --------------------
+const renderToolDetails = () => {
+  if (!selectedTool) return null;
 
-    const toolGroup = tools.filter((t) => t.name === selectedTool.name);
-    const filteredSerials = toolGroup.filter((t) =>
-      t.code.toLowerCase().includes(serialSearch.toLowerCase())
-    );
+  const toolGroup = tools.filter((t) => t.name === selectedTool.name);
+  const filteredSerials = toolGroup.filter((t) =>
+    t.code.toLowerCase().includes(serialSearch.toLowerCase())
+  );
 
-    return (
-      <div className="mt-6 border rounded-lg p-4 bg-slate-900">
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="text-xl font-semibold">
-            {selectedTool.name} — Details
-          </h2>
-          <Button
-            className="bg-slate-700 hover:bg-slate-600"
-            onClick={() => setSelectedTool(null)}
-          >
-            Back
-          </Button>
-        </div>
+  // Group by invoice number
+  const groupedByInvoice = filteredSerials.reduce((acc, item) => {
+    const key = item.invoice_no || "no-invoice";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {} as Record<string, Tool[]>);
 
-        <input
-          type="text"
-          placeholder="Filter by serial number"
-          value={serialSearch}
-          onChange={(e) => setSerialSearch(e.target.value)}
-          className="px-3 py-2 mb-3 bg-slate-800 text-white rounded-md w-80"
-        />
+  return (
+    <div className="mt-6 border rounded-lg p-4 bg-slate-900">
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-xl font-semibold">{selectedTool.name} — Details</h2>
+        <Button
+          className="bg-slate-700 hover:bg-slate-600"
+          onClick={() => setSelectedTool(null)}
+        >
+          Back
+        </Button>
+      </div>
 
-        <div className="overflow-auto border rounded-md">
-          <table className="min-w-full text-white">
-            <thead className="bg-slate-800">
-              <tr>
-                <th className="px-4 py-2 text-left">Serial Number</th>
-                <th className="px-4 py-2 text-left">Invoice No</th>
-                <th className="px-4 py-2 text-left">Date Added</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredSerials.map((s, idx) => (
-                <tr key={idx} className="border-b border-slate-700">
-                  <td className="px-4 py-2">{s.code}</td>
-                  <td className="px-4 py-2">{s.invoice_no || "—"}</td>
-                  <td className="px-4 py-2">
-                    {s.date_added
-                      ? new Date(s.date_added).toLocaleDateString()
+      <input
+        type="text"
+        placeholder="Filter by serial number"
+        value={serialSearch}
+        onChange={(e) => setSerialSearch(e.target.value)}
+        className="px-3 py-2 mb-3 bg-slate-800 text-white rounded-md w-80"
+      />
+
+      <div className="overflow-auto border rounded-md">
+        <table className="min-w-full text-white">
+          <thead className="bg-slate-800">
+            <tr>
+              <th className="px-4 py-2 text-left w-40">Box Type</th>
+              <th className="px-4 py-2 text-left w-64">Serial Numbers</th>
+              <th className="px-4 py-2 text-left w-40">Supplier</th>
+              <th className="px-4 py-2 text-left w-40">Invoice No</th>
+              <th className="px-4 py-2 text-left w-40">Date Added</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {Object.entries(groupedByInvoice).map(([invoice, group], i) =>
+              group.map((item, idx) => (
+                <tr key={`${invoice}-${idx}`} className="border-b border-slate-700">
+                   {/* BOX TYPE */}
+                    <td className="px-4 py-2 align-top">
+                     {item.box_type || "—"}
+                    </td>
+
+
+                 {/* ✅ Serials Section */}
+{selectedTool && Array.isArray(selectedTool.serials) && selectedTool.serials.length > 0 ? (
+  <div className="mt-4">
+    <h3 className="text-lg font-semibold mb-2">Serial Numbers</h3>
+    <ul className="list-disc list-inside">
+      {selectedTool.serials.map((s: string, sIdx: number) => (
+        <li key={sIdx} className="text-sm text-gray-700">{s}</li>
+      ))}
+    </ul>
+  </div>
+) : (
+  <p className="mt-4 text-sm text-gray-500">No serial numbers available.</p>
+)}
+
+
+                  {/* SUPPLIER */}
+                  <td className="px-4 py-2 align-top">
+                    {item.supplier_name || "—"}
+                  </td>
+
+                  {/* INVOICE */}
+                  <td className="px-4 py-2 align-top">{item.invoice_no || "—"}</td>
+
+                  {/* DATE */}
+                  <td className="px-4 py-2 align-top">
+                    {item.date_added
+                      ? new Date(item.date_added).toLocaleDateString()
                       : "—"}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
+
+  // --------------------
+  // RETURN
+  // --------------------
   return (
     <DashboardLayout>
       <div className="p-6">

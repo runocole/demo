@@ -1,3 +1,4 @@
+// src/pages/Tools.tsx
 import React, { useEffect, useState } from "react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
@@ -39,11 +40,12 @@ interface Tool {
   cost: string | number;
   stock: number;
   description?: string;
-  supplier?: string;
+  supplier?: string; // UUID
+  supplier_name?: string; // from serializer
   category?: string;
   invoice_number?: string;
   date_added?: string;
-  serials?: string[];
+  serials?: string[]; // extras or full list
   receiver_type?: string | null;
   receiver_type_id?: number | string | null;
 }
@@ -78,6 +80,8 @@ const Tools: React.FC = () => {
 
   // Modal & form state
   const [open, setOpen] = useState(false);
+  const [modalStep, setModalStep] = useState<"select-category" | "form">("select-category");
+  const [selectedCategoryCard, setSelectedCategoryCard] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingToolId, setEditingToolId] = useState<string | null>(null);
 
@@ -103,20 +107,19 @@ const Tools: React.FC = () => {
   // Form model
   const [form, setForm] = useState<any>({
     name: "",
-    code: "",
+    code: "", // required main serial
     cost: "",
     stock: "1",
-    description: "",
-    supplier: "",
+    description: "", // box type (Base / Rover / Base and Rover)
+    supplier: "", // supplier id
     category: "",
     invoice_number: "",
-    serials: [""],
+    serials: [], // extras (does NOT include main code)
     receiver_type_id: "",
     receiver_type: "",
   });
 
   /* ---------------- Effects ---------------- */
-
   useEffect(() => {
     const fetchTools = async () => {
       try {
@@ -131,7 +134,6 @@ const Tools: React.FC = () => {
               .map((k) => t.serials[k])
               .filter(Boolean);
           }
-
           return {
             ...t,
             stock: typeof t.stock === "number" ? t.stock : Number(t.stock || 0),
@@ -208,7 +210,6 @@ const Tools: React.FC = () => {
   }, []);
 
   /* ---------------- Helpers ---------------- */
-
   const resetForm = () =>
     setForm({
       name: "",
@@ -219,7 +220,7 @@ const Tools: React.FC = () => {
       supplier: "",
       category: "",
       invoice_number: "",
-      serials: [""],
+      serials: [],
       receiver_type_id: "",
       receiver_type: "",
     });
@@ -228,11 +229,28 @@ const Tools: React.FC = () => {
     resetForm();
     setIsEditMode(false);
     setEditingToolId(null);
+    setSelectedCategoryCard(null);
+    setModalStep("select-category");
     setOpen(true);
   };
 
+  const getAllowedExtraLabels = (boxType: string): string[] => {
+    if (boxType === "Rover" || boxType === "Base") {
+      return ["Data Logger"]; // maximum 1
+    }
+    if (boxType === "Base and Rover") {
+      return ["Receiver 2", "DataLogger", "External Radio"]; // maximum 3
+    }
+    return [];
+  };
+
   const openEditModal = (tool: Tool) => {
-    const serials = Array.isArray(tool.serials) && tool.serials.length ? tool.serials : [""];
+    // If tool.serials includes the main code, exclude it when populating extras
+    const extras: string[] =
+      Array.isArray(tool.serials) && tool.serials.length
+        ? tool.serials.filter((s) => s !== tool.code)
+        : [];
+
     setForm({
       name: tool.name || "",
       code: tool.code || "",
@@ -242,18 +260,20 @@ const Tools: React.FC = () => {
       supplier: tool.supplier || "",
       category: tool.category || "",
       invoice_number: tool.invoice_number || "",
-      serials,
+      serials: extras.length ? extras : [],
       receiver_type_id: tool.receiver_type_id || "",
       receiver_type: tool.receiver_type || "",
     });
+
     setIsEditMode(true);
     setEditingToolId(tool.id ?? null);
+    setSelectedCategoryCard(tool.category || null);
+    setModalStep("form");
+    setOpen(true);
 
     if (tool.category === "Receiver") {
       fetchReceiverTypes();
     }
-
-    setOpen(true);
   };
 
   const calculateNairaEquivalent = (usdAmount: string): string => {
@@ -277,12 +297,44 @@ const Tools: React.FC = () => {
     }
   };
 
-  /* ---------------- Save / Update ---------------- */
+  /* ---------------- Serial extras logic (top area) ---------------- */
+  const shouldShowBoxTypeAndExtras = form.category === "Receiver";
+  const allowedExtraLabels = shouldShowBoxTypeAndExtras ? getAllowedExtraLabels(form.description) : [];
 
+  const canAddExtra = () => {
+    if (!allowedExtraLabels || allowedExtraLabels.length === 0) return false;
+    return (form.serials || []).length < allowedExtraLabels.length;
+  };
+
+  const addExtraSerial = () => {
+    if (!canAddExtra()) {
+      alert(
+        allowedExtraLabels.length > 0
+          ? `Maximum of ${allowedExtraLabels.length} extra box(es) allowed for "${form.description}".`
+          : "No extras allowed for this box type."
+      );
+      return;
+    }
+    setForm((prev: any) => ({ ...prev, serials: [...(prev.serials || []), ""] }));
+  };
+
+  const removeExtraSerial = (index: number) => {
+    const updated = Array.isArray(form.serials) ? [...form.serials] : [];
+    updated.splice(index, 1);
+    setForm((prev: any) => ({ ...prev, serials: updated }));
+  };
+
+  const setExtraSerialValue = (index: number, value: string) => {
+    const updated = Array.isArray(form.serials) ? [...form.serials] : [];
+    updated[index] = value;
+    setForm((prev: any) => ({ ...prev, serials: updated }));
+  };
+
+  /* ---------------- Save / Update ---------------- */
   const handleSaveTool = async () => {
     // basic validation
-    if (!form.name.toString().trim() || !form.code.toString().trim() || !form.cost.toString().trim()) {
-      alert("Please fill in required fields: Name, Code, Cost.");
+    if (!String(form.name || "").trim() || !String(form.code || "").trim() || !String(form.cost || "").trim()) {
+      alert("Please fill in required fields: Name, Serial (Code), Cost.");
       return;
     }
 
@@ -290,9 +342,9 @@ const Tools: React.FC = () => {
 
     // prepare payload according to your requested schema
     const payload: any = {
-      name: form.name.toString().trim(),
-      code: form.code.toString().trim(),
-      cost: form.cost.toString().trim(),
+      name: String(form.name).trim(),
+      code: String(form.code).trim(),
+      cost: String(form.cost).trim(),
       stock: parsedStock,
       description: form.description || "",
       supplier: form.supplier || "",
@@ -301,32 +353,33 @@ const Tools: React.FC = () => {
       date_added: new Date().toISOString(),
     };
 
-    // serials: send as array of non-empty trimmed strings
-    const serialsArray = (Array.isArray(form.serials) ? form.serials : [])
+    // serials: main serial + extras (if any)
+    const extrasArr = (Array.isArray(form.serials) ? form.serials : [])
       .map((s: any) => String(s || "").trim())
       .filter((s: string) => s !== "");
 
-    if (serialsArray.length > 0) {
-      payload.serials = serialsArray;
+    if (form.category === "Receiver") {
+      // ensure main code is included first
+      payload.serials = [String(form.code).trim(), ...extrasArr];
+    } else {
+      // non-receiver: if extras present, include them after main as well
+      const allSerials = [String(form.code).trim(), ...extrasArr].filter(Boolean);
+      if (allSerials.length > 0) payload.serials = allSerials;
     }
 
-    // include receiver_type as string if present (per your requested format)
     if (form.receiver_type && String(form.receiver_type).trim() !== "") {
       payload.receiver_type = String(form.receiver_type).trim();
     }
-
-    // also include receiver_type_id for robustness (optional)
     if (form.receiver_type_id) payload.receiver_type_id = form.receiver_type_id;
 
     // Create or update
     if (isEditMode && editingToolId) {
       try {
         const updated = await updateTool(editingToolId, payload);
-        // normalize returned tool
         const normalized: Tool = {
           ...updated,
           stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || parsedStock),
-          serials: Array.isArray(updated.serials) ? updated.serials : serialsArray,
+          serials: Array.isArray(updated.serials) ? updated.serials : payload.serials || [],
           receiver_type: updated.receiver_type ?? payload.receiver_type ?? "",
           receiver_type_id: updated.receiver_type_id ?? payload.receiver_type_id ?? "",
         };
@@ -346,15 +399,14 @@ const Tools: React.FC = () => {
     try {
       const existing = tools.find((t) => t.code && t.code.toLowerCase() === payload.code.toLowerCase());
       if (existing) {
-        // simply increase stock and optionally append serials
         const newStock = (existing.stock || 0) + parsedStock;
         const updatePayload: any = { stock: newStock };
-        if (serialsArray.length > 0) updatePayload.serials = serialsArray;
+        if (payload.serials) updatePayload.serials = payload.serials;
         const updated = await updateTool(existing.id, updatePayload);
         const normalized = {
           ...updated,
           stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || newStock),
-          serials: Array.isArray(updated.serials) ? updated.serials : serialsArray,
+          serials: Array.isArray(updated.serials) ? updated.serials : updatePayload.serials || [],
         };
         setTools((prev) => prev.map((t) => (t.id === existing.id ? normalized : t)));
         alert(`Tool "${existing.code}" already exists. Quantity increased by ${parsedStock}.`);
@@ -363,7 +415,7 @@ const Tools: React.FC = () => {
         const normalizedCreated: Tool = {
           ...created,
           stock: typeof created.stock === "number" ? created.stock : Number(created.stock || parsedStock),
-          serials: Array.isArray(created.serials) ? created.serials : serialsArray,
+          serials: Array.isArray(created.serials) ? created.serials : payload.serials || [],
           receiver_type: created.receiver_type ?? payload.receiver_type ?? "",
           receiver_type_id: created.receiver_type_id ?? payload.receiver_type_id ?? "",
         };
@@ -391,19 +443,16 @@ const Tools: React.FC = () => {
 
   /* ---------------- Receiver type selection (autofill) ---------------- */
   const handleReceiverTypeSelect = (val: string) => {
-    // val could be id (string) or name; since getReceiverTypes returns objects,
-    // we detect whether val matches an id in list, otherwise treat as name.
     const found = receiverTypes.find((r) => String(r.id) === String(val) || r.name === val);
     if (found) {
       setForm((prev: any) => ({
         ...prev,
         receiver_type_id: found.id,
         receiver_type: found.name,
-        name: prev.name || found.name, // do not override if user typed a name
+        name: prev.name || found.name,
         cost: prev.cost || String(found.default_cost ?? prev.cost),
       }));
     } else {
-      // if val is empty or not found, set as manual value
       setForm((prev: any) => ({ ...prev, receiver_type_id: "", receiver_type: val }));
     }
   };
@@ -411,9 +460,7 @@ const Tools: React.FC = () => {
   /* ---------------- Filtering & summary ---------------- */
   const filteredTools = tools.filter((t) => {
     const matchesCategory =
-      categoryFilter === "all" ||
-      !categoryFilter ||
-      (t.category || "").toLowerCase() === categoryFilter.toLowerCase();
+      categoryFilter === "all" || !categoryFilter || (t.category || "").toLowerCase() === categoryFilter.toLowerCase();
     const q = searchTerm.trim().toLowerCase();
     const matchesSearch =
       !q ||
@@ -440,7 +487,7 @@ const Tools: React.FC = () => {
       `${t.serials && t.serials.length ? t.serials.join(", ") : "—"}`,
       `$${t.cost}`,
       t.stock?.toString() || "0",
-      t.supplier || "—",
+      t.supplier_name || t.supplier || "—",
       t.invoice_number || "—",
       t.date_added ? new Date(t.date_added).toLocaleDateString() : "—",
     ]);
@@ -564,9 +611,7 @@ const Tools: React.FC = () => {
                     <p className="text-sm text-gray-400">
                       {tool.code} • {tool.category || "Uncategorized"}
                     </p>
-                    <p className="text-xs text-gray-500">
-                      Added: {tool.date_added ? new Date(tool.date_added).toLocaleDateString() : "—"}
-                    </p>
+                    <p className="text-xs text-gray-500">Added: {tool.date_added ? new Date(tool.date_added).toLocaleDateString() : "—"}</p>
                     <p className="text-xs text-gray-500">Invoice: {tool.invoice_number || "—"}</p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -596,7 +641,7 @@ const Tools: React.FC = () => {
                     <p className="text-xs text-gray-400">Box Type</p>
                     <p className="text-sm font-medium">{tool.description || "—"}</p>
                     <p className="text-xs text-gray-400 mt-2">Supplier</p>
-                    <p className="text-sm">{tool.supplier || "—"}</p>
+                    <p className="text-sm">{tool.supplier_name || "—"}</p>
 
                     {/* show serials if available */}
                     {tool.serials && Array.isArray(tool.serials) && tool.serials.length > 0 && (
@@ -632,282 +677,327 @@ const Tools: React.FC = () => {
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-  <DialogContent className="max-w-2xl">
-    <DialogHeader>
-      <DialogTitle>{isEditMode ? "Edit Tool" : "Add New Item"}</DialogTitle>
-      <DialogDescription>
-        Fill in the fields below to {isEditMode ? "update" : "create"} a tool.
-      </DialogDescription>
-    </DialogHeader>
+      {/* ---------------- Add/Edit Modal ---------------- */}
+      <Dialog open={open} onOpenChange={(val) => { if (!val) { setOpen(false); resetForm(); setIsEditMode(false); setEditingToolId(null); setSelectedCategoryCard(null); setModalStep("select-category"); } }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{isEditMode ? "Edit Tool" : "Add New Item"}</DialogTitle>
+            <DialogDescription>
+              {modalStep === "select-category" ? "Choose a category to start" : `Fill in the fields below to ${isEditMode ? "update" : "create"} a tool.`}
+            </DialogDescription>
+          </DialogHeader>
 
           <div className="space-y-4 py-2">
-            <div>
-              <Label>Name</Label>
-              <Input
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-                placeholder="Item name"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
-                <Label>Serial  Number</Label>
-                <Input
-                  value={form.code}
-                  onChange={(e) => setForm({ ...form, code: e.target.value })}
-                  placeholder="e.g. TL-001"
-                />
-              </div>
-              <div>
-                <Label>Category</Label>
-                <Select
-                  value={form.category}
-                  onValueChange={(val) => {
-                    setForm((prev: any) => ({
-                      ...prev,
-                      category: val,
-                      // ensure at least one serial input exists always
-                      serials: prev.serials && prev.serials.length ? prev.serials : [""],
-                    }));
-                    if (val === "Receiver") fetchReceiverTypes();
-                    if (val !== "Receiver") {
-                      // clear receiver-specific fields if switching away
-                      setForm((prev: any) => ({ ...prev, receiver_type_id: "", receiver_type: "", description: "" }));
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black text-white">
-                    {CATEGORY_OPTIONS.map((c) => (
-                      <SelectItem key={c} value={c} className="text-white">
-                        {c}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-           {/* Receiver type (only when Receiver) */}
-{form.category === "Receiver" && (
-  <div>
-    <Label>Receiver Type (autofill name & cost)</Label>
-    <Select
-      value={form.receiver_type_id || form.receiver_type}
-      onValueChange={(val) => {
-        // if val matches an id from receiverTypes we'll autofill; otherwise treat as manual name
-        handleReceiverTypeSelect(val);
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue
-          placeholder={isLoadingReceiverTypes ? "Loading..." : "Select receiver type"}
-        />
-      </SelectTrigger>
-      <SelectContent>
-        {/* Disabled placeholder instead of empty value */}
-        <SelectItem value="none" disabled>
-          -- Select type --
-        </SelectItem>
-
-        {receiverTypes.length === 0 && !isLoadingReceiverTypes && (
-          <SelectItem value="manual">Manual / No types</SelectItem>
-        )}
-
-        {receiverTypes.map((r) => (
-          <SelectItem key={r.id} value={String(r.id)}>
-            {r.name} {r.default_cost ? `— $${r.default_cost}` : ""}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    <p className="text-xs text-gray-400 mt-1">
-      Cost is autofilled from admin settings but remains editable.
-    </p>
-  </div>
-)}
-
-
-            {/* Foreign Exchange */}
-            <div className="space-y-4 p-4 bg-[#0f1f3d] rounded-lg border border-[#1b2d55]">
-              <div className="space-y-2">
-                <Label htmlFor="cost-usd" className="text-blue-200 flex items-center gap-2">
-                  <span>Cost in USD</span>
-                  <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">$</span>
-                </Label>
-                <Input
-                  id="cost-usd"
-                  type="number"
-                  step="0.01"
-                  value={form.cost}
-                  onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                  placeholder="100.00"
-                  className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
-                />
-              </div>
-
-              <div className="flex items-center justify-between p-3 bg-[#1e3a78] rounded-lg border border-[#2a4375]">
-                <div className="text-blue-200 text-sm">💱 Exchange Rate</div>
-                <div className="text-right">
-                  <div className="text-green-400 font-bold">
-                    1 USD = ₦{exchangeRate.rate.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                  <div className="text-blue-300 text-xs flex items-center gap-2">
-                    <span>Updated {getTimeAgo(exchangeRate.lastUpdated)}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={fetchExchangeRate}
-                      disabled={exchangeRate.isLoading}
-                      className="h-6 w-6 p-0 hover:bg-blue-600"
-                    >
-                      <RefreshCw className={`h-3 w-3 ${exchangeRate.isLoading ? "animate-spin" : ""}`} />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="cost-naira" className="text-blue-200 flex items-center gap-2">
-                  <span>Equivalent in Naira</span>
-                  <span className="text-xs text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded">₦</span>
-                </Label>
-                <Input
-                  id="cost-naira"
-                  type="text"
-                  value={calculateNairaEquivalent(form.cost)}
-                  readOnly
-                  className="bg-[#1e3a78] border-[#2a4375] text-yellow-400 font-bold text-lg cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <Label>Stock</Label>
-                <Input value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="1" />
-              </div>
-              <div>
-  <Label>Supplier</Label>
-  <Select
-    value={form.supplier}
-    onValueChange={(val) => setForm({ ...form, supplier: val })}
-  >
-    <SelectTrigger>
-      <SelectValue placeholder="Select supplier" />
-    </SelectTrigger>
-    <SelectContent className="bg-black text-white max-h-60 overflow-y-auto">
-      {isLoadingSuppliers ? (
-        <SelectItem value="" disabled>Loading suppliers...</SelectItem>
-      ) : suppliers.length > 0 ? (
-        suppliers.map((s) => (
-          <SelectItem key={s.id} value={s.name} className="text-white">
-            {s.name}
-          </SelectItem>
-        ))
-      ) : (
-        <SelectItem value="" disabled>No suppliers found</SelectItem>
-      )}
-    </SelectContent>
-  </Select>
-              </div>
-              <div>
-                <Label>Invoice Number</Label>
-                <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="INV-2025-001" />
-              </div>
-            </div>
-
-            {/* Box Type only when Receiver */}
-            {form.category === "Receiver" && (
-              <div>
-                <Label>Box Type</Label>
-                <Select
-                  value={form.description}
-                  onValueChange={(val) => setForm((prev: any) => ({ ...prev, description: val }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select box type" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black text-white border-gray-700 rounded-lg">
-                    <SelectItem value="Base" className="text-white">Base</SelectItem>
-                    <SelectItem value="Rover" className="text-white">Rover</SelectItem>
-                    <SelectItem value="Base and Rover" className="text-white">Base and Rover</SelectItem>
-                  </SelectContent>
-                </Select>
+            {/* ---- STEP 1: Category selection (cards) ---- */}
+            {modalStep === "select-category" && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <Card key={cat} className="p-4 cursor-pointer hover:scale-105 transform" onClick={() => { setSelectedCategoryCard(cat); setForm((p: any) => ({ ...p, category: cat })); setModalStep("form"); if (cat === "Receiver") fetchReceiverTypes(); }}>
+                    <CardContent>
+                      <div className="text-lg font-semibold">{cat}</div>
+                      <div className="text-xs text-gray-400 mt-1">Add {cat} items</div>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
 
-            {/* Compact serial numbers UI */}
-            <div className="p-3 bg-[#07122a] rounded-md border border-[#12305a]">
-              <p className="text-sm text-gray-300 mb-2 font-medium">Serial Numbers</p>
+            {/* ---- STEP 2: Form ---- */}
+            {modalStep === "form" && (
+              <>
+                <div>
+                  <Label>Name</Label>
+                  <Input
+                    value={form.name}
+                    readOnly
+                    placeholder="Item name"
+                    className="bg-gray-100 cursor-not-allowed text-gray-600"
+                  />
+                </div>
 
-              <div className="grid gap-3">
-                {Array.isArray(form.serials) &&
-                  form.serials.map((serial: string, idx: number) => (
-                    <div key={idx} className="flex items-center gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div>
+                    <Label>Serial </Label>
+                    <div className="flex items-center gap-2">
                       <Input
-                        value={serial}
-                        onChange={(e) => {
-                          const updated = Array.isArray(form.serials) ? [...form.serials] : [""];
-                          updated[idx] = e.target.value;
-                          setForm({ ...form, serials: updated });
-                        }}
-                        placeholder={`Serial number ${idx + 1}`}
+                        value={form.code}
+                        onChange={(e) => setForm({ ...form, code: e.target.value })}
+                        placeholder="e.g. TL-001"
+                        className="flex-1"
+                        required
                       />
-                      {form.serials.length > 1 && (
+                      {shouldShowBoxTypeAndExtras && allowedExtraLabels.length > 0 && (
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            const updated = [...form.serials];
-                            updated.splice(idx, 1);
-                            setForm({ ...form, serials: updated.length ? updated : [""] });
-                          }}
-                          className="text-red-400 hover:text-red-600"
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={addExtraSerial}
+                          className="flex items-center gap-2"
+                          disabled={!canAddExtra()}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Plus className="h-4 w-4" /> Add
                         </Button>
                       )}
                     </div>
-                  ))}
 
-                <div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const updated = Array.isArray(form.serials) ? [...form.serials, ""] : [""];
-                      setForm({ ...form, serials: updated });
-                    }}
-                  >
-                    + Add Serial
-                  </Button>
-                  <p className="text-xs text-gray-400 mt-2">Add additional serials when necessary. For non-Receiver categories only one serial is required.</p>
+                    {/* Extras (vertical list) */}
+                    {shouldShowBoxTypeAndExtras && form.serials && form.serials.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        {form.serials.map((serial: string, idx: number) => {
+                          const label = allowedExtraLabels[idx] ?? `Extra ${idx + 1}`;
+                          return (
+                            <div key={idx} className="flex items-center gap-2">
+                              <div className="min-w-[110px] text-xs text-slate-300 bg-slate-800 rounded-md px-2 py-2">
+                                {label}
+                              </div>
+                              <Input
+                                value={serial}
+                                onChange={(e) => setExtraSerialValue(idx, e.target.value)}
+                                placeholder={`${label} serial number`}
+                              />
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeExtraSerial(idx)}
+                                className="text-red-400 hover:text-red-600"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <Label>Category</Label>
+                    <Select
+                      value={form.category}
+                      onValueChange={(val) => {
+                        setForm((prev: any) => ({
+                          ...prev,
+                          category: val,
+                          ...(val !== "Receiver" ? { description: "", serials: [], receiver_type_id: "", receiver_type: "" } : {}),
+                        }));
+                        if (val === "Receiver") fetchReceiverTypes();
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black text-white">
+                        {CATEGORY_OPTIONS.map((c) => (
+                          <SelectItem key={c} value={c} className="text-white">
+                            {c}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            </div>
+
+                {/* Receiver type (only when Receiver) */}
+                {form.category === "Receiver" && (
+                  <div>
+                    <Label>Receiver Type (autofill name & cost)</Label>
+                    <Select
+                      value={form.receiver_type_id || form.receiver_type}
+                      onValueChange={(val) => {
+                        handleReceiverTypeSelect(val);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isLoadingReceiverTypes ? "Loading..." : "Select receiver type"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" disabled>
+                          -- Select type --
+                        </SelectItem>
+
+                        {receiverTypes.length === 0 && !isLoadingReceiverTypes && (
+                          <SelectItem value="manual">Manual / No types</SelectItem>
+                        )}
+
+                        {receiverTypes.map((r) => (
+                          <SelectItem key={r.id} value={String(r.id)}>
+                            {r.name} {r.default_cost ? `— $${r.default_cost}` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-400 mt-1">Cost is autofilled from admin settings but remains editable.</p>
+                  </div>
+                )}
+
+                {/* Foreign Exchange */}
+                <div className="space-y-4 p-4 bg-[#0f1f3d] rounded-lg border border-[#1b2d55]">
+                  <div className="space-y-2">
+                    <Label htmlFor="cost-usd" className="text-blue-200 flex items-center gap-2">
+                      <span>Cost in USD</span>
+                      <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">$</span>
+                    </Label>
+                    <Input
+                      id="cost-usd"
+                      type="number"
+                      step="0.01"
+                      value={form.cost}
+                      readOnly
+                      placeholder="100.00"
+                      className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium opacity-70 cursor-not-allowed"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-[#1e3a78] rounded-lg border border-[#2a4375]">
+                    <div className="text-blue-200 text-sm">💱 Exchange Rate</div>
+                    <div className="text-right">
+                      <div className="text-green-400 font-bold">
+                        1 USD = ₦{exchangeRate.rate.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-blue-300 text-xs flex items-center gap-2">
+                        <span>Updated {getTimeAgo(exchangeRate.lastUpdated)}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={fetchExchangeRate}
+                          disabled={exchangeRate.isLoading}
+                          className="h-6 w-6 p-0 hover:bg-blue-600"
+                        >
+                          <RefreshCw className={`h-3 w-3 ${exchangeRate.isLoading ? "animate-spin" : ""}`} />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="cost-naira" className="text-blue-200 flex items-center gap-2">
+                      <span>Equivalent in Naira</span>
+                      <span className="text-xs text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded">₦</span>
+                    </Label>
+                    <Input
+                      id="cost-naira"
+                      type="text"
+                      value={calculateNairaEquivalent(form.cost)}
+                      readOnly
+                      className="bg-[#1e3a78] border-[#2a4375] text-yellow-400 font-bold text-lg cursor-not-allowed"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div>
+                    <Label>Stock</Label>
+                    <Input value={form.stock} onChange={(e) => setForm({ ...form, stock: e.target.value })} placeholder="1" />
+                  </div>
+
+                  <div>
+                    <Label>Supplier</Label>
+                    <Select
+                      value={String(form.supplier || "")}
+                      onValueChange={(val) => setForm({ ...form, supplier: val })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select supplier" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black text-white max-h-60 overflow-y-auto">
+                        {isLoadingSuppliers ? (
+                          <SelectItem value="" disabled>Loading suppliers...</SelectItem>
+                        ) : suppliers.length > 0 ? (
+                          suppliers.map((s) => (
+                            <SelectItem key={s.id} value={s.id.toString()} className="text-white">
+                              {s.name}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="" disabled>No suppliers found</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <Label>Invoice Number</Label>
+                    <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="INV-2025-001" />
+                  </div>
+                </div>
+
+                {/* Box Type only when Receiver */}
+                {form.category === "Receiver" && (
+                  <div className="mt-4">
+                    <Label>Box Type</Label>
+                    <Select
+                      value={form.description}
+                      onValueChange={(val) =>
+                        setForm((prev: any) => ({
+                          ...prev,
+                          description: val,
+                          serials: prev.serials && prev.serials.length ? prev.serials : [],
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select box type" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-black text-white border-gray-700 rounded-lg">
+                        <SelectItem value="Base" className="text-white">Base</SelectItem>
+                        <SelectItem value="Rover" className="text-white">Rover</SelectItem>
+                        <SelectItem value="Base and Rover" className="text-white">Base and Rover</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <DialogFooter>
             <div className="flex gap-2">
+              {modalStep === "form" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    // back to category selection step
+                    setModalStep("select-category");
+                    setSelectedCategoryCard(null);
+                    // preserve form but clear category
+                    setForm((prev: any) => ({ ...prev, category: "" }));
+                  }}
+                >
+                  ← Back
+                </Button>
+              )}
+
+              <Button
+                onClick={() => {
+                  if (modalStep === "select-category") {
+                    // if category chosen jump to form
+                    if (!selectedCategoryCard) {
+                      alert("Choose a category first.");
+                      return;
+                    }
+                    setForm((prev: any) => ({ ...prev, category: selectedCategoryCard }));
+                    setModalStep("form");
+                  } else {
+                    handleSaveTool();
+                  }
+                }}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {modalStep === "select-category" ? "Next" : (isEditMode ? "Save Changes" : "Add Item")}
+              </Button>
+
               <Button
                 onClick={() => {
                   setOpen(false);
                   resetForm();
                   setIsEditMode(false);
                   setEditingToolId(null);
+                  setSelectedCategoryCard(null);
+                  setModalStep("select-category");
                 }}
                 variant="outline"
               >
                 Cancel
-              </Button>
-              <Button onClick={handleSaveTool} className="bg-blue-600 hover:bg-blue-700">
-                {isEditMode ? "Save Changes" : "Add Item"}
               </Button>
             </div>
           </DialogFooter>

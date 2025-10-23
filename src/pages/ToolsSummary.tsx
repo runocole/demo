@@ -316,7 +316,7 @@ const renderToolDetails = () => {
           </thead>
 
           <tbody>
-            {Object.entries(groupedByInvoice).map(([invoice, group], i) =>
+            {Object.entries(groupedByInvoice).map(([invoice, group]) =>
               group.map((item, idx) => (
                 <tr key={`${invoice}-${idx}`} className="border-b border-slate-700">
                    {/* BOX TYPE */}

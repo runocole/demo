@@ -1,16 +1,8 @@
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/AppSidebar";
-import { Bell, User } from "lucide-react";
+import { Power } from "lucide-react";
 import { Button } from "../components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -18,6 +10,17 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Simple logout handler
+  const handleLogout = () => {
+    // Clear any stored user/session data
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    sessionStorage.clear();
+
+    // Redirect to login page
+    window.location.href = "/login";
+  };
 
   return (
     <SidebarProvider>
@@ -40,46 +43,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               </h1>
             </div>
 
-            <div className="flex items-center gap-3">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-gray-300 hover:text-white hover:bg-gray-700/40"
-              >
-                <Bell className="h-5 w-5" />
-              </Button>
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="rounded-full text-gray-300 hover:text-white hover:bg-gray-700/40"
-                  >
-                    <User className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-56 bg-[#1E293B] border border-gray-700 text-gray-200 shadow-lg"
-                >
-                  <DropdownMenuLabel className="text-sm font-semibold text-gray-300">
-                    My Account
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator className="bg-gray-700" />
-                  <DropdownMenuItem className="hover:bg-gray-700/60">
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-gray-700/60">
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-gray-700" />
-                  <DropdownMenuItem className="hover:bg-gray-700/60 text-red-400">
-                    Log out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            {/* Logout Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleLogout}
+              className="rounded-full text-gray-300 hover:text-white hover:bg-gray-700/40 transition"
+              title="Log out"
+            >
+              <Power className="h-5 w-5" />
+            </Button>
           </header>
 
           {/* Main content */}

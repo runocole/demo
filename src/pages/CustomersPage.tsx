@@ -36,6 +36,8 @@ const CustomersPage = () => {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [newCustomer, setNewCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Add Customer Fields
@@ -76,16 +78,79 @@ const CustomersPage = () => {
 
     try {
       setLoading(true);
-      await registerCustomer(name, email, phone, state);
-      toast({ title: "Success", description: "Customer added successfully!" });
+      const response = await registerCustomer(name, email, phone, state);
+      
+      // Store the newly created customer for the sales page
+      const createdCustomer: Customer = {
+        id: response.id || String(customers.length + 1),
+        name: name,
+        email: email,
+        phone: phone,
+        state: state,
+        is_activated: false
+      };
+      
+      setNewCustomer(createdCustomer);
+      toast({ 
+        title: "Success", 
+        description: "Customer added successfully! Email with password has been sent." 
+      });
       setFormData({ name: "", email: "", phone: "", state: "" });
       setShowAddModal(false);
+      setShowSuccessModal(true);
       fetchCustomers();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Add customer failed:", error);
-      toast({ title: "Error", description: "Failed to add customer." });
+      
+      // Check if the error is about email sending but customer was created
+      if (error.response?.status === 500 && error.response?.data?.detail?.includes('email')) {
+        // Customer might have been created but email failed
+        const createdCustomer: Customer = {
+          id: error.response.data.id || String(customers.length + 1),
+          name: name,
+          email: email,
+          phone: phone,
+          state: state,
+          is_activated: false
+        };
+        
+        setNewCustomer(createdCustomer);
+        toast({ 
+          title: "Customer Created", 
+          description: "Customer was created but email failed to send. You can still add a sale.",
+          variant: "destructive"
+        });
+        setFormData({ name: "", email: "", phone: "", state: "" });
+        setShowAddModal(false);
+        setShowSuccessModal(true);
+        fetchCustomers();
+      } else {
+        toast({ 
+          title: "Error", 
+          description: error.response?.data?.detail || "Failed to add customer." 
+        });
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ------------------------------
+  // Navigate to Sales Page
+  // ------------------------------
+  const handleAddSale = () => {
+    if (newCustomer) {
+      // Store customer data for the sales page
+      localStorage.setItem('selectedCustomer', JSON.stringify({
+        id: newCustomer.id,
+        name: newCustomer.name,
+        email: newCustomer.email,
+        phone: newCustomer.phone,
+        state: newCustomer.state
+      }));
+      
+      // Navigate to sales page
+      window.location.href = '/sales'; // or use your router if using React Router
     }
   };
 
@@ -103,21 +168,21 @@ const CustomersPage = () => {
   };
 
   // ------------------------------
-// Filter Customers (Search)
-// ------------------------------
-const filteredCustomers = customers.filter((customer) => {
-  const term = searchTerm.toLowerCase();
+  // Filter Customers (Search)
+  // ------------------------------
+  const filteredCustomers = customers.filter((customer) => {
+    const term = searchTerm.toLowerCase();
 
-  const name = customer.name?.toLowerCase() || "";
-  const email = customer.email?.toLowerCase() || "";
-  const phone = customer.phone?.toLowerCase() || "";
+    const name = customer.name?.toLowerCase() || "";
+    const email = customer.email?.toLowerCase() || "";
+    const phone = customer.phone?.toLowerCase() || "";
 
-  return (
-    name.includes(term) ||
-    email.includes(term) ||
-    phone.includes(term)
-  );
-});
+    return (
+      name.includes(term) ||
+      email.includes(term) ||
+      phone.includes(term)
+    );
+  });
 
   // ------------------------------
   // RENDER
@@ -145,7 +210,7 @@ const filteredCustomers = customers.filter((customer) => {
               <DialogTitle>Add New Customer</DialogTitle>
             </DialogHeader>
 
-            <div className="space-y-3 ">
+            <div className="space-y-3">
               <Label>Name</Label>
               <Input
                 value={formData.name}
@@ -186,6 +251,33 @@ const filteredCustomers = customers.filter((customer) => {
           </DialogContent>
         </Dialog>
 
+        {/* Success Modal */}
+        <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+          <DialogContent className="bg-white text-gray-900">
+            <DialogHeader>
+              <DialogTitle className="text-green-600">Success!</DialogTitle>
+            </DialogHeader>
+            <div className="py-4">
+              <p className="text-lg text-gray-900">
+                Successfully added a customer, kindly proceed to add sale
+              </p>
+              {newCustomer && (
+                <div className="mt-4 p-3 bg-gray-100 rounded-md text-gray-900">
+                  <p className="text-gray-900"><strong>Name:</strong> {newCustomer.name}</p>
+                  <p className="text-gray-900"><strong>Email:</strong> {newCustomer.email}</p>
+                  <p className="text-gray-900"><strong>Phone:</strong> {newCustomer.phone}</p>
+                  <p className="text-gray-900"><strong>State:</strong> {newCustomer.state}</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button onClick={handleAddSale} className="bg-blue-600 hover:bg-blue-700 text-white">
+                Add Sale
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Search Input */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -203,7 +295,7 @@ const filteredCustomers = customers.filter((customer) => {
             <CardTitle>All Customers</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table className="border-border bg-blue-950">
+            <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Customer ID</TableHead>

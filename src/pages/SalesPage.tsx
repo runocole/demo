@@ -59,9 +59,7 @@ export default function SalesPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
   const [newSale, setNewSale] = useState<Partial<Sale>>({});
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
-    null
-  );
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -86,6 +84,23 @@ export default function SalesPage() {
         setSales(salesRes.data);
         setCustomers(custRes.data);
         setTools(toolsRes.data);
+        
+        // Check if we have a customer from the customers page
+        const storedCustomer = localStorage.getItem('selectedCustomer');
+        if (storedCustomer) {
+          const customerData = JSON.parse(storedCustomer);
+          setSelectedCustomer(customerData);
+          setNewSale(prev => ({
+            ...prev,
+            name: customerData.name,
+            phone: customerData.phone,
+            state: customerData.state
+          }));
+          // Clear the stored customer data
+          localStorage.removeItem('selectedCustomer');
+          // Auto-open the add sale modal
+          setOpen(true);
+        }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -215,12 +230,12 @@ export default function SalesPage() {
     <DashboardLayout>
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-800">
+          <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
             My Sales Records
           </h1>
           <div className="flex gap-3">
             <Button
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
               onClick={exportPDF}
             >
               <FileText className="w-4 h-4 mr-2" />
@@ -229,53 +244,44 @@ export default function SalesPage() {
 
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700">
+                <Button className="bg-green-600 hover:bg-green-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Add Sale
                 </Button>
               </DialogTrigger>
 
-              <DialogContent className="max-w-2xl">
+              <DialogContent className="max-w-2xl bg-white text-gray-900">
                 <DialogHeader>
-                  <DialogTitle>Add New Sale</DialogTitle>
+                  <DialogTitle className="text-gray-900">Add New Sale</DialogTitle>
                 </DialogHeader>
 
-                {/* Customer Selection */}
+                {/* Customer Information (Auto-filled from customer page) */}
+                {selectedCustomer && (
+                  <div className="bg-blue-50 p-4 rounded-md mb-4 border border-blue-200">
+                    <h3 className="font-semibold text-blue-800 mb-2">Customer Information</h3>
+                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                      <div>
+                        <span className="font-medium">Name:</span> {selectedCustomer.name}
+                      </div>
+                      <div>
+                        <span className="font-medium">Email:</span> {selectedCustomer.email}
+                      </div>
+                      <div>
+                        <span className="font-medium">Phone:</span> {selectedCustomer.phone}
+                      </div>
+                      <div>
+                        <span className="font-medium">State:</span> {selectedCustomer.state}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Tool Selection */}
                 <div className="grid grid-cols-2 gap-4 py-3">
                   <div className="col-span-2">
-                    <Label className="text-white">Select Customer</Label>
+                    <Label className="text-gray-700">Select Tool</Label>
                     <select
-                      className="border rounded-md p-2 w-full bg-black text-white"
-                      value={selectedCustomer?.id || ""}
-                      onChange={(e) => {
-                        const cust = customers.find(
-                          (c) => c.id === Number(e.target.value)
-                        );
-                        setSelectedCustomer(cust || null);
-                        if (cust) {
-                          setNewSale((prev) => ({
-                            ...prev,
-                            name: cust.name,
-                            phone: cust.phone,
-                            state: cust.state,
-                          }));
-                        }
-                      }}
-                    >
-                      <option value="">-- Select --</option>
-                      {customers.map((cust) => (
-                        <option key={cust.id} value={cust.id}>
-                          {cust.name} ({cust.email})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Tool Selection */}
-                  <div className="col-span-2">
-                    <Label className="text-white">Select Tool</Label>
-                    <select
-                      className="border rounded-md p-2 w-full bg-black text-white"
+                      className="border rounded-md p-2 w-full bg-white text-gray-900 border-gray-300"
                       value={newSale.tool_id || ""}
                       onChange={(e) =>
                         setNewSale((prev) => ({
@@ -295,16 +301,28 @@ export default function SalesPage() {
 
                   {/* Auto-filled fields */}
                   <div>
-                    <Label>Client Name</Label>
-                    <Input value={newSale.name || ""} readOnly />
+                    <Label className="text-gray-700">Client Name</Label>
+                    <Input 
+                      value={newSale.name || ""} 
+                      readOnly 
+                      className="bg-gray-100 text-gray-900"
+                    />
                   </div>
                   <div>
-                    <Label>Phone</Label>
-                    <Input value={newSale.phone || ""} readOnly />
+                    <Label className="text-gray-700">Phone</Label>
+                    <Input 
+                      value={newSale.phone || ""} 
+                      readOnly 
+                      className="bg-gray-100 text-gray-900"
+                    />
                   </div>
                   <div>
-                    <Label>State</Label>
-                    <Input value={newSale.state || ""} readOnly />
+                    <Label className="text-gray-700">State</Label>
+                    <Input 
+                      value={newSale.state || ""} 
+                      readOnly 
+                      className="bg-gray-100 text-gray-900"
+                    />
                   </div>
 
                   {/* Editable fields */}
@@ -315,7 +333,7 @@ export default function SalesPage() {
                     ["expiry_date", "Expiry Date", "date"],
                   ].map(([key, label, type]) => (
                     <div key={key}>
-                      <Label htmlFor={key}>{label}</Label>
+                      <Label htmlFor={key} className="text-gray-700">{label}</Label>
                       <Input
                         id={key}
                         type={type}
@@ -326,17 +344,18 @@ export default function SalesPage() {
                             [key]: e.target.value,
                           }))
                         }
+                        className="text-gray-900 bg-white"
                       />
                     </div>
                   ))}
 
                   {/* Status */}
                   <div>
-                    <Label className="text-white">Status</Label>
+                    <Label className="text-gray-700">Status</Label>
                     <Input
                       readOnly
                       value={calculateStatus(newSale)}
-                      className="bg-black text-white"
+                      className="bg-gray-100 text-gray-900"
                     />
                   </div>
                 </div>
@@ -346,6 +365,7 @@ export default function SalesPage() {
                     variant="outline"
                     onClick={() => handleAction("cancel")}
                     disabled={isSubmitting}
+                    className="text-gray-700"
                   >
                     Cancel
                   </Button>
@@ -360,7 +380,7 @@ export default function SalesPage() {
                   <Button
                     onClick={() => handleAction("send")}
                     disabled={isSubmitting}
-                    className="bg-blue-600 hover:bg-blue-700"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     {isSubmitting ? "Saving..." : "Save & Send"}
                   </Button>
@@ -373,7 +393,7 @@ export default function SalesPage() {
         {/* Sales Table */}
         <Card>
           <CardHeader>
-            <CardTitle>Sales Overview</CardTitle>
+            <CardTitle className="text-gray-900 dark:text-white">Sales Overview</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -382,7 +402,7 @@ export default function SalesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="text-left border-b">
+                    <tr className="text-left border-b bg-gray-50">
                       {[
                         "Client",
                         "Phone",
@@ -395,7 +415,7 @@ export default function SalesPage() {
                         "Expiry",
                         "Status",
                       ].map((col) => (
-                        <th key={col} className="p-2 text-gray-600 font-medium">
+                        <th key={col} className="p-2 text-gray-700 font-medium">
                           {col}
                         </th>
                       ))}
@@ -406,7 +426,7 @@ export default function SalesPage() {
                       <tr>
                         <td
                           colSpan={10}
-                          className="text-center p-4 text-gray-400"
+                          className="text-center p-4 text-gray-500"
                         >
                           No records yet. Add a sale to begin.
                         </td>
@@ -415,7 +435,7 @@ export default function SalesPage() {
                       sales.map((sale) => (
                         <tr
                           key={sale.id}
-                          className="border-b hover:bg-gray-50"
+                          className="border-b hover:bg-gray-50 text-gray-700"
                         >
                           <td className="p-2">{sale.name}</td>
                           <td className="p-2">{sale.phone}</td>

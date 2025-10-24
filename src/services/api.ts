@@ -238,21 +238,31 @@ export const fetchDashboardData = async () => {
 };
 
 // ----------------------------
-// RECEIVER TYPES
+//EQUIPMENT TYPES
 // ----------------------------
-export const getReceiverTypes = async () => {
-  const response = await axios.get(`${API_URL}/receiver-types/`, {
+export interface EquipmentType {
+  id: string;
+  name: string;
+  default_cost: string;
+  category: string;
+  description?: string;
+  created_at?: string;
+}
+
+export const getEquipmentTypes = async () => {
+  const response = await axios.get(`${API_URL}/equipment-types/`, {
     headers: authHeader(),
   });
   return response.data;
 };
 
-export const createReceiverType = async (receiverTypeData: {
+export const createEquipmentType = async (equipmentTypeData: {
   name: string;
   default_cost: string;
+  category: string;
   description?: string;
 }) => {
-  const response = await axios.post(`${API_URL}/receiver-types/`, receiverTypeData, {
+  const response = await axios.post(`${API_URL}/equipment-types/`, equipmentTypeData, {
     headers: {
       ...authHeader(),
       "Content-Type": "application/json",
@@ -261,15 +271,16 @@ export const createReceiverType = async (receiverTypeData: {
   return response.data;
 };
 
-export const updateReceiverType = async (
+export const updateEquipmentType = async (
   id: string,
-  receiverTypeData: Partial<{
+  equipmentTypeData: Partial<{
     name: string;
     default_cost: string;
+    category: string;
     description?: string;
   }>
 ) => {
-  const response = await axios.patch(`${API_URL}/receiver-types/${id}/`, receiverTypeData, {
+  const response = await axios.patch(`${API_URL}/equipment-types/${id}/`, equipmentTypeData, {
     headers: {
       ...authHeader(),
       "Content-Type": "application/json",
@@ -278,13 +289,12 @@ export const updateReceiverType = async (
   return response.data;
 };
 
-export const deleteReceiverType = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/receiver-types/${id}/`, {
+export const deleteEquipmentType = async (id: string) => {
+  const response = await axios.delete(`${API_URL}/equipment-types/${id}/`, {
     headers: authHeader(),
   });
   return response.data;
 };
-
 // ----------------------------
 // SUPPLIERS
 // ----------------------------

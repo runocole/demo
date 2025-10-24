@@ -3,7 +3,7 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
-import { Search, Plus, Trash2, Edit2, RefreshCw, Download } from "lucide-react";
+import { Search, Plus, Trash2, Edit2, RefreshCw, Download, CheckCircle, X } from "lucide-react"; // Added CheckCircle and X
 import {
   Dialog,
   DialogContent,
@@ -25,7 +25,7 @@ import {
   createTool,
   updateTool,
   deleteTool,
-  getEquipmentTypes, // Changed from getReceiverTypes
+  getEquipmentTypes,
   getSuppliers,
 } from "../services/api";
 import jsPDF from "jspdf";
@@ -39,36 +39,36 @@ interface Tool {
   cost: string | number;
   stock: number;
   description?: string;
-  supplier?: string; // UUID
-  supplier_name?: string; // from serializer
+  supplier?: string;
+  supplier_name?: string;
   category?: string;
   invoice_number?: string;
   date_added?: string;
-  serials?: string[]; // extras or full list
-  equipment_type?: string | null; // Changed from receiver_type
-  equipment_type_id?: number | string | null; // Changed from receiver_type_id
+  serials?: string[];
+  equipment_type?: string | null;
+  equipment_type_id?: number | string | null;
 }
 
 interface GroupedTool {
   id: string;
   name: string;
   category: string;
-  equipment_type?: string; // Changed from receiver_type
-  equipment_type_id?: string | number | null; // Changed from receiver_type_id
-  tools: Tool[]; // All individual tools in this group
+  equipment_type?: string;
+  equipment_type_id?: string | number | null;
+  tools: Tool[];
   totalStock: number;
   lastUpdated: string;
   cost: string;
   description?: string;
   supplier_name?: string;
-  latestTool: Tool; // The most recently added tool in the group
+  latestTool: Tool;
 }
 
-interface EquipmentType { // Changed from ReceiverType
+interface EquipmentType {
   id: number | string;
   name: string;
   default_cost?: string | number;
-  category?: string; // Added category field
+  category?: string;
 }
 
 interface Supplier {
@@ -88,6 +88,17 @@ const CATEGORY_OPTIONS = [
   "Other",
 ];
 
+// Toast Component
+const Toast = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="fixed top-4 right-4 z-50 flex items-center gap-3 bg-green-600 text-white px-4 py-3 rounded-lg shadow-lg border border-green-400 animate-in slide-in-from-right-8 duration-300">
+    <CheckCircle className="h-5 w-5" />
+    <span className="font-medium">{message}</span>
+    <button onClick={onClose} className="hover:bg-green-700 rounded p-1">
+      <X className="h-4 w-4" />
+    </button>
+  </div>
+);
+
 /* ---------------- Component ---------------- */
 const Tools: React.FC = () => {
   const [tools, setTools] = useState<Tool[]>([]);
@@ -96,10 +107,10 @@ const Tools: React.FC = () => {
   // Modal & form state
   const [open, setOpen] = useState(false);
   const [modalStep, setModalStep] = useState<
-    "select-category" | "select-equipment-type" | "form" // Changed from select-receiver-type
+    "select-category" | "select-equipment-type" | "form"
   >("select-category");
   const [selectedCategoryCard, setSelectedCategoryCard] = useState<string | null>(null);
-  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string | null>(null); // Changed from selectedReceiverType
+  const [selectedEquipmentType, setSelectedEquipmentType] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingToolId, setEditingToolId] = useState<string | null>(null);
 
@@ -108,8 +119,8 @@ const Tools: React.FC = () => {
   const [categoryFilter, setCategoryFilter] = useState<string>("");
 
   // Equipment types
-  const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]); // Changed from receiverTypes
-  const [isLoadingEquipmentTypes, setIsLoadingEquipmentTypes] = useState(false); // Changed from isLoadingReceiverTypes
+  const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
+  const [isLoadingEquipmentTypes, setIsLoadingEquipmentTypes] = useState(false);
 
   // Suppliers
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -122,88 +133,87 @@ const Tools: React.FC = () => {
     isLoading: false,
   });
 
+  // Toast state
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
+
   // Form model
   const [form, setForm] = useState<any>({
     name: "",
-    code: "", // required main serial
+    code: "",
     cost: "",
     stock: "1",
-    description: "", // box type (Base / Rover / Base and Rover)
-    supplier: "", // supplier id
-    category: "", // will be set from selection but hidden in final form
+    description: "",
+    supplier: "",
+    category: "",
     invoice_number: "",
-    serials: [], // extras (does NOT include main code)
-    equipment_type_id: "", // Changed from receiver_type_id
-    equipment_type: "", // Changed from receiver_type
+    serials: [],
+    equipment_type_id: "",
+    equipment_type: "",
   });
 
   /* ---------------- Grouping Logic ---------------- */
-const groupTools = (tools: Tool[]): GroupedTool[] => {
-  const groups: { [key: string]: GroupedTool } = {};
+  const groupTools = (tools: Tool[]): GroupedTool[] => {
+    const groups: { [key: string]: GroupedTool } = {};
 
-  tools.forEach(tool => {
-    // For Receivers, group by equipment_type if available, otherwise fall back to name
-    if (tool.category === "Receiver" && tool.equipment_type) {
-      const key = `receiver-${tool.equipment_type}`;
-      
-      if (!groups[key]) {
-        groups[key] = {
-          id: key,
-          name: tool.equipment_type,
-          category: tool.category || "Receiver",
-          equipment_type: tool.equipment_type,
-          equipment_type_id: tool.equipment_type_id,
-          tools: [tool],
-          totalStock: tool.stock || 0,
-          lastUpdated: tool.date_added || new Date().toISOString(),
-          cost: String(tool.cost),
-          description: tool.description,
-          supplier_name: tool.supplier_name,
-          // Store the latest tool for serial display
-          latestTool: tool,
-        };
-      } else {
-        groups[key].tools.push(tool);
-        groups[key].totalStock += tool.stock || 0;
+    tools.forEach(tool => {
+      if (tool.category === "Receiver" && tool.equipment_type) {
+        const key = `receiver-${tool.equipment_type}`;
         
-        // Update lastUpdated and latestTool if this tool is newer
-        if (tool.date_added && tool.date_added > groups[key].lastUpdated) {
-          groups[key].lastUpdated = tool.date_added;
-          groups[key].latestTool = tool;
+        if (!groups[key]) {
+          groups[key] = {
+            id: key,
+            name: tool.equipment_type,
+            category: tool.category || "Receiver",
+            equipment_type: tool.equipment_type,
+            equipment_type_id: tool.equipment_type_id,
+            tools: [tool],
+            totalStock: tool.stock || 0,
+            lastUpdated: tool.date_added || new Date().toISOString(),
+            cost: String(tool.cost),
+            description: tool.description,
+            supplier_name: tool.supplier_name,
+            latestTool: tool,
+          };
+        } else {
+          groups[key].tools.push(tool);
+          groups[key].totalStock += tool.stock || 0;
+          
+          if (tool.date_added && tool.date_added > groups[key].lastUpdated) {
+            groups[key].lastUpdated = tool.date_added;
+            groups[key].latestTool = tool;
+          }
         }
-      }
-    } 
-    // For non-Receivers, or Receivers without equipment_type, group by name and category
-    else {
-      const key = `${tool.category || "Uncategorized"}-${tool.name}`;
-      
-      if (!groups[key]) {
-        groups[key] = {
-          id: key,
-          name: tool.name,
-          category: tool.category || "Uncategorized",
-          tools: [tool],
-          totalStock: tool.stock || 0,
-          lastUpdated: tool.date_added || new Date().toISOString(),
-          cost: String(tool.cost),
-          description: tool.description,
-          supplier_name: tool.supplier_name,
-          // Store the latest tool for serial display
-          latestTool: tool,
-        };
       } else {
-        groups[key].tools.push(tool);
-        groups[key].totalStock += tool.stock || 0;
-        if (tool.date_added && tool.date_added > groups[key].lastUpdated) {
-          groups[key].lastUpdated = tool.date_added;
-          groups[key].latestTool = tool;
+        const key = `${tool.category || "Uncategorized"}-${tool.name}`;
+        
+        if (!groups[key]) {
+          groups[key] = {
+            id: key,
+            name: tool.name,
+            category: tool.category || "Uncategorized",
+            tools: [tool],
+            totalStock: tool.stock || 0,
+            lastUpdated: tool.date_added || new Date().toISOString(),
+            cost: String(tool.cost),
+            description: tool.description,
+            supplier_name: tool.supplier_name,
+            latestTool: tool,
+          };
+        } else {
+          groups[key].tools.push(tool);
+          groups[key].totalStock += tool.stock || 0;
+          if (tool.date_added && tool.date_added > groups[key].lastUpdated) {
+            groups[key].lastUpdated = tool.date_added;
+            groups[key].latestTool = tool;
+          }
         }
       }
-    }
-  });
+    });
 
-  return Object.values(groups);
-};
+    return Object.values(groups);
+  };
 
   /* ---------------- Effects ---------------- */
   useEffect(() => {
@@ -225,8 +235,8 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
             stock: typeof t.stock === "number" ? t.stock : Number(t.stock || 0),
             category: t.category || "",
             serials: serialsArr,
-            equipment_type: t.equipment_type ?? t.equipment_type_name ?? "", // Changed from receiver_type
-            equipment_type_id: t.equipment_type_id ?? "", // Changed from receiver_type_id
+            equipment_type: t.equipment_type ?? t.equipment_type_name ?? "",
+            equipment_type_id: t.equipment_type_id ?? "",
           };
         });
         setTools(normalized);
@@ -262,11 +272,11 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
     fetchExchangeRate();
   }, []);
 
-  // Fetch equipment types (used on demand)
-  const fetchEquipmentTypes = async () => { // Changed from fetchReceiverTypes
+  // Fetch equipment types
+  const fetchEquipmentTypes = async () => {
     setIsLoadingEquipmentTypes(true);
     try {
-      const data = await getEquipmentTypes(); // Changed from getReceiverTypes
+      const data = await getEquipmentTypes();
       setEquipmentTypes(data || []);
     } catch (err) {
       console.warn("Could not fetch equipment types:", err);
@@ -291,9 +301,20 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
   };
 
   useEffect(() => {
-    fetchEquipmentTypes(); // Changed from fetchReceiverTypes
+    fetchEquipmentTypes();
     fetchSuppliers();
   }, []);
+
+  // Toast auto-hide
+  useEffect(() => {
+    if (showToast) {
+      const timer = setTimeout(() => {
+        setShowToast(false);
+        setRecentlyAddedId(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [showToast]);
 
   /* ---------------- Helpers ---------------- */
   const resetForm = () =>
@@ -307,8 +328,8 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
       category: "",
       invoice_number: "",
       serials: [],
-      equipment_type_id: "", // Changed from receiver_type_id
-      equipment_type: "", // Changed from receiver_type
+      equipment_type_id: "",
+      equipment_type: "",
     });
 
   const openAddModal = () => {
@@ -316,17 +337,17 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
     setIsEditMode(false);
     setEditingToolId(null);
     setSelectedCategoryCard(null);
-    setSelectedEquipmentType(null); // Changed from selectedReceiverType
+    setSelectedEquipmentType(null);
     setModalStep("select-category");
     setOpen(true);
   };
 
   const getAllowedExtraLabels = (boxType: string): string[] => {
     if (boxType === "Rover" || boxType === "Base") {
-      return ["Data Logger"]; // maximum 1
+      return ["Data Logger"];
     }
     if (boxType === "Base and Rover") {
-      return ["Receiver 2", "DataLogger", "External Radio"]; // maximum 3
+      return ["Receiver 2", "DataLogger", "External Radio"];
     }
     return [];
   };
@@ -347,8 +368,8 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
       category: tool.category || "",
       invoice_number: tool.invoice_number || "",
       serials: extras.length ? extras : [],
-      equipment_type_id: tool.equipment_type_id || "", // Changed from receiver_type_id
-      equipment_type: tool.equipment_type || "", // Changed from receiver_type
+      equipment_type_id: tool.equipment_type_id || "",
+      equipment_type: tool.equipment_type || "",
     });
 
     setIsEditMode(true);
@@ -356,13 +377,13 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
     setSelectedCategoryCard(tool.category || null);
 
     if (tool.category === "Receiver") {
-      fetchEquipmentTypes().then(() => { // Changed from fetchReceiverTypes
-        const etId = tool.equipment_type_id ? String(tool.equipment_type_id) : ""; // Changed from receiver_type_id
-        const found = equipmentTypes.find((e) => String(e.id) === String(etId) || e.name === tool.equipment_type); // Changed from receiverTypes
+      fetchEquipmentTypes().then(() => {
+        const etId = tool.equipment_type_id ? String(tool.equipment_type_id) : "";
+        const found = equipmentTypes.find((e) => String(e.id) === String(etId) || e.name === tool.equipment_type);
         if (found) {
-          setSelectedEquipmentType(String(found.id)); // Changed from selectedReceiverType
+          setSelectedEquipmentType(String(found.id));
         } else {
-          setSelectedEquipmentType(tool.equipment_type_id ? String(tool.equipment_type_id) : tool.equipment_type || null); // Changed from selectedReceiverType
+          setSelectedEquipmentType(tool.equipment_type_id ? String(tool.equipment_type_id) : tool.equipment_type || null);
         }
       });
     }
@@ -426,6 +447,33 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
     setForm((prev: any) => ({ ...prev, serials: updated }));
   };
 
+  /* ---------------- Equipment type selection ---------------- */
+  const handleEquipmentTypeSelect = (val: string) => {
+    const found = equipmentTypes.find((e) => String(e.id) === String(val) || e.name === val);
+    if (found) {
+      setSelectedEquipmentType(String(found.id));
+      setForm((prev: any) => ({
+        ...prev,
+        equipment_type_id: found.id,
+        equipment_type: found.name,
+        name: found.name,
+        cost: String(found.default_cost ?? prev.cost),
+        category: selectedCategoryCard || prev.category,
+      }));
+    } else {
+      setSelectedEquipmentType(val);
+      setForm((prev: any) => ({ 
+        ...prev, 
+        equipment_type_id: "", 
+        equipment_type: val,
+        category: selectedCategoryCard || prev.category,
+      }));
+    }
+    
+    // AUTOMATICALLY proceed to form after selection
+    setModalStep("form");
+  };
+
   /* ---------------- Save / Update ---------------- */
   const handleSaveTool = async () => {
     if (!String(form.name || "").trim() || !String(form.code || "").trim() || !String(form.cost || "").trim()) {
@@ -435,21 +483,21 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
 
     const parsedStock = Math.max(0, Number(form.stock) || 0);
     const finalCategory = selectedCategoryCard || form.category || "";
-    let finalEquipmentTypeName = ""; // Changed from finalReceiverTypeName
-    let finalEquipmentTypeId: any = form.equipment_type_id || ""; // Changed from finalReceiverTypeId
+    let finalEquipmentTypeName = "";
+    let finalEquipmentTypeId: any = form.equipment_type_id || "";
 
-    if (selectedEquipmentType) { // Changed from selectedReceiverType
-      const found = equipmentTypes.find((e) => String(e.id) === String(selectedEquipmentType)); // Changed from receiverTypes
+    if (selectedEquipmentType) {
+      const found = equipmentTypes.find((e) => String(e.id) === String(selectedEquipmentType));
       if (found) {
-        finalEquipmentTypeName = found.name; // Changed from finalReceiverTypeName
-        finalEquipmentTypeId = found.id; // Changed from finalReceiverTypeId
+        finalEquipmentTypeName = found.name;
+        finalEquipmentTypeId = found.id;
       } else {
-        finalEquipmentTypeName = selectedEquipmentType; // Changed from finalReceiverTypeName
-        finalEquipmentTypeId = selectedEquipmentType; // Changed from finalReceiverTypeId
+        finalEquipmentTypeName = selectedEquipmentType;
+        finalEquipmentTypeId = selectedEquipmentType;
       }
-    } else if (form.equipment_type) { // Changed from form.receiver_type
-      finalEquipmentTypeName = form.equipment_type; // Changed from finalReceiverTypeName
-      finalEquipmentTypeId = form.equipment_type_id || ""; // Changed from finalReceiverTypeId
+    } else if (form.equipment_type) {
+      finalEquipmentTypeName = form.equipment_type;
+      finalEquipmentTypeId = form.equipment_type_id || "";
     }
 
     const payload: any = {
@@ -475,10 +523,10 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
       if (allSerials.length > 0) payload.serials = allSerials;
     }
 
-    if (finalEquipmentTypeName && String(finalEquipmentTypeName).trim() !== "") { // Changed from finalReceiverTypeName
-      payload.equipment_type = String(finalEquipmentTypeName).trim(); // Changed from receiver_type
+    if (finalEquipmentTypeName && String(finalEquipmentTypeName).trim() !== "") {
+      payload.equipment_type = String(finalEquipmentTypeName).trim();
     }
-    if (finalEquipmentTypeId) payload.equipment_type_id = finalEquipmentTypeId; // Changed from receiver_type_id
+    if (finalEquipmentTypeId) payload.equipment_type_id = finalEquipmentTypeId;
 
     if (isEditMode && editingToolId) {
       try {
@@ -487,16 +535,22 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
           ...updated,
           stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || parsedStock),
           serials: Array.isArray(updated.serials) ? updated.serials : payload.serials || [],
-          equipment_type: updated.equipment_type ?? payload.equipment_type ?? "", // Changed from receiver_type
-          equipment_type_id: updated.equipment_type_id ?? payload.equipment_type_id ?? "", // Changed from receiver_type_id
+          equipment_type: updated.equipment_type ?? payload.equipment_type ?? "",
+          equipment_type_id: updated.equipment_type_id ?? payload.equipment_type_id ?? "",
         };
         setTools((prev) => prev.map((t) => (t.id === editingToolId ? normalized : t)));
+        
+        // Show success feedback
+        setToastMessage("Tool updated successfully!");
+        setShowToast(true);
+        setRecentlyAddedId(editingToolId);
+        
         setOpen(false);
         resetForm();
         setIsEditMode(false);
         setEditingToolId(null);
         setSelectedCategoryCard(null);
-        setSelectedEquipmentType(null); // Changed from selectedReceiverType
+        setSelectedEquipmentType(null);
       } catch (err) {
         console.error("Error updating tool:", err);
         alert("Failed to update tool.");
@@ -517,22 +571,31 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
           serials: Array.isArray(updated.serials) ? updated.serials : updatePayload.serials || [],
         };
         setTools((prev) => prev.map((t) => (t.id === existing.id ? normalized : t)));
-        alert(`Tool "${existing.code}" already exists. Quantity increased by ${parsedStock}.`);
+        
+        // Show success feedback
+        setToastMessage(`Tool "${existing.code}" quantity increased by ${parsedStock}!`);
+        setShowToast(true);
+        setRecentlyAddedId(existing.id);
       } else {
         const created = await createTool(payload);
         const normalizedCreated: Tool = {
           ...created,
           stock: typeof created.stock === "number" ? created.stock : Number(created.stock || parsedStock),
           serials: Array.isArray(created.serials) ? created.serials : payload.serials || [],
-          equipment_type: created.equipment_type ?? payload.equipment_type ?? "", // Changed from receiver_type
-          equipment_type_id: created.equipment_type_id ?? payload.equipment_type_id ?? "", // Changed from receiver_type_id
+          equipment_type: created.equipment_type ?? payload.equipment_type ?? "",
+          equipment_type_id: created.equipment_type_id ?? payload.equipment_type_id ?? "",
         };
         setTools((prev) => [normalizedCreated, ...prev]);
+        
+        // Show success feedback
+        setToastMessage("New tool added successfully!");
+        setShowToast(true);
+        setRecentlyAddedId(created.id);
       }
       setOpen(false);
       resetForm();
       setSelectedCategoryCard(null);
-      setSelectedEquipmentType(null); // Changed from selectedReceiverType
+      setSelectedEquipmentType(null);
     } catch (error) {
       console.error("Error saving tool:", error);
       alert("Failed to save tool.");
@@ -551,24 +614,6 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
     }
   };
 
-  /* ---------------- Equipment type selection ---------------- */
-  const handleEquipmentTypeSelect = (val: string) => { // Changed from handleReceiverTypeSelect
-    const found = equipmentTypes.find((e) => String(e.id) === String(val) || e.name === val); // Changed from receiverTypes
-    if (found) {
-      setSelectedEquipmentType(String(found.id)); // Changed from selectedReceiverType
-      setForm((prev: any) => ({
-        ...prev,
-        equipment_type_id: found.id, // Changed from receiver_type_id
-        equipment_type: found.name, // Changed from receiver_type
-        name: prev.name || found.name,
-        cost: prev.cost || String(found.default_cost ?? prev.cost),
-      }));
-    } else {
-      setSelectedEquipmentType(val); // Changed from selectedReceiverType
-      setForm((prev: any) => ({ ...prev, equipment_type_id: "", equipment_type: val })); // Changed from receiver_type_id and receiver_type
-    }
-  };
-
   /* ---------------- Filtering & summary ---------------- */
   const filteredTools = tools.filter((t) => {
     const matchesCategory =
@@ -579,7 +624,7 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
       (t.name || "").toLowerCase().includes(q) ||
       (t.code || "").toLowerCase().includes(q) ||
       ((t.description || "") as string).toLowerCase().includes(q) ||
-      (t.equipment_type || "").toLowerCase().includes(q); // Changed from receiver_type
+      (t.equipment_type || "").toLowerCase().includes(q);
     return matchesCategory && matchesSearch;
   });
 
@@ -600,7 +645,7 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
     const tableData = groupedTools.map((group) => [
       group.name,
       group.category,
-      group.equipment_type || "—", // Changed from receiver_type
+      group.equipment_type || "—",
       group.tools.reduce((acc, t) => acc + (t.serials?.length || 0), 0) + " serials",
       `$${group.cost}`,
       group.totalStock.toString(),
@@ -614,7 +659,7 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
         [
           "Name",
           "Category",
-          "Equipment Type", // Changed from Receiver Type
+          "Equipment Type",
           "Serials",
           "Cost (USD)",
           "Total Stock",
@@ -638,6 +683,17 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
   /* ---------------- Render ---------------- */
   return (
     <DashboardLayout>
+      {/* Toast Notification */}
+      {showToast && (
+        <Toast 
+          message={toastMessage} 
+          onClose={() => {
+            setShowToast(false);
+            setRecentlyAddedId(null);
+          }} 
+        />
+      )}
+
       <div className="space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
@@ -660,7 +716,7 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
             <Input
-              placeholder="Search tools by name, code, box type or equipment type..." // Changed from receiver type
+              placeholder="Search tools by name, code, box type or equipment type..."
               className="pl-10"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -717,94 +773,114 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
           </Card>
         </div>
 
-       {/* Tools Grid - Updated for Grouped Display */}
-<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-  {groupedTools.map((group) => (
-    <Card key={group.id} className="hover:shadow-lg transition-shadow bg-blue-950">
-      <CardContent className="p-6 space-y-3">
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <h3 className="font-semibold text-lg">{group.name}</h3>
-            <p className="text-sm text-gray-400">
-              {group.category} {group.equipment_type ? `• ${group.equipment_type}` : ''} {/* Changed from receiver_type */}
-            </p>
-            <p className="text-xs text-gray-500">
-              Last Updated: {group.lastUpdated ? new Date(group.lastUpdated).toLocaleDateString() : "—"}
-            </p>
-            <p className="text-xs text-gray-500">
-              {group.tools.length} individual item{group.tools.length > 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                if (group.tools.length > 0) {
-                  openEditModal(group.tools[0]);
-                }
-              }}
-              className="text-slate-400 hover:bg-slate-700"
-              title="Edit"
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                if (group.tools.length === 1) {
-                  handleDeleteTool(group.tools[0].id);
-                } else {
-                  if (window.confirm(`Delete all ${group.tools.length} ${group.name} items?`)) {
-                    group.tools.forEach(tool => handleDeleteTool(tool.id));
-                  }
-                }
-              }}
-              className="text-red-600 hover:bg-red-100"
-              title="Delete"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
+        {/* Tools Grid */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {groupedTools.map((group) => {
+            const isRecentlyAdded = group.tools.some(tool => tool.id === recentlyAddedId);
+            
+            return (
+              <Card 
+                key={group.id} 
+                className={`
+                  hover:shadow-lg transition-all duration-300 bg-blue-950
+                  ${isRecentlyAdded ? 'ring-2 ring-green-500 shadow-lg scale-105' : ''}
+                `}
+              >
+                <CardContent className="p-6 space-y-3">
+                  {/* Recently Added Badge */}
+                  {isRecentlyAdded && (
+                    <div className="flex justify-between items-center">
+                      <div className="bg-green-600 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                        <CheckCircle className="h-3 w-3" />
+                        Recently Added
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-lg">{group.name}</h3>
+                      <p className="text-sm text-gray-400">
+                        {group.category} {group.equipment_type ? `• ${group.equipment_type}` : ''}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        Last Updated: {group.lastUpdated ? new Date(group.lastUpdated).toLocaleDateString() : "—"}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {group.tools.length} individual item{group.tools.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (group.tools.length > 0) {
+                            openEditModal(group.tools[0]);
+                          }
+                        }}
+                        className="text-slate-400 hover:bg-slate-700"
+                        title="Edit"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          if (group.tools.length === 1) {
+                            handleDeleteTool(group.tools[0].id);
+                          } else {
+                            if (window.confirm(`Delete all ${group.tools.length} ${group.name} items?`)) {
+                              group.tools.forEach(tool => handleDeleteTool(tool.id));
+                            }
+                          }
+                        }}
+                        className="text-red-600 hover:bg-red-100"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 flex justify-between items-start">
+                    <div>
+                      {/* Show only the latest tool's serial */}
+                      {group.latestTool && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-400">Latest Serial</p>
+                          <p className="text-sm font-mono text-gray-300">
+                            {group.latestTool.code || "—"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-xs text-gray-400">Cost (USD)</p>
+                      <p className="text-sm font-bold text-blue-400">${group.cost}</p>
+
+                      <p className="text-xs text-gray-400 mt-1">Cost (NGN)</p>
+                      <p className="text-sm font-bold text-green-400">
+                        {calculateNairaEquivalent(String(group.cost))}
+                      </p>
+
+                      <p className="text-xs text-gray-400 mt-3">Total Stock</p>
+                      <div
+                        className={`px-2 py-1 rounded-full text-sm font-medium ${
+                          group.totalStock <= 5 ? "bg-amber-600/20 text-amber-300" : "bg-green-600/10 text-green-300"
+                        }`}
+                      >
+                        {group.totalStock}
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
-
-        <div className="pt-3 border-t border-slate-800 flex justify-between items-start">
-          <div>
-            {/* Show only the latest tool's serial */}
-            {group.latestTool && (
-              <div className="mt-2">
-                <p className="text-xs text-gray-400">Latest Serial</p>
-                <p className="text-sm font-mono text-gray-300">
-                  {group.latestTool.code || "—"}
-                </p>
-              </div>
-            )}
-          </div>
-
-          <div className="text-right">
-            <p className="text-xs text-gray-400">Cost (USD)</p>
-            <p className="text-sm font-bold text-blue-400">${group.cost}</p>
-
-            <p className="text-xs text-gray-400 mt-1">Cost (NGN)</p>
-            <p className="text-sm font-bold text-green-400">
-              {calculateNairaEquivalent(String(group.cost))}
-            </p>
-
-            <p className="text-xs text-gray-400 mt-3">Total Stock</p>
-            <div
-              className={`px-2 py-1 rounded-full text-sm font-medium ${
-                group.totalStock <= 5 ? "bg-amber-600/20 text-amber-300" : "bg-green-600/10 text-green-300"
-              }`}
-            >
-              {group.totalStock}
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  ))}
-</div>
       </div>
 
       {/* ---------------- Add/Edit Modal ---------------- */}
@@ -817,7 +893,7 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
             setIsEditMode(false);
             setEditingToolId(null);
             setSelectedCategoryCard(null);
-            setSelectedEquipmentType(null); // Changed from selectedReceiverType
+            setSelectedEquipmentType(null);
             setModalStep("select-category");
           }
         }}
@@ -828,86 +904,127 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
             <DialogDescription>
               {modalStep === "select-category"
                 ? "Choose a category to start"
-                : modalStep === "select-equipment-type" // Changed from select-receiver-type
-                ? "Select the equipment type for this Receiver" // Changed from receiver type
+                : modalStep === "select-equipment-type"
+                ? "Select the equipment type"
                 : `Fill in the fields below to ${isEditMode ? "update" : "create"} a tool.`}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-           {/* STEP 1: Category selection */}
-{modalStep === "select-category" && (
-  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-    {CATEGORY_OPTIONS.map((cat) => (
-      <Card
-        key={cat}
-        className={`p-4 cursor-pointer hover:scale-105 transform ${selectedCategoryCard === cat ? "ring-2 ring-blue-500" : ""}`}
-        onClick={() => {
-          setSelectedCategoryCard(cat);
-          // Auto-proceed to next step
-          if (cat === "Receiver") {
-            fetchEquipmentTypes(); // Changed from fetchReceiverTypes
-            setModalStep("select-equipment-type"); // Changed from select-receiver-type
-          } else {
-            setForm((prev: any) => ({ ...prev, category: cat }));
-            setModalStep("form");
-          }
-        }}
-      >
-        <CardContent>
-          <div className="text-lg font-semibold">{cat}</div>
-          <div className="text-xs text-gray-400 mt-1">Add {cat} items</div>
-        </CardContent>
-      </Card>
-    ))}
-  </div>
-)}
+            {/* STEP 1: Category selection */}
+            {modalStep === "select-category" && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {CATEGORY_OPTIONS.map((cat) => (
+                  <Card
+                    key={cat}
+                    className={`p-4 cursor-pointer hover:scale-105 transform ${selectedCategoryCard === cat ? "ring-2 ring-blue-500" : ""}`}
+                    onClick={async () => {
+                      setSelectedCategoryCard(cat);
+                      
+                      // Always fetch equipment types first
+                      await fetchEquipmentTypes();
+                      
+                      // Check if there are equipment types for this category
+                      const categoryEquipmentTypes = equipmentTypes.filter(item => item.category === cat);
+                      
+                      if (categoryEquipmentTypes.length > 0) {
+                        // If there are equipment types for this category, show selection
+                        setModalStep("select-equipment-type");
+                      } else {
+                        // If no equipment types, go directly to form
+                        setForm((prev: any) => ({ 
+                          ...prev, 
+                          category: cat,
+                          name: "",
+                          cost: ""
+                        }));
+                        setModalStep("form");
+                      }
+                    }}
+                  >
+                    <CardContent>
+                      <div className="text-lg font-semibold">{cat}</div>
+                      <div className="text-xs text-gray-400 mt-1">Add {cat} items</div>
+                      <div className="text-xs text-blue-400 mt-1">
+                        {equipmentTypes.filter(item => item.category === cat).length} types available
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
             {/* STEP 2: Equipment type selection */}
-{modalStep === "select-equipment-type" && (
-  <div>
-    <Label>Equipment Type</Label>
-    <Select
-      value={selectedEquipmentType ?? ""}
-      onValueChange={(val) => {
-        handleEquipmentTypeSelect(val);
-        setForm((prev: any) => ({ ...prev, category: selectedCategoryCard || "Receiver" }));
-        setModalStep("form");
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder={isLoadingEquipmentTypes ? "Loading..." : "Select equipment type"} />
-      </SelectTrigger>
-      <SelectContent className="bg-black text-white border-gray-700 rounded-lg">
-        {isLoadingEquipmentTypes ? (
-          <SelectItem value="loading" disabled>
-            Loading...
-          </SelectItem>
-        ) : equipmentTypes.length === 0 ? (
-          <SelectItem value="manual">No equipment types found — enter manual</SelectItem>
-        ) : (
-          equipmentTypes.map((item) => (
-            <SelectItem key={item.id} value={String(item.id)}>
-              {item.name} {item.default_cost ? `— $${item.default_cost}` : ""}
-            </SelectItem>
-          ))
-        )}
-      </SelectContent>
-    </Select>
-  </div>
-)}
+            {modalStep === "select-equipment-type" && (
+              <div>
+                <Label>Equipment Type for {selectedCategoryCard}</Label>
+                <Select
+                  value={selectedEquipmentType ?? ""}
+                  onValueChange={(val) => {
+                    handleEquipmentTypeSelect(val);
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoadingEquipmentTypes ? "Loading..." : `Select ${selectedCategoryCard} type`} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black text-white border-gray-700 rounded-lg">
+                    {isLoadingEquipmentTypes ? (
+                      <SelectItem value="loading" disabled>
+                        Loading...
+                      </SelectItem>
+                    ) : equipmentTypes.filter((item) => item.category === selectedCategoryCard).length === 0 ? (
+                      <SelectItem value="manual">No {selectedCategoryCard} types found</SelectItem>
+                    ) : (
+                      equipmentTypes
+                        .filter((item) => item.category === selectedCategoryCard)
+                        .map((item) => (
+                          <SelectItem key={item.id} value={String(item.id)}>
+                            {item.name} {item.default_cost ? `— $${item.default_cost}` : ""}
+                          </SelectItem>
+                        ))
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                {/* Show message and option to proceed without selection */}
+                {!isLoadingEquipmentTypes && equipmentTypes.filter((item) => item.category === selectedCategoryCard).length === 0 && (
+                  <div className="mt-4 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg">
+                    <p className="text-amber-400 text-sm mb-2">
+                      No {selectedCategoryCard} types configured in admin settings.
+                    </p>
+                    <Button
+                      onClick={() => {
+                        setForm((prev: any) => ({ 
+                          ...prev, 
+                          category: selectedCategoryCard,
+                          name: "",
+                          cost: ""
+                        }));
+                        setModalStep("form");
+                      }}
+                      variant="outline"
+                      className="w-full bg-amber-900/40 border-amber-700 text-amber-300 hover:bg-amber-800/40"
+                    >
+                      Continue with Manual Entry
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* STEP 3: Form */}
             {modalStep === "form" && (
               <>
                 <div>
-  <Label>Name</Label>
-  <Input
-    value={form.name}
-    onChange={(e) => setForm({ ...form, name: e.target.value })}
-    placeholder="Item name"
-    readOnly
-    className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium cursor-not-allowed"
-  />
-</div>
+                  <Label>Name</Label>
+                  <Input
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="Item name"
+                    className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
+                  />
+                </div>
+
                 {/* Box Type only when Receiver */}
                 {shouldShowBoxTypeAndExtras && (
                   <div className="mt-4">
@@ -998,10 +1115,10 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
                           setForm((prev: any) => ({
                             ...prev,
                             category: val,
-                            ...(val !== "Receiver" ? { description: "", serials: [], equipment_type_id: "", equipment_type: "" } : {}), // Changed from receiver_type_id and receiver_type
+                            ...(val !== "Receiver" ? { description: "", serials: [], equipment_type_id: "", equipment_type: "" } : {}),
                           }));
                           if (val === "Receiver") {
-                            fetchEquipmentTypes(); // Changed from fetchReceiverTypes
+                            fetchEquipmentTypes();
                           }
                         }}
                       >
@@ -1019,55 +1136,58 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
                     </div>
                   )}
                 </div>
-{!selectedCategoryCard && form.category === "Receiver" && (
-  <div>
-    <Label>Equipment Type (autofill name & cost)</Label>
-    <Select
-      value={form.equipment_type_id || form.equipment_type}
-      onValueChange={(val) => {
-        handleEquipmentTypeSelect(val);
-      }}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder={isLoadingEquipmentTypes ? "Loading..." : "Select equipment type"} />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="none" disabled>
-          -- Select type --
-        </SelectItem>
 
-        {equipmentTypes.length === 0 && !isLoadingEquipmentTypes && (
-          <SelectItem value="manual">Manual / No types</SelectItem>
-        )}
+                {!selectedCategoryCard && form.category === "Receiver" && (
+                  <div>
+                    <Label>Equipment Type (autofill name & cost)</Label>
+                    <Select
+                      value={form.equipment_type_id || form.equipment_type}
+                      onValueChange={(val) => {
+                        handleEquipmentTypeSelect(val);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={isLoadingEquipmentTypes ? "Loading..." : "Select equipment type"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none" disabled>
+                          -- Select type --
+                        </SelectItem>
 
-        {equipmentTypes.map((item) => (
-          <SelectItem key={item.id} value={String(item.id)}>
-            {item.name} {item.default_cost ? `— $${item.default_cost}` : ""}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
-    <p className="text-xs text-gray-400 mt-1">Cost is autofilled from admin settings but remains editable.</p>
-  </div>
-)}
+                        {equipmentTypes.length === 0 && !isLoadingEquipmentTypes && (
+                          <SelectItem value="manual">Manual / No types</SelectItem>
+                        )}
+
+                        {equipmentTypes
+                          .filter((item) => item.category === form.category)
+                          .map((item) => (
+                            <SelectItem key={item.id} value={String(item.id)}>
+                              {item.name} {item.default_cost ? `— $${item.default_cost}` : ""}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-400 mt-1">Cost is autofilled from admin settings but remains editable.</p>
+                  </div>
+                )}
+
                 {/* Foreign Exchange */}
                 <div className="space-y-4 p-4 bg-[#0f1f3d] rounded-lg border border-[#1b2d55]">
                   <div className="space-y-2">
-  <Label htmlFor="cost-usd" className="text-blue-200 flex items-center gap-2">
-    <span>Cost in USD</span>
-    <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">$</span>
-  </Label>
-  <Input
-    id="cost-usd"
-    type="number"
-    step="0.01"
-    value={form.cost}
-    onChange={(e) => setForm({ ...form, cost: e.target.value })}
-    placeholder="100.00"
-    className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium cursor-not-allowed"
-    readOnly
-  />
-</div>
+                    <Label htmlFor="cost-usd" className="text-blue-200 flex items-center gap-2">
+                      <span>Cost in USD</span>
+                      <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">$</span>
+                    </Label>
+                    <Input
+                      id="cost-usd"
+                      type="number"
+                      step="0.01"
+                      value={form.cost}
+                      onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                      placeholder="100.00"
+                      className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
+                    />
+                  </div>
                   <div className="flex items-center justify-between p-3 bg-[#1e3a78] rounded-lg border border-[#2a4375]">
                     <div className="text-blue-200 text-sm">💱 Exchange Rate</div>
                     <div className="text-right">
@@ -1105,7 +1225,6 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-
                   <div>
                     <Label>Supplier</Label>
                     <Select
@@ -1140,56 +1259,55 @@ const groupTools = (tools: Tool[]): GroupedTool[] => {
             )}
           </div>
 
-       <DialogFooter>
-  <div className="flex gap-2">
-    {modalStep !== "select-category" && (
-      <Button
-        variant="outline"
-        onClick={() => {
-          if (modalStep === "form") {
-            if ((selectedCategoryCard === "Receiver" || form.category === "Receiver") && selectedCategoryCard) {
-              setModalStep(selectedCategoryCard === "Receiver" ? "select-equipment-type" : "select-category"); // Changed from select-receiver-type
-            } else {
-              setModalStep("select-category");
-              setSelectedCategoryCard(null);
-            }
-          } else if (modalStep === "select-equipment-type") { // Changed from select-receiver-type
-            setModalStep("select-category");
-            setSelectedEquipmentType(null); // Changed from selectedReceiverType
-          }
-        }}
-      >
-        ← Back
-      </Button>
-    )}
+          <DialogFooter>
+            <div className="flex gap-2">
+              {modalStep !== "select-category" && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    if (modalStep === "form") {
+                      if ((selectedCategoryCard === "Receiver" || form.category === "Receiver") && selectedCategoryCard) {
+                        setModalStep(selectedCategoryCard === "Receiver" ? "select-equipment-type" : "select-category");
+                      } else {
+                        setModalStep("select-category");
+                        setSelectedCategoryCard(null);
+                      }
+                    } else if (modalStep === "select-equipment-type") {
+                      setModalStep("select-category");
+                      setSelectedEquipmentType(null);
+                    }
+                  }}
+                >
+                  ← Back
+                </Button>
+              )}
 
-    {/* Only show Save/Add button on the form step */}
-    {modalStep === "form" && (
-      <Button
-        onClick={handleSaveTool}
-        className="bg-blue-600 hover:bg-blue-700"
-      >
-        {isEditMode ? "Save Changes" : "Add Item"}
-      </Button>
-    )}
+              {/* Only show Save/Add button on form step */}
+              {modalStep === "form" && (
+                <Button
+                  onClick={handleSaveTool}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  {isEditMode ? "Save Changes" : "Add Item"}
+                </Button>
+              )}
 
-    <Button
-      onClick={() => {
-        setOpen(false);
-        resetForm();
-        setIsEditMode(false);
-        setEditingToolId(null);
-        setSelectedCategoryCard(null);
-        setSelectedEquipmentType(null); // Changed from selectedReceiverType
-        setModalStep("select-category");
-      }}
-      variant="outline"
-    >
-      Cancel
-    </Button>
-  </div>
-</DialogFooter>
-           
+              <Button
+                onClick={() => {
+                  setOpen(false);
+                  resetForm();
+                  setIsEditMode(false);
+                  setEditingToolId(null);
+                  setSelectedCategoryCard(null);
+                  setSelectedEquipmentType(null);
+                  setModalStep("select-category");
+                }}
+                variant="outline"
+              >
+                Cancel
+              </Button>
+            </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </DashboardLayout>

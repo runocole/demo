@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, Search, X } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -63,6 +63,11 @@ export default function SalesPage() {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Search states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Customer[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState(false);
 
   const token = localStorage.getItem("access");
 
@@ -109,6 +114,48 @@ export default function SalesPage() {
     };
     fetchAll();
   }, []);
+
+  // ✅ Search customers
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    
+    if (query.trim() === "") {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    const filtered = customers.filter(customer =>
+      customer.name.toLowerCase().includes(query.toLowerCase()) ||
+      customer.phone.includes(query) ||
+      customer.email.toLowerCase().includes(query.toLowerCase()) ||
+      customer.state.toLowerCase().includes(query.toLowerCase())
+    );
+    
+    setSearchResults(filtered);
+    setShowSearchResults(true);
+  };
+
+  // ✅ Select customer from search results
+  const handleSelectCustomer = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setNewSale(prev => ({
+      ...prev,
+      name: customer.name,
+      phone: customer.phone,
+      state: customer.state
+    }));
+    setSearchQuery("");
+    setShowSearchResults(false);
+    setOpen(true);
+  };
+
+  // ✅ Clear search
+  const clearSearch = () => {
+    setSearchQuery("");
+    setSearchResults([]);
+    setShowSearchResults(false);
+  };
 
   const calculateStatus = (sale: Partial<Sale>): string => {
     if (!sale.date_sold) return "Pending";
@@ -229,6 +276,108 @@ export default function SalesPage() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Customer Search Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-gray-900 dark:text-white">
+              Find Customer for New Sale
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative">
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    type="text"
+                    placeholder="Search customers by name, phone, email, or state..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-10 pr-10 text-gray-900 bg-white border-gray-300 focus:border-blue-500"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={clearSearch}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <Button
+                  onClick={() => setOpen(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Sale Manually
+                </Button>
+              </div>
+
+              {/* Search Results Dropdown */}
+              {showSearchResults && searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
+                  {searchResults.map((customer) => (
+                    <div
+                      key={customer.id}
+                      className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      onClick={() => handleSelectCustomer(customer)}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="font-medium text-gray-900">{customer.name}</p>
+                          <p className="text-sm text-gray-600">{customer.phone}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-gray-600">{customer.email}</p>
+                          <p className="text-sm text-gray-500">{customer.state}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* No Results Message */}
+              {showSearchResults && searchQuery && searchResults.length === 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1 p-4">
+                  <p className="text-gray-500 text-center">No customers found matching your search.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Selected Customer Info */}
+            {selectedCustomer && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="font-semibold text-blue-800">Selected Customer</h3>
+                    <p className="text-sm text-gray-700">
+                      {selectedCustomer.name} • {selectedCustomer.phone} • {selectedCustomer.email} • {selectedCustomer.state}
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedCustomer(null);
+                      setNewSale(prev => ({
+                        ...prev,
+                        name: "",
+                        phone: "",
+                        state: ""
+                      }));
+                    }}
+                    className="text-red-600 border-red-200 hover:bg-red-50"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Clear
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
             My Sales Records
@@ -241,65 +390,103 @@ export default function SalesPage() {
               <FileText className="w-4 h-4 mr-2" />
               Export PDF
             </Button>
+          </div>
+        </div>
 
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-600 hover:bg-green-700 text-white">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Sale
-                </Button>
-              </DialogTrigger>
+        {/* Add Sale Dialog */}
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogContent className="max-w-2xl bg-white text-gray-900">
+            <DialogHeader>
+              <DialogTitle className="text-gray-900">Add New Sale</DialogTitle>
+            </DialogHeader>
 
-              <DialogContent className="max-w-2xl bg-white text-gray-900">
-                <DialogHeader>
-                  <DialogTitle className="text-gray-900">Add New Sale</DialogTitle>
-                </DialogHeader>
-
-                {/* Customer Information (Auto-filled from customer page) */}
-                {selectedCustomer && (
-                  <div className="bg-blue-50 p-4 rounded-md mb-4 border border-blue-200">
-                    <h3 className="font-semibold text-blue-800 mb-2">Customer Information</h3>
-                    <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
-                      <div>
-                        <span className="font-medium">Name:</span> {selectedCustomer.name}
-                      </div>
-                      <div>
-                        <span className="font-medium">Email:</span> {selectedCustomer.email}
-                      </div>
-                      <div>
-                        <span className="font-medium">Phone:</span> {selectedCustomer.phone}
-                      </div>
-                      <div>
-                        <span className="font-medium">State:</span> {selectedCustomer.state}
-                      </div>
-                    </div>
+            {/* Customer Information */}
+            {selectedCustomer ? (
+              <div className="bg-blue-50 p-4 rounded-md mb-4 border border-blue-200">
+                <h3 className="font-semibold text-blue-800 mb-2">Customer Information</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+                  <div>
+                    <span className="font-medium">Name:</span> {selectedCustomer.name}
                   </div>
-                )}
-
-                {/* Tool Selection */}
-                <div className="grid grid-cols-2 gap-4 py-3">
-                  <div className="col-span-2">
-                    <Label className="text-gray-700">Select Tool</Label>
-                    <select
-                      className="border rounded-md p-2 w-full bg-white text-gray-900 border-gray-300"
-                      value={newSale.tool_id || ""}
-                      onChange={(e) =>
-                        setNewSale((prev) => ({
-                          ...prev,
-                          tool_id: Number(e.target.value),
-                        }))
-                      }
-                    >
-                      <option value="">-- Select Tool --</option>
-                      {tools.map((tool) => (
-                        <option key={tool.id} value={tool.id}>
-                          {tool.name} ({tool.category})
-                        </option>
-                      ))}
-                    </select>
+                  <div>
+                    <span className="font-medium">Email:</span> {selectedCustomer.email}
                   </div>
+                  <div>
+                    <span className="font-medium">Phone:</span> {selectedCustomer.phone}
+                  </div>
+                  <div>
+                    <span className="font-medium">State:</span> {selectedCustomer.state}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-yellow-50 p-4 rounded-md mb-4 border border-yellow-200">
+                <h3 className="font-semibold text-yellow-800 mb-2">No Customer Selected</h3>
+                <p className="text-sm text-yellow-700">
+                  Please search and select a customer above, or fill in the details manually below.
+                </p>
+              </div>
+            )}
 
-                  {/* Auto-filled fields */}
+            {/* Tool Selection and Form */}
+            <div className="grid grid-cols-2 gap-4 py-3">
+              <div className="col-span-2">
+                <Label className="text-gray-700">Select Tool</Label>
+                <select
+                  className="border rounded-md p-2 w-full bg-white text-gray-900 border-gray-300"
+                  value={newSale.tool_id || ""}
+                  onChange={(e) =>
+                    setNewSale((prev) => ({
+                      ...prev,
+                      tool_id: Number(e.target.value),
+                    }))
+                  }
+                >
+                  <option value="">-- Select Tool --</option>
+                  {tools.map((tool) => (
+                    <option key={tool.id} value={tool.id}>
+                      {tool.name} ({tool.category})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Customer Details - Editable if no customer selected */}
+              {!selectedCustomer && (
+                <>
+                  <div>
+                    <Label className="text-gray-700">Client Name</Label>
+                    <Input 
+                      value={newSale.name || ""} 
+                      onChange={(e) => setNewSale(prev => ({ ...prev, name: e.target.value }))}
+                      className="text-gray-900 bg-white"
+                      placeholder="Enter client name"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700">Phone</Label>
+                    <Input 
+                      value={newSale.phone || ""} 
+                      onChange={(e) => setNewSale(prev => ({ ...prev, phone: e.target.value }))}
+                      className="text-gray-900 bg-white"
+                      placeholder="Enter phone number"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-700">State</Label>
+                    <Input 
+                      value={newSale.state || ""} 
+                      onChange={(e) => setNewSale(prev => ({ ...prev, state: e.target.value }))}
+                      className="text-gray-900 bg-white"
+                      placeholder="Enter state"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* Read-only fields when customer is selected */}
+              {selectedCustomer && (
+                <>
                   <div>
                     <Label className="text-gray-700">Client Name</Label>
                     <Input 
@@ -324,71 +511,71 @@ export default function SalesPage() {
                       className="bg-gray-100 text-gray-900"
                     />
                   </div>
+                </>
+              )}
 
-                  {/* Editable fields */}
-                  {[
-                    ["equipment", "Equipment", "text"],
-                    ["cost_sold", "Cost Sold", "number"],
-                    ["payment_plan", "Payment Plan", "text"],
-                    ["expiry_date", "Expiry Date", "date"],
-                  ].map(([key, label, type]) => (
-                    <div key={key}>
-                      <Label htmlFor={key} className="text-gray-700">{label}</Label>
-                      <Input
-                        id={key}
-                        type={type}
-                        value={(newSale[key as keyof Sale] as string) || ""}
-                        onChange={(e) =>
-                          setNewSale((prev) => ({
-                            ...prev,
-                            [key]: e.target.value,
-                          }))
-                        }
-                        className="text-gray-900 bg-white"
-                      />
-                    </div>
-                  ))}
-
-                  {/* Status */}
-                  <div>
-                    <Label className="text-gray-700">Status</Label>
-                    <Input
-                      readOnly
-                      value={calculateStatus(newSale)}
-                      className="bg-gray-100 text-gray-900"
-                    />
-                  </div>
+              {/* Editable fields */}
+              {[
+                ["equipment", "Equipment", "text"],
+                ["cost_sold", "Cost Sold", "number"],
+                ["payment_plan", "Payment Plan", "text"],
+                ["expiry_date", "Expiry Date", "date"],
+              ].map(([key, label, type]) => (
+                <div key={key}>
+                  <Label htmlFor={key} className="text-gray-700">{label}</Label>
+                  <Input
+                    id={key}
+                    type={type}
+                    value={(newSale[key as keyof Sale] as string) || ""}
+                    onChange={(e) =>
+                      setNewSale((prev) => ({
+                        ...prev,
+                        [key]: e.target.value,
+                      }))
+                    }
+                    className="text-gray-900 bg-white"
+                  />
                 </div>
+              ))}
 
-                <DialogFooter className="gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => handleAction("cancel")}
-                    disabled={isSubmitting}
-                    className="text-gray-700"
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    onClick={() => handleAction("draft")}
-                    disabled={isSubmitting}
-                    className="bg-gray-500 hover:bg-gray-600 text-white"
-                  >
-                    {isSubmitting ? "Saving..." : "Save to Draft"}
-                  </Button>
-                  <Button
-                    onClick={() => handleAction("send")}
-                    disabled={isSubmitting}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    {isSubmitting ? "Saving..." : "Save & Send"}
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
+              {/* Status */}
+              <div>
+                <Label className="text-gray-700">Status</Label>
+                <Input
+                  readOnly
+                  value={calculateStatus(newSale)}
+                  className="bg-gray-100 text-gray-900"
+                />
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleAction("cancel")}
+                disabled={isSubmitting}
+                className="text-gray-700"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => handleAction("draft")}
+                disabled={isSubmitting}
+                className="bg-gray-500 hover:bg-gray-600 text-white"
+              >
+                {isSubmitting ? "Saving..." : "Save to Draft"}
+              </Button>
+              <Button
+                onClick={() => handleAction("send")}
+                disabled={isSubmitting}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isSubmitting ? "Saving..." : "Save & Send"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Sales Table */}
         <Card>

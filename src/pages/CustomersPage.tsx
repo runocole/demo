@@ -5,7 +5,7 @@ import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
-import { registerCustomer, getCustomers, activateCustomer } from "../services/api";
+import { registerCustomer, getCustomers } from "../services/api";
 import {
   Table,
   TableBody,
@@ -155,19 +155,6 @@ const CustomersPage = () => {
   };
 
   // ------------------------------
-  // Activate Customer
-  // ------------------------------
-  const handleActivateCustomer = async (id: number) => {
-    try {
-      await activateCustomer(id);
-      toast({ title: "Activated", description: "Customer account activated." });
-      fetchCustomers();
-    } catch (error) {
-      toast({ title: "Error", description: "Activation failed." });
-    }
-  };
-
-  // ------------------------------
   // Filter Customers (Search)
   // ------------------------------
   const filteredCustomers = customers.filter((customer) => {
@@ -303,7 +290,6 @@ const CustomersPage = () => {
                   <TableHead>Contact</TableHead>
                   <TableHead>State</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
 
@@ -339,16 +325,7 @@ const CustomersPage = () => {
                         )}
                       </TableCell>
 
-                      <TableCell className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleActivateCustomer(Number(customer.id))}
-                          disabled={customer.is_activated}
-                        >
-                          {customer.is_activated ? "Activated" : "Inactive"}
-                        </Button>
-                      </TableCell>
+                      
                     </TableRow>
                   ))
                 ) : (

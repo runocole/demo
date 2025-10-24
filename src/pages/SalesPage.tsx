@@ -279,7 +279,7 @@ export default function SalesPage() {
         {/* Customer Search Section */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white">
+            <CardTitle className="text-white dark:text-white">
               Find Customer for New Sale
             </CardTitle>
           </CardHeader>
@@ -293,7 +293,7 @@ export default function SalesPage() {
                     placeholder="Search customers by name, phone, email, or state..."
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10 pr-10 text-gray-900 bg-white border-gray-300 focus:border-blue-500"
+                    className="pl-10 pr-10 text-white bg-slate-900 border-gray-300 focus:border-blue-500"
                   />
                   {searchQuery && (
                     <button
@@ -315,21 +315,21 @@ export default function SalesPage() {
 
               {/* Search Results Dropdown */}
               {showSearchResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 bg-slate-900 border border-gray-200 rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
                   {searchResults.map((customer) => (
                     <div
                       key={customer.id}
-                      className="p-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      className="p-3 hover:bg-blue-950 cursor-pointer border-b border-gray-100 last:border-b-0"
                       onClick={() => handleSelectCustomer(customer)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
-                          <p className="font-medium text-gray-900">{customer.name}</p>
-                          <p className="text-sm text-gray-600">{customer.phone}</p>
+                          <p className="font-medium text-white">{customer.name}</p>
+                          <p className="text-sm text-white">{customer.phone}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-gray-600">{customer.email}</p>
-                          <p className="text-sm text-gray-500">{customer.state}</p>
+                          <p className="text-sm text-white">{customer.email}</p>
+                          <p className="text-sm text-white">{customer.state}</p>
                         </div>
                       </div>
                     </div>
@@ -339,8 +339,8 @@ export default function SalesPage() {
 
               {/* No Results Message */}
               {showSearchResults && searchQuery && searchResults.length === 0 && (
-                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-10 mt-1 p-4">
-                  <p className="text-gray-500 text-center">No customers found matching your search.</p>
+                <div className="absolute top-full left-0 right-0 bg-slate-900 border border-gray-200 rounded-md shadow-lg z-10 mt-1 p-4">
+                  <p className="text-white text-center">No customers found matching your search.</p>
                 </div>
               )}
             </div>
@@ -378,26 +378,21 @@ export default function SalesPage() {
           </CardContent>
         </Card>
 
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold text-gray-800 dark:text-white">
-            My Sales Records
-          </h1>
-          <div className="flex gap-3">
-            <Button
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={exportPDF}
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              Export PDF
-            </Button>
-          </div>
+        <div className="flex justify-end gap-3">
+          <Button
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={exportPDF}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Export PDF
+          </Button>
         </div>
-
+          
         {/* Add Sale Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl bg-white text-gray-900">
+          <DialogContent className="max-w-2xl bg-blue-950 text-gray-900">
             <DialogHeader>
-              <DialogTitle className="text-gray-900">Add New Sale</DialogTitle>
+              <DialogTitle className="text-white">Add New Sale</DialogTitle>
             </DialogHeader>
 
             {/* Customer Information */}
@@ -433,7 +428,7 @@ export default function SalesPage() {
               <div className="col-span-2">
                 <Label className="text-gray-700">Select Tool</Label>
                 <select
-                  className="border rounded-md p-2 w-full bg-white text-gray-900 border-gray-300"
+                  className="border rounded-md p-2 w-full bg-blue-950 text-white border-gray-300"
                   value={newSale.tool_id || ""}
                   onChange={(e) =>
                     setNewSale((prev) => ({
@@ -455,29 +450,29 @@ export default function SalesPage() {
               {!selectedCustomer && (
                 <>
                   <div>
-                    <Label className="text-gray-700">Client Name</Label>
+                    <Label className="text-white">Client Name</Label>
                     <Input 
                       value={newSale.name || ""} 
                       onChange={(e) => setNewSale(prev => ({ ...prev, name: e.target.value }))}
-                      className="text-gray-900 bg-white"
+                      className="text-white bg-blue-950"
                       placeholder="Enter client name"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700">Phone</Label>
+                    <Label className="text-white">Phone</Label>
                     <Input 
                       value={newSale.phone || ""} 
                       onChange={(e) => setNewSale(prev => ({ ...prev, phone: e.target.value }))}
-                      className="text-gray-900 bg-white"
+                      className="text-white bg-blue-950"
                       placeholder="Enter phone number"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700">State</Label>
+                    <Label className="text-white">State</Label>
                     <Input 
                       value={newSale.state || ""} 
                       onChange={(e) => setNewSale(prev => ({ ...prev, state: e.target.value }))}
-                      className="text-gray-900 bg-white"
+                      className="text-white bg-blue-950"
                       placeholder="Enter state"
                     />
                   </div>
@@ -488,27 +483,27 @@ export default function SalesPage() {
               {selectedCustomer && (
                 <>
                   <div>
-                    <Label className="text-gray-700">Client Name</Label>
+                    <Label className="text-white">Client Name</Label>
                     <Input 
                       value={newSale.name || ""} 
                       readOnly 
-                      className="bg-gray-100 text-gray-900"
+                      className="text-white bg-blue-950"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700">Phone</Label>
+                    <Label className="text-white">Phone</Label>
                     <Input 
                       value={newSale.phone || ""} 
                       readOnly 
-                      className="bg-gray-100 text-gray-900"
+                      className="text-white bg-blue-950"
                     />
                   </div>
                   <div>
-                    <Label className="text-gray-700">State</Label>
+                    <Label className="text-white">State</Label>
                     <Input 
                       value={newSale.state || ""} 
                       readOnly 
-                      className="bg-gray-100 text-gray-900"
+                      className="text-white bg-blue-950"
                     />
                   </div>
                 </>
@@ -522,7 +517,7 @@ export default function SalesPage() {
                 ["expiry_date", "Expiry Date", "date"],
               ].map(([key, label, type]) => (
                 <div key={key}>
-                  <Label htmlFor={key} className="text-gray-700">{label}</Label>
+                  <Label htmlFor={key} className="text-white">{label}</Label>
                   <Input
                     id={key}
                     type={type}
@@ -533,14 +528,14 @@ export default function SalesPage() {
                         [key]: e.target.value,
                       }))
                     }
-                    className="text-gray-900 bg-white"
+                    className="text-white bg-blue-950"
                   />
                 </div>
               ))}
 
               {/* Status */}
               <div>
-                <Label className="text-gray-700">Status</Label>
+                <Label className="text-white">Status</Label>
                 <Input
                   readOnly
                   value={calculateStatus(newSale)}
@@ -580,7 +575,7 @@ export default function SalesPage() {
         {/* Sales Table */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-gray-900 dark:text-white">Sales Overview</CardTitle>
+            <CardTitle className="text-white dark:text-white">Sales Overview</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
@@ -589,7 +584,7 @@ export default function SalesPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="text-left border-b bg-gray-50">
+                    <tr className="text-left border-b bg-slate-900">
                       {[
                         "Client",
                         "Phone",
@@ -602,7 +597,7 @@ export default function SalesPage() {
                         "Expiry",
                         "Status",
                       ].map((col) => (
-                        <th key={col} className="p-2 text-gray-700 font-medium">
+                        <th key={col} className="p-2 text-white font-medium">
                           {col}
                         </th>
                       ))}

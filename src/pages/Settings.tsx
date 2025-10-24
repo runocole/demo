@@ -43,7 +43,11 @@ import {
   Drone,
   Waves,
   Scan,
-  Box
+  Box,
+  FileText,
+  Calendar,
+  ChevronDown,
+  ChevronUp
 } from "lucide-react";
 import { 
   getEquipmentTypes, 
@@ -65,6 +69,7 @@ interface EquipmentType {
   description?: string;
   created_at?: string;
   category: string;
+  invoice_number?: string;
 }
 
 interface Supplier {
@@ -73,7 +78,15 @@ interface Supplier {
   created_at?: string;
 }
 
-type DialogType = 'equipment' | 'supplier' | null; // Changed from 'receiver' to 'equipment'
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  created_at: string;
+  equipment_count: number;
+  total_value: number;
+}
+
+type DialogType = 'invoice' | 'equipment' | 'supplier' | null;
 
 /* ---------------- Constants ---------------- */
 const CATEGORY_OPTIONS = [
@@ -99,16 +112,20 @@ const CATEGORY_ICONS = {
 };
 
 const Settings: React.FC = () => {
-  const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]); // Changed from receiverTypes
+  const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogType, setDialogType] = useState<DialogType>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [selectedInvoice, setSelectedInvoice] = useState<string>("");
+  const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set());
 
   // Form state for equipment types
-  const [equipmentForm, setEquipmentForm] = useState({ // Changed from receiverForm
+  const [equipmentForm, setEquipmentForm] = useState({
     name: "",
     default_cost: "",
     category: "Receiver",
@@ -124,13 +141,23 @@ const Settings: React.FC = () => {
     ? equipmentTypes 
     : equipmentTypes.filter(type => type.category === categoryFilter);
 
+  // Group equipment by invoice
+  const equipmentByInvoice = equipmentTypes.reduce((acc, equipment) => {
+    const invoiceNum = equipment.invoice_number || "No Invoice";
+    if (!acc[invoiceNum]) {
+      acc[invoiceNum] = [];
+    }
+    acc[invoiceNum].push(equipment);
+    return acc;
+  }, {} as Record<string, EquipmentType[]>);
+
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
         const [equipmentData, supplierData] = await Promise.all([
-          getEquipmentTypes(), // Changed from getReceiverTypes
+          getEquipmentTypes(),
           getSuppliers()
         ]);
         
@@ -139,7 +166,8 @@ const Settings: React.FC = () => {
           ...item,
           default_cost: String(item.default_cost || ""),
           id: String(item.id),
-          category: item.category || "Receiver"
+          category: item.category || "Receiver",
+          invoice_number: item.invoice_number || ""
         }));
         
         const transformedSupplierData = (supplierData || []).map((item: any) => ({
@@ -147,8 +175,11 @@ const Settings: React.FC = () => {
           id: String(item.id)
         }));
         
-        setEquipmentTypes(transformedEquipmentData); // Changed from setReceiverTypes
+        setEquipmentTypes(transformedEquipmentData);
         setSuppliers(transformedSupplierData);
+        
+        // Generate invoices from equipment data
+        generateInvoices(transformedEquipmentData);
       } catch (err) {
         console.error("Error fetching settings data:", err);
         toast.error("Failed to load settings");
@@ -159,16 +190,41 @@ const Settings: React.FC = () => {
     fetchData();
   }, []);
 
-  const fetchEquipmentTypes = async () => { // Changed from fetchReceiverTypes
+  const generateInvoices = (equipmentData: EquipmentType[]) => {
+    const invoiceMap = new Map();
+    
+    equipmentData.forEach(equipment => {
+      if (equipment.invoice_number) {
+        if (!invoiceMap.has(equipment.invoice_number)) {
+          invoiceMap.set(equipment.invoice_number, {
+            id: equipment.invoice_number,
+            invoice_number: equipment.invoice_number,
+            created_at: equipment.created_at || new Date().toISOString(),
+            equipment_count: 0,
+            total_value: 0
+          });
+        }
+        const invoice = invoiceMap.get(equipment.invoice_number);
+        invoice.equipment_count += 1;
+        invoice.total_value += parseFloat(equipment.default_cost) || 0;
+      }
+    });
+
+    setInvoices(Array.from(invoiceMap.values()));
+  };
+
+  const fetchEquipmentTypes = async () => {
     try {
-      const data = await getEquipmentTypes(); // Changed from getReceiverTypes
+      const data = await getEquipmentTypes();
       const transformedData = (data || []).map((item: any) => ({
         ...item,
         default_cost: String(item.default_cost || ""),
         id: String(item.id),
-        category: item.category || "Receiver"
+        category: item.category || "Receiver",
+        invoice_number: item.invoice_number || ""
       }));
-      setEquipmentTypes(transformedData); // Changed from setReceiverTypes
+      setEquipmentTypes(transformedData);
+      generateInvoices(transformedData);
     } catch (err) {
       console.error("Error fetching equipment types:", err);
     }
@@ -188,19 +244,31 @@ const Settings: React.FC = () => {
   };
 
   const resetForms = () => {
-    setEquipmentForm({ name: "", default_cost: "", category: "Receiver" }); // Changed from receiverForm
+    setInvoiceNumber("");
+    setSelectedInvoice("");
+    setEquipmentForm({ name: "", default_cost: "", category: "Receiver" });
     setSupplierForm({ name: "" });
     setIsEditMode(false);
     setEditingId(null);
   };
 
-  // Equipment type dialogs
-  const openAddEquipmentDialog = () => { // Changed from openAddReceiverDialog
+  // Invoice management
+  const openAddInvoiceDialog = () => {
     resetForms();
-    setDialogType('equipment'); // Changed from 'receiver'
+    setDialogType('invoice');
   };
 
-  const openEditEquipmentDialog = (type: EquipmentType) => { // Changed from openEditReceiverDialog
+  const openAddEquipmentDialog = (invoiceNum?: string) => {
+    resetForms();
+    if (invoiceNum) {
+      setSelectedInvoice(invoiceNum);
+      setDialogType('equipment');
+    } else {
+      setDialogType('invoice');
+    }
+  };
+
+  const openEditEquipmentDialog = (type: EquipmentType) => {
     setEquipmentForm({
       name: type.name || "",
       default_cost: type.default_cost || "",
@@ -208,7 +276,7 @@ const Settings: React.FC = () => {
     });
     setIsEditMode(true);
     setEditingId(type.id);
-    setDialogType('equipment'); // Changed from 'receiver'
+    setDialogType('equipment');
   };
 
   // Supplier dialogs
@@ -226,7 +294,34 @@ const Settings: React.FC = () => {
     setDialogType('supplier');
   };
 
-  const handleSaveEquipment = async () => { // Changed from handleSaveReceiver
+  // Handle invoice creation
+  const handleCreateInvoice = () => {
+    if (!invoiceNumber.trim()) {
+      toast.error("Invoice number is required");
+      return;
+    }
+
+    // Check if invoice already exists
+    if (invoices.find(inv => inv.invoice_number === invoiceNumber.trim())) {
+      toast.error("Invoice number already exists");
+      return;
+    }
+
+    const newInvoice: Invoice = {
+      id: invoiceNumber.trim(),
+      invoice_number: invoiceNumber.trim(),
+      created_at: new Date().toISOString(),
+      equipment_count: 0,
+      total_value: 0
+    };
+
+    setInvoices(prev => [...prev, newInvoice]);
+    setSelectedInvoice(invoiceNumber.trim());
+    setDialogType('equipment');
+    toast.success("Invoice created successfully");
+  };
+
+  const handleSaveEquipment = async () => {
     if (!equipmentForm.name.trim()) {
       toast.error("Equipment name is required");
       return;
@@ -240,27 +335,47 @@ const Settings: React.FC = () => {
       return;
     }
 
+    // For new equipment, require an invoice
+    if (!isEditMode && !selectedInvoice) {
+      toast.error("Please select an invoice for this equipment");
+      return;
+    }
+
     // Convert to string for the API
     const payload = {
       name: equipmentForm.name.trim(),
       default_cost: equipmentForm.default_cost,
       category: equipmentForm.category,
+      invoice_number: isEditMode ? undefined : selectedInvoice
     };
 
     try {
       let result: EquipmentType;
       if (isEditMode && editingId) {
-        result = await updateEquipmentType(editingId, payload); // Changed from updateReceiverType
+        result = await updateEquipmentType(editingId, payload);
         // Update local state
         setEquipmentTypes(prev => prev.map(item => 
           item.id === editingId ? { ...result, default_cost: String(result.default_cost || "") } : item
         ));
         toast.success("Equipment type updated successfully");
       } else {
-        result = await createEquipmentType(payload); // Changed from createReceiverType
+        result = await createEquipmentType(payload);
         // Add to local state
-        setEquipmentTypes(prev => [...prev, { ...result, default_cost: String(result.default_cost || "") }]);
-        toast.success("Equipment type created successfully");
+        const newEquipment = { ...result, default_cost: String(result.default_cost || ""), invoice_number: selectedInvoice };
+        setEquipmentTypes(prev => [...prev, newEquipment]);
+        
+        // Update invoice stats
+        setInvoices(prev => prev.map(inv => 
+          inv.invoice_number === selectedInvoice 
+            ? {
+                ...inv,
+                equipment_count: inv.equipment_count + 1,
+                total_value: inv.total_value + (parseFloat(equipmentForm.default_cost) || 0)
+              }
+            : inv
+        ));
+        
+        toast.success(`Equipment type created successfully for invoice ${selectedInvoice}`);
       }
       setDialogType(null);
       resetForms();
@@ -303,12 +418,13 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleDeleteEquipment = async (id: string) => { // Changed from handleDeleteReceiver
+  const handleDeleteEquipment = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this equipment type?")) return;
     try {
-      await deleteEquipmentType(id); // Changed from deleteReceiverType
+      const equipmentToDelete = equipmentTypes.find(eq => eq.id === id);
+      await deleteEquipmentType(id);
       toast.success("Equipment type deleted successfully");
-      await fetchEquipmentTypes(); // Changed from fetchReceiverTypes
+      await fetchEquipmentTypes();
     } catch (err) {
       console.error("Error deleting equipment type:", err);
       toast.error("Failed to delete equipment type");
@@ -327,11 +443,23 @@ const Settings: React.FC = () => {
     }
   };
 
+  const toggleInvoiceExpansion = (invoiceNumber: string) => {
+    setExpandedInvoices(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(invoiceNumber)) {
+        newSet.delete(invoiceNumber);
+      } else {
+        newSet.add(invoiceNumber);
+      }
+      return newSet;
+    });
+  };
+
   // Get category counts for the cards
   const getCategoryCounts = () => {
     const counts: { [key: string]: number } = {};
     CATEGORY_OPTIONS.forEach(category => {
-      counts[category] = equipmentTypes.filter(type => type.category === category).length; // Changed from receiverTypes
+      counts[category] = equipmentTypes.filter(type => type.category === category).length;
     });
     return counts;
   };
@@ -364,12 +492,171 @@ const Settings: React.FC = () => {
               <div>
                 <h2 className="text-3xl font-bold tracking-tight">Admin Settings</h2>
                 <p className="text-gray-400">
-                  Configure system defaults, manage suppliers, and customize inventory options
+                  Configure system defaults, manage invoices, suppliers, and inventory options
                 </p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Invoice Management */}
+        <Card className="border-[#1e3a78]/80 bg-gradient-to-br from-[#0f1f3d] to-[#162a52]">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-xl">
+                  <FileText className="h-5 w-5 text-blue-400" />
+                  Invoice Management
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  Manage invoices and add equipment to existing invoices
+                </CardDescription>
+              </div>
+              <Button onClick={openAddInvoiceDialog} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg">
+                <Plus className="h-4 w-4" />
+                New Invoice
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {invoices.length === 0 ? (
+              <div className="text-center py-12 space-y-3 bg-[#0a1628]/50 rounded-lg border border-[#1e3a78]/30">
+                <div className="mx-auto w-16 h-16 bg-blue-950/50 rounded-full flex items-center justify-center">
+                  <FileText className="h-8 w-8 text-blue-400" />
+                </div>
+                <p className="text-gray-400 font-medium">No invoices created</p>
+                <p className="text-sm text-gray-500">
+                  Create your first invoice to start adding equipment
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {invoices.map((invoice) => {
+                  const isExpanded = expandedInvoices.has(invoice.invoice_number);
+                  const invoiceEquipment = equipmentByInvoice[invoice.invoice_number] || [];
+                  
+                  return (
+                    <Card key={invoice.id} className="bg-[#0a1628]/40 border-[#1e3a78]/40">
+                      <CardContent className="p-0">
+                        {/* Invoice Header */}
+                        <div 
+                          className="p-4 hover:bg-[#162a52]/30 transition-colors cursor-pointer"
+                          onClick={() => toggleInvoiceExpansion(invoice.invoice_number)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                              <div className="p-2 bg-blue-600/20 rounded-lg">
+                                <FileText className="h-5 w-5 text-blue-400" />
+                              </div>
+                              <div>
+                                <h3 className="font-semibold text-white text-lg">
+                                  {invoice.invoice_number}
+                                </h3>
+                                <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(invoice.created_at).toLocaleDateString()}
+                                  </span>
+                                  <span>{invoice.equipment_count} items</span>
+                                  <span className="text-green-400 font-semibold">
+                                    ${invoice.total_value.toLocaleString()}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <Button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openAddEquipmentDialog(invoice.invoice_number);
+                                }}
+                                className="gap-2 bg-green-600 hover:bg-green-700"
+                                size="sm"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Add Equipment
+                              </Button>
+                              {isExpanded ? (
+                                <ChevronUp className="h-5 w-5 text-blue-400" />
+                              ) : (
+                                <ChevronDown className="h-5 w-5 text-blue-400" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expandable Equipment List */}
+                        {isExpanded && (
+                          <div className="border-t border-[#1e3a78]/50 bg-[#0a1628]/60">
+                            {invoiceEquipment.length === 0 ? (
+                              <div className="p-6 text-center text-gray-400">
+                                No equipment added to this invoice yet
+                              </div>
+                            ) : (
+                              <Table>
+                                <TableHeader>
+                                  <TableRow className="bg-[#162a52]/40 border-[#1e3a78]/50">
+                                    <TableHead className="text-blue-300 font-semibold">Category</TableHead>
+                                    <TableHead className="text-blue-300 font-semibold">Equipment Type</TableHead>
+                                    <TableHead className="text-blue-300 font-semibold">Cost (USD)</TableHead>
+                                    <TableHead className="text-blue-300 font-semibold text-right">Actions</TableHead>
+                                  </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                  {invoiceEquipment.map((equipment) => {
+                                    const CategoryIcon = CATEGORY_ICONS[equipment.category as keyof typeof CATEGORY_ICONS] || Box;
+                                    return (
+                                      <TableRow key={equipment.id} className="border-[#1e3a78]/30">
+                                        <TableCell>
+                                          <div className="flex items-center gap-2">
+                                            <CategoryIcon className="h-4 w-4 text-blue-400" />
+                                            <span className="text-white">{equipment.category}</span>
+                                          </div>
+                                        </TableCell>
+                                        <TableCell className="font-medium text-white">
+                                          {equipment.name}
+                                        </TableCell>
+                                        <TableCell>
+                                          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-950/40 text-green-400 rounded-md font-semibold border border-green-800/30">
+                                            ${equipment.default_cost}
+                                          </span>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                          <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => openEditEquipmentDialog(equipment)}
+                                              className="h-8 w-8 text-blue-400 hover:bg-blue-950/50 hover:text-blue-300"
+                                            >
+                                              <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                              variant="ghost"
+                                              size="icon"
+                                              onClick={() => handleDeleteEquipment(equipment.id)}
+                                              className="h-8 w-8 text-red-400 hover:bg-red-950/50 hover:text-red-300"
+                                            >
+                                              <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                          </div>
+                                        </TableCell>
+                                      </TableRow>
+                                    );
+                                  })}
+                                </TableBody>
+                              </Table>
+                            )}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Equipment Categories Grid */}
         <Card className="border-[#1e3a78]/80 bg-gradient-to-br from-[#0f1f3d] to-[#162a52]">
@@ -381,10 +668,10 @@ const Settings: React.FC = () => {
                   Equipment Categories
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Manage equipment types across different categories with default pricing
+                  Overview of equipment types across different categories
                 </CardDescription>
               </div>
-              <Button onClick={openAddEquipmentDialog} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg">
+              <Button onClick={() => openAddEquipmentDialog()} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg">
                 <Plus className="h-4 w-4" />
                 Add Equipment Type
               </Button>
@@ -398,125 +685,22 @@ const Settings: React.FC = () => {
                 return (
                   <Card 
                     key={category} 
-                    className={`bg-[#0a1628]/40 border-[#1e3a78]/40 hover:border-[#1e3a78]/70 transition-all hover:shadow-lg cursor-pointer ${
-                      categoryFilter === category ? 'ring-2 ring-blue-500 border-blue-500' : ''
-                    }`}
-                    onClick={() => setCategoryFilter(categoryFilter === category ? 'all' : category)}
+                    className="bg-[#0a1628]/40 border-[#1e3a78]/40 hover:border-[#1e3a78]/70 transition-all hover:shadow-lg"
                   >
                     <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-600/20 rounded-lg">
-                            <IconComponent className="h-5 w-5 text-blue-400" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-white text-sm">{category}</h3>
-                            <p className="text-xs text-gray-400">{count} items</p>
-                          </div>
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600/20 rounded-lg">
+                          <IconComponent className="h-5 w-5 text-blue-400" />
                         </div>
-                        {categoryFilter === category && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        )}
+                        <div>
+                          <h3 className="font-semibold text-white text-sm">{category}</h3>
+                          <p className="text-xs text-gray-400">{count} items</p>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 );
               })}
-            </div>
-
-            {/* Equipment Types Table */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  {categoryFilter === 'all' ? 'All Equipment Types' : `${categoryFilter} Equipment Types`}
-                </h3>
-                <div className="flex gap-2 items-center">
-                  <Select value={categoryFilter} onValueChange={(val) => setCategoryFilter(val)}>
-                    <SelectTrigger className="w-44 bg-[#0a1628] border-[#1e3a78] text-white">
-                      <SelectValue placeholder="Filter by category" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-[#0f1f3d] text-white border-[#1e3a78] rounded-lg">
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {CATEGORY_OPTIONS.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {filteredEquipmentTypes.length === 0 ? (
-                <div className="text-center py-12 space-y-3 bg-[#0a1628]/50 rounded-lg border border-[#1e3a78]/30">
-                  <div className="mx-auto w-16 h-16 bg-blue-950/50 rounded-full flex items-center justify-center">
-                    <Package className="h-8 w-8 text-blue-400" />
-                  </div>
-                  <p className="text-gray-400 font-medium">No equipment types configured</p>
-                  <p className="text-sm text-gray-500">
-                    {categoryFilter === 'all' 
-                      ? "Add equipment types to enable autofill when adding inventory items"
-                      : `No ${categoryFilter.toLowerCase()} equipment types found`}
-                  </p>
-                </div>
-              ) : (
-                <div className="rounded-lg border border-[#1e3a78]/50 overflow-hidden bg-[#0a1628]/30">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-[#162a52]/40 hover:bg-[#162a52]/60 border-[#1e3a78]/50">
-                        <TableHead className="text-blue-300 font-semibold">Category</TableHead>
-                        <TableHead className="text-blue-300 font-semibold">Equipment Type</TableHead>
-                        <TableHead className="text-blue-300 font-semibold">Default Cost (USD)</TableHead>
-                        <TableHead className="text-blue-300 font-semibold text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredEquipmentTypes.map((type) => {
-                        const CategoryIcon = CATEGORY_ICONS[type.category as keyof typeof CATEGORY_ICONS] || Box;
-                        return (
-                          <TableRow 
-                            key={type.id} 
-                            className="hover:bg-[#162a52]/30 transition-colors border-[#1e3a78]/30"
-                          >
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                <CategoryIcon className="h-4 w-4 text-blue-400" />
-                                <span className="text-white">{type.category}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-medium text-white">{type.name}</TableCell>
-                            <TableCell>
-                              <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-950/40 text-green-400 rounded-md font-semibold border border-green-800/30">
-                                ${type.default_cost}
-                              </span>
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditEquipmentDialog(type)}
-                                  className="h-8 w-8 text-blue-400 hover:bg-blue-950/50 hover:text-blue-300"
-                                >
-                                  <Edit2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteEquipment(type.id)}
-                                  className="h-8 w-8 text-red-400 hover:bg-red-950/50 hover:text-red-300"
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
             </div>
           </CardContent>
         </Card>
@@ -598,6 +782,10 @@ const Settings: React.FC = () => {
                 <h3 className="text-lg font-semibold text-blue-300">System Configuration</h3>
                 <div className="grid gap-3 text-sm text-gray-400">
                   <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-400" />
+                    <span>Create invoices to organize equipment by purchase orders</span>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Tags className="h-4 w-4 text-blue-400" />
                     <span>Equipment types autofill item names and costs during inventory entry</span>
                   </div>
@@ -605,16 +793,65 @@ const Settings: React.FC = () => {
                     <Building2 className="h-4 w-4 text-blue-400" />
                     <span>Supplier list appears in dropdown when adding new inventory items</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4 text-blue-400" />
-                    <span>All costs are stored in USD with real-time NGN conversion</span>
-                  </div>
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Invoice Creation Dialog */}
+      <Dialog open={dialogType === 'invoice'} onOpenChange={(open) => !open && setDialogType(null)}>
+        <DialogContent className="max-w-md bg-[#0f1f3d] border-[#1e3a78]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <FileText className="h-5 w-5 text-blue-400" />
+              Create New Invoice
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Create a new invoice to start adding equipment
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="invoice-number" className="text-sm font-medium text-gray-300">
+                Invoice Number <span className="text-red-400">*</span>
+              </Label>
+              <Input
+                id="invoice-number"
+                value={invoiceNumber}
+                onChange={(e) => setInvoiceNumber(e.target.value)}
+                placeholder="e.g. INV-2024-001, PO-12345"
+                className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
+              />
+              <p className="text-xs text-gray-400">
+                This invoice number will be used to group equipment items
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button
+                variant="outline"
+                onClick={() => setDialogType(null)}
+                className="flex-1 sm:flex-none border-gray-600 text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateInvoice}
+                className="flex-1 sm:flex-none gap-2 bg-blue-600 hover:bg-blue-700"
+                disabled={!invoiceNumber.trim()}
+              >
+                <Save className="h-4 w-4" />
+                Create Invoice
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Equipment Type Dialog */}
       <Dialog open={dialogType === 'equipment'} onOpenChange={(open) => !open && setDialogType(null)}>
@@ -639,6 +876,37 @@ const Settings: React.FC = () => {
                 : "Configure a new equipment type with default pricing"}
             </DialogDescription>
           </DialogHeader>
+
+          {!isEditMode && (
+            <div className="space-y-4">
+              <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-blue-300 mb-2">
+                  <FileText className="h-4 w-4" />
+                  <span className="font-medium">Invoice Selection</span>
+                </div>
+                <Select 
+                  value={selectedInvoice} 
+                  onValueChange={setSelectedInvoice}
+                >
+                  <SelectTrigger className="bg-[#162a52] border-[#2a4375] text-white">
+                    <SelectValue placeholder="Select an invoice" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0f1f3d] text-white border-[#1e3a78]">
+                    {invoices.map((invoice) => (
+                      <SelectItem key={invoice.id} value={invoice.invoice_number}>
+                        {invoice.invoice_number} ({invoice.equipment_count} items)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!selectedInvoice && (
+                  <p className="text-sm text-red-400 mt-2">
+                    Please select an invoice to add equipment to
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="space-y-5 py-4">
             <div className="space-y-2">
@@ -712,6 +980,7 @@ const Settings: React.FC = () => {
               <Button
                 onClick={handleSaveEquipment}
                 className="flex-1 sm:flex-none gap-2 bg-blue-600 hover:bg-blue-700"
+                disabled={!isEditMode && !selectedInvoice}
               >
                 <Save className="h-4 w-4" />
                 {isEditMode ? "Save Changes" : "Create Type"}

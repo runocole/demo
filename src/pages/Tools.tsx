@@ -3,7 +3,7 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
-import { Search, Plus, Trash2, Edit2, RefreshCw, Download, CheckCircle, X } from "lucide-react"; // Added CheckCircle and X
+import { Search, Plus, Trash2, Edit2, Download, CheckCircle, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +43,7 @@ interface Tool {
   supplier_name?: string;
   category?: string;
   invoice_number?: string;
+  expiry_date?: string;
   date_added?: string;
   serials?: string[];
   equipment_type?: string | null;
@@ -126,13 +127,6 @@ const Tools: React.FC = () => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
 
-  // Exchange rate
-  const [exchangeRate, setExchangeRate] = useState({
-    rate: 1560.75,
-    lastUpdated: new Date().toISOString(),
-    isLoading: false,
-  });
-
   // Toast state
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -148,6 +142,7 @@ const Tools: React.FC = () => {
     supplier: "",
     category: "",
     invoice_number: "",
+    expiry_date: "",
     serials: [],
     equipment_type_id: "",
     equipment_type: "",
@@ -237,6 +232,7 @@ const Tools: React.FC = () => {
             serials: serialsArr,
             equipment_type: t.equipment_type ?? t.equipment_type_name ?? "",
             equipment_type_id: t.equipment_type_id ?? "",
+            expiry_date: t.expiry_date || "",
           };
         });
         setTools(normalized);
@@ -248,28 +244,6 @@ const Tools: React.FC = () => {
     };
 
     fetchTools();
-  }, []);
-
-  // Fetch exchange rate
-  const fetchExchangeRate = async () => {
-    setExchangeRate((p) => ({ ...p, isLoading: true }));
-    try {
-      const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
-      const payload = await res.json();
-      const ngn = payload?.rates?.NGN;
-      if (ngn) {
-        setExchangeRate({ rate: ngn, lastUpdated: new Date().toISOString(), isLoading: false });
-      } else {
-        setExchangeRate((p) => ({ ...p, isLoading: false }));
-      }
-    } catch (err) {
-      console.error("Failed to fetch exchange rate:", err);
-      setExchangeRate((p) => ({ ...p, isLoading: false }));
-    }
-  };
-
-  useEffect(() => {
-    fetchExchangeRate();
   }, []);
 
   // Fetch equipment types
@@ -327,6 +301,7 @@ const Tools: React.FC = () => {
       supplier: "",
       category: "",
       invoice_number: "",
+      expiry_date: "",
       serials: [],
       equipment_type_id: "",
       equipment_type: "",
@@ -367,6 +342,7 @@ const Tools: React.FC = () => {
       supplier: tool.supplier || "",
       category: tool.category || "",
       invoice_number: tool.invoice_number || "",
+      expiry_date: tool.expiry_date || "",
       serials: extras.length ? extras : [],
       equipment_type_id: tool.equipment_type_id || "",
       equipment_type: tool.equipment_type || "",
@@ -390,13 +366,6 @@ const Tools: React.FC = () => {
 
     setModalStep("form");
     setOpen(true);
-  };
-
-  const calculateNairaEquivalent = (usdAmount: string): string => {
-    if (!usdAmount || isNaN(parseFloat(usdAmount))) return "₦0.00";
-    const usd = parseFloat(usdAmount);
-    const naira = usd * exchangeRate.rate;
-    return `₦${naira.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const getTimeAgo = (dateString: string): string => {
@@ -509,6 +478,7 @@ const Tools: React.FC = () => {
       supplier: form.supplier || "",
       category: finalCategory,
       invoice_number: form.invoice_number || "",
+      expiry_date: form.expiry_date || "",
       date_added: new Date().toISOString(),
     };
 
@@ -537,6 +507,7 @@ const Tools: React.FC = () => {
           serials: Array.isArray(updated.serials) ? updated.serials : payload.serials || [],
           equipment_type: updated.equipment_type ?? payload.equipment_type ?? "",
           equipment_type_id: updated.equipment_type_id ?? payload.equipment_type_id ?? "",
+          expiry_date: updated.expiry_date || form.expiry_date || "",
         };
         setTools((prev) => prev.map((t) => (t.id === editingToolId ? normalized : t)));
         
@@ -564,11 +535,13 @@ const Tools: React.FC = () => {
         const newStock = (existing.stock || 0) + parsedStock;
         const updatePayload: any = { stock: newStock };
         if (payload.serials) updatePayload.serials = payload.serials;
+        if (payload.expiry_date) updatePayload.expiry_date = payload.expiry_date;
         const updated = await updateTool(existing.id, updatePayload);
         const normalized = {
           ...updated,
           stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || newStock),
           serials: Array.isArray(updated.serials) ? updated.serials : updatePayload.serials || [],
+          expiry_date: updated.expiry_date || payload.expiry_date || "",
         };
         setTools((prev) => prev.map((t) => (t.id === existing.id ? normalized : t)));
         
@@ -584,6 +557,7 @@ const Tools: React.FC = () => {
           serials: Array.isArray(created.serials) ? created.serials : payload.serials || [],
           equipment_type: created.equipment_type ?? payload.equipment_type ?? "",
           equipment_type_id: created.equipment_type_id ?? payload.equipment_type_id ?? "",
+          expiry_date: created.expiry_date || payload.expiry_date || "",
         };
         setTools((prev) => [normalizedCreated, ...prev]);
         
@@ -858,13 +832,8 @@ const Tools: React.FC = () => {
                     </div>
 
                     <div className="text-right">
-                      <p className="text-xs text-gray-400">Cost (USD)</p>
+                      <p className="text-xs text-gray-400">Cost</p>
                       <p className="text-sm font-bold text-blue-400">${group.cost}</p>
-
-                      <p className="text-xs text-gray-400 mt-1">Cost (NGN)</p>
-                      <p className="text-sm font-bold text-green-400">
-                        {calculateNairaEquivalent(String(group.cost))}
-                      </p>
 
                       <p className="text-xs text-gray-400 mt-3">Total Stock</p>
                       <div
@@ -1171,60 +1140,24 @@ const Tools: React.FC = () => {
                   </div>
                 )}
 
-                {/* Foreign Exchange */}
-                <div className="space-y-4 p-4 bg-[#0f1f3d] rounded-lg border border-[#1b2d55]">
-                  <div className="space-y-2">
-                    <Label htmlFor="cost-usd" className="text-blue-200 flex items-center gap-2">
-                      <span>Cost in USD</span>
-                      <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">$</span>
-                    </Label>
-                    <Input
-                      id="cost-usd"
-                      type="number"
-                      step="0.01"
-                      value={form.cost}
-                      onChange={(e) => setForm({ ...form, cost: e.target.value })}
-                      placeholder="100.00"
-                      className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 bg-[#1e3a78] rounded-lg border border-[#2a4375]">
-                    <div className="text-blue-200 text-sm">💱 Exchange Rate</div>
-                    <div className="text-right">
-                      <div className="text-green-400 font-bold">
-                        1 USD = ₦{exchangeRate.rate.toLocaleString("en-NG", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
-                      <div className="text-blue-300 text-xs flex items-center gap-2">
-                        <span>Updated {getTimeAgo(exchangeRate.lastUpdated)}</span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={fetchExchangeRate}
-                          disabled={exchangeRate.isLoading}
-                          className="h-6 w-6 p-0 hover:bg-blue-600"
-                        >
-                          <RefreshCw className={`h-3 w-3 ${exchangeRate.isLoading ? "animate-spin" : ""}`} />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cost-naira" className="text-blue-200 flex items-center gap-2">
-                      <span>Equivalent in Naira</span>
-                      <span className="text-xs text-yellow-400 bg-yellow-900/30 px-2 py-1 rounded">₦</span>
-                    </Label>
-                    <Input
-                      id="cost-naira"
-                      type="text"
-                      value={calculateNairaEquivalent(form.cost)}
-                      readOnly
-                      className="bg-[#1e3a78] border-[#2a4375] text-yellow-400 font-bold text-lg cursor-not-allowed"
-                    />
-                  </div>
+                {/* Cost Field Only (Exchange Rate Section Removed) */}
+                <div className="space-y-2">
+                  <Label htmlFor="cost-usd" className="text-blue-200 flex items-center gap-2">
+                    <span>Cost in USD</span>
+                    <span className="text-xs text-green-400 bg-green-900/30 px-2 py-1 rounded">$</span>
+                  </Label>
+                  <Input
+                    id="cost-usd"
+                    type="number"
+                    step="0.01"
+                    value={form.cost}
+                    onChange={(e) => setForm({ ...form, cost: e.target.value })}
+                    placeholder="100.00"
+                    className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
+                  />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   <div>
                     <Label>Supplier</Label>
                     <Select
@@ -1252,8 +1185,26 @@ const Tools: React.FC = () => {
 
                   <div>
                     <Label>Invoice Number</Label>
-                    <Input value={form.invoice_number} onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} placeholder="INV-2025-001" />
+                    <Input 
+                      value={form.invoice_number} 
+                      onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} 
+                      placeholder="INV-2025-001" 
+                    />
                   </div>
+                </div>
+
+                {/* NEW: Expiry Date Field */}
+                <div>
+                  <Label>Expiry Date</Label>
+                  <Input
+                    type="date"
+                    value={form.expiry_date}
+                    onChange={(e) => setForm({ ...form, expiry_date: e.target.value })}
+                    className="bg-[#162a52] border-[#2a4375] text-white"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">
+                    Optional: Set the expiration date for this item (e.g., warranty, calibration expiry)
+                  </p>
                 </div>
               </>
             )}

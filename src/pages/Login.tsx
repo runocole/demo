@@ -5,13 +5,14 @@ import { Label } from "../components/ui/label";
 import { Card } from "../components/ui/card";
 import authHero from "@/assets/auth-hero.jpg";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 import logo from "../assets/image.png";
 
 const Login = () => {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -58,6 +59,10 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const togglePasswordVisibility = () => {
+    setShowPassword(!showPassword);
   };
 
   return (
@@ -125,15 +130,29 @@ const Login = () => {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-blue-200">Password</Label>
-                  <Input
-                    type="password"
-                    placeholder="••••••••"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                    disabled={isLoading}
-                    className="h-11 bg-[#162a52] border border-[#2a4375] text-white placeholder:text-blue-200 focus:ring-2 focus:ring-blue-500"
-                  />
+                  <div className="relative">
+                    <Input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      className="h-11 bg-[#162a52] border border-[#2a4375] text-white placeholder:text-blue-200 focus:ring-2 focus:ring-blue-500 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={togglePasswordVisibility}
+                      disabled={isLoading}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-blue-300 hover:text-blue-100 transition-colors disabled:opacity-50"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
 

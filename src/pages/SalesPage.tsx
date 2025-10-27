@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, FileText, Search, X } from "lucide-react";
+import { Plus, FileText, Search, X, Trash2 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -28,15 +28,22 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import axios from "axios";
 
+// New interfaces for multi-item sales
+interface SaleItem {
+  tool_id: string;
+  equipment: string;
+  cost: string;
+  category?: string;
+}
+
 interface Sale {
   id: number;
   customer_id?: number;
-  tool_id?: string;
   name: string;
   phone: string;
   state: string;
-  equipment: string;
-  cost_sold: string;
+  items: SaleItem[];
+  total_cost: string;
   date_sold: string;
   invoice_number?: string;
   payment_plan?: string;
@@ -50,7 +57,7 @@ interface Customer {
   phone: string;
   email: string;
   state: string;
-  user?: number; // User ID
+  user?: number;
 }
 
 interface Tool {
@@ -88,7 +95,6 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
-  const [newSale, setNewSale] = useState<Partial<Sale>>({});
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,9 +104,23 @@ export default function SalesPage() {
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
 
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  // Multi-item state
+  const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
+  const [currentItem, setCurrentItem] = useState<{
+    selectedCategory: string;
+    selectedTool: Tool | null;
+    cost: string;
+  }>({
+    selectedCategory: "",
+    selectedTool: null,
+    cost: ""
+  });
+
   const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
-  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [saleDetails, setSaleDetails] = useState({
+    payment_plan: "",
+    expiry_date: ""
+  });
 
   const token = localStorage.getItem("access");
 
@@ -126,13 +146,6 @@ export default function SalesPage() {
         if (storedCustomer) {
           const customerData = JSON.parse(storedCustomer);
           setSelectedCustomer(customerData);
-          setNewSale(prev => ({
-            ...prev,
-            name: customerData.name,
-            phone: customerData.phone,
-            state: customerData.state
-          }));
-          localStorage.removeItem('selectedCustomer');
           setOpen(true);
         }
       } catch (error) {
@@ -145,15 +158,18 @@ export default function SalesPage() {
   }, []);
 
   useEffect(() => {
-    if (selectedCategory) {
+    if (currentItem.selectedCategory) {
       const filtered = tools.filter(tool => 
-        tool.category?.toLowerCase() === selectedCategory.toLowerCase()
+        tool.category?.toLowerCase() === currentItem.selectedCategory.toLowerCase()
       );
       setFilteredTools(filtered);
     } else {
       setFilteredTools([]);
     }
-  }, [selectedCategory, tools]);
+  }, [currentItem.selectedCategory, tools]);
+
+  // Calculate total cost
+  const totalCost = saleItems.reduce((sum, item) => sum + parseFloat(item.cost || "0"), 0);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -177,12 +193,6 @@ export default function SalesPage() {
 
   const handleSelectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
-    setNewSale(prev => ({
-      ...prev,
-      name: customer.name,
-      phone: customer.phone,
-      state: customer.state
-    }));
     setSearchQuery("");
     setShowSearchResults(false);
     setOpen(true);
@@ -195,13 +205,11 @@ export default function SalesPage() {
   };
 
   const handleCategorySelect = (category: string) => {
-    setSelectedCategory(category);
-    setSelectedTool(null);
-    setNewSale(prev => ({
+    setCurrentItem(prev => ({
       ...prev,
-      tool_id: undefined,
-      equipment: "",
-      cost_sold: ""
+      selectedCategory: category,
+      selectedTool: null,
+      cost: ""
     }));
   };
 
@@ -209,121 +217,140 @@ export default function SalesPage() {
     const selected = tools.find(tool => tool.id === toolId);
     
     if (selected) {
-      setSelectedTool(selected);
-      setNewSale(prev => ({
+      setCurrentItem(prev => ({
         ...prev,
-        tool_id: selected.id,
-        equipment: selected.name,
+        selectedTool: selected,
+        cost: prev.cost || String(selected.cost || "") // Pre-fill with tool cost as suggestion
       }));
     }
   };
 
-  const clearToolSelection = () => {
-    setSelectedCategory("");
+  const addItemToSale = () => {
+    if (!currentItem.selectedTool || !currentItem.cost) {
+      alert("Please select equipment and enter a cost.");
+      return;
+    }
+
+    const newItem: SaleItem = {
+      tool_id: currentItem.selectedTool.id,
+      equipment: currentItem.selectedTool.name,
+      cost: currentItem.cost,
+      category: currentItem.selectedCategory
+    };
+
+    setSaleItems(prev => [...prev, newItem]);
+    
+    // Reset current item form
+    setCurrentItem({
+      selectedCategory: "",
+      selectedTool: null,
+      cost: ""
+    });
     setFilteredTools([]);
-    setSelectedTool(null);
-    setNewSale(prev => ({
-      ...prev,
-      tool_id: undefined,
-      equipment: "",
-      cost_sold: ""
-    }));
   };
 
-  const calculateStatus = (sale: Partial<Sale>): string => {
-    if (!sale.date_sold) return "Pending";
-    const today = new Date();
-    if (sale.expiry_date) {
-      const expiryDate = new Date(sale.expiry_date);
-      if (expiryDate < today) return "Expired";
-    }
-    if (sale.payment_plan && sale.payment_plan !== "Full Payment") {
-      return "Installment";
-    }
-    return "Completed";
+  const removeItemFromSale = (index: number) => {
+    setSaleItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const clearCurrentSelection = () => {
+    setCurrentItem({
+      selectedCategory: "",
+      selectedTool: null,
+      cost: ""
+    });
+    setFilteredTools([]);
   };
 
   const resetForm = () => {
-    setNewSale({});
+    setSaleItems([]);
+    setCurrentItem({
+      selectedCategory: "",
+      selectedTool: null,
+      cost: ""
+    });
+    setSaleDetails({
+      payment_plan: "",
+      expiry_date: ""
+    });
     setSelectedCustomer(null);
-    setSelectedCategory("");
-    setFilteredTools([]);
-    setSelectedTool(null);
     setOpen(false);
     setIsSubmitting(false);
   };
 
-  const sendEmail = async (email: string, name: string) => {
+  const sendEmail = async (email: string, name: string, items: SaleItem[], total: number, invoiceNumber?: string) => {
     try {
+      const itemList = items.map(item => `• ${item.equipment} - ₦${parseFloat(item.cost).toLocaleString()}`).join('\n');
+      
       await axios.post(`${API_URL}/send-sale-email/`, {
         to_email: email,
-        subject: "Your Payment Link",
-        message: `Hello ${name}, your payment link will be available soon.`,
+        subject: `Your Invoice ${invoiceNumber ? `- ${invoiceNumber}` : ''}`,
+        message: `Hello ${name},\n\nThank you for your purchase! Here's your invoice:\n\n${itemList}\n\nTotal: ₦${total.toLocaleString()}\n\nPayment link: [Paystack Link Here]\n\nBest regards,\nYour Company`,
       });
     } catch (error) {
       console.error("Error sending email:", error);
     }
   };
- const handleAction = async (action: "cancel" | "draft" | "send") => {
-  if (action === "cancel") return resetForm();
 
-  if (!selectedCustomer && (!newSale.name || !newSale.phone || !newSale.state)) {
-    alert("Please select a customer or fill in all customer details first.");
-    return;
-  }
+  const handleAction = async (action: "cancel" | "draft" | "send") => {
+    if (action === "cancel") return resetForm();
 
-  if (!newSale.tool_id) {
-    alert("Please select a tool.");
-    return;
-  }
+    if (!selectedCustomer) {
+      alert("Please select a customer first.");
+      return;
+    }
 
-  if (!newSale.equipment) {
-    alert("Please ensure equipment field is filled.");
-    return;
-  }
+    if (saleItems.length === 0) {
+      alert("Please add at least one item to the sale.");
+      return;
+    }
 
-  if (action === "draft" || action === "send") {
-    setIsSubmitting(true);
-    try {
-      const payload = {
-        // Don't send any customer fields since they're read-only in serializer
-        tool_id: newSale.tool_id,
-        name: newSale.name || selectedCustomer?.name,
-        phone: newSale.phone || selectedCustomer?.phone,
-        state: newSale.state || selectedCustomer?.state,
-        equipment: newSale.equipment || "",
-        cost_sold: newSale.cost_sold || "0",
-        payment_plan: newSale.payment_plan || "",
-        expiry_date: newSale.expiry_date || null,
-        date_sold: new Date().toISOString().split('T')[0],
-      };
+    if (action === "draft" || action === "send") {
+      setIsSubmitting(true);
+      try {
+        const payload = {
+          name: selectedCustomer.name,
+          phone: selectedCustomer.phone,
+          state: selectedCustomer.state,
+          items: saleItems,
+          total_cost: totalCost.toString(),
+          payment_plan: saleDetails.payment_plan || "",
+          expiry_date: saleDetails.expiry_date || null,
+          date_sold: new Date().toISOString().split('T')[0],
+        };
 
-      console.log("Sending payload:", payload);
+        console.log("Sending payload:", payload);
 
-      const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
-      setSales((prev) => [res.data, ...prev]);
+        const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
+        setSales((prev) => [res.data, ...prev]);
 
-      if (action === "send" && selectedCustomer?.email) {
-        await sendEmail(selectedCustomer.email, selectedCustomer.name);
+        if (action === "send" && selectedCustomer?.email) {
+          await sendEmail(
+            selectedCustomer.email, 
+            selectedCustomer.name, 
+            saleItems, 
+            totalCost,
+            res.data.invoice_number
+          );
+        }
+
+        resetForm();
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("Error adding sale:", error);
+          console.error("Error response:", error.response?.data);
+          alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
+        } else if (error instanceof Error) {
+          console.error("Unexpected error:", error.message);
+          alert("Unexpected error occurred.");
+        } else {
+          console.error("Unknown error:", error);
+        }
+      } finally {
+        setIsSubmitting(false);
       }
-
-      resetForm();
-} catch (error) {
-  if (axios.isAxiosError(error)) {
-    console.error("Error adding sale:", error);
-    console.error("Error response:", error.response?.data);
-    alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
-  } else if (error instanceof Error) {
-    console.error("Unexpected error:", error.message);
-    alert("Unexpected error occurred.");
-  } else {
-    console.error("Unknown error:", error);
-  }
-} finally {
-  setIsSubmitting(false);
-}
-  }
-};
+    }
+  };
 
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -333,7 +360,7 @@ export default function SalesPage() {
       head: [
         [
           "Client",
-          "Phone",
+          "Phone", 
           "State",
           "Equipment",
           "Cost",
@@ -348,8 +375,8 @@ export default function SalesPage() {
         s.name,
         s.phone,
         s.state,
-        s.equipment,
-        s.cost_sold,
+        s.items.map(item => item.equipment).join(', '),
+        `₦${s.total_cost}`,
         s.date_sold,
         s.invoice_number || "-",
         s.payment_plan || "-",
@@ -364,6 +391,7 @@ export default function SalesPage() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
+        {/* Customer Search Section - Unchanged */}
         <Card>
           <CardHeader>
             <CardTitle className="text-white dark:text-white">
@@ -444,12 +472,7 @@ export default function SalesPage() {
                     size="sm"
                     onClick={() => {
                       setSelectedCustomer(null);
-                      setNewSale(prev => ({
-                        ...prev,
-                        name: "",
-                        phone: "",
-                        state: ""
-                      }));
+                      resetForm();
                     }}
                     className="text-red-600 border-red-200 hover:bg-red-50"
                   >
@@ -472,8 +495,9 @@ export default function SalesPage() {
           </Button>
         </div>
           
+        {/* Updated Sale Dialog with Multi-Item Support */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-2xl bg-blue-950 text-gray-900">
+          <DialogContent className="max-w-4xl bg-blue-950 text-gray-900 max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">Add New Sale</DialogTitle>
             </DialogHeader>
@@ -500,185 +524,134 @@ export default function SalesPage() {
               <div className="bg-yellow-50 p-4 rounded-md mb-4 border border-yellow-200">
                 <h3 className="font-semibold text-yellow-800 mb-2">No Customer Selected</h3>
                 <p className="text-sm text-yellow-700">
-                  Please search and select a customer above, or fill in the details manually below.
+                  Please search and select a customer above.
                 </p>
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 py-3">
-              <div className="col-span-2">
-                <Label className="text-white">Select Equipment Category</Label>
-                <Select
-                  value={selectedCategory}
-                  onValueChange={handleCategorySelect}
-                >
-                  <SelectTrigger className="bg-blue-950 text-white border-gray-300">
-                    <SelectValue placeholder="-- Select Category --" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black text-white border-gray-700">
-                    {TOOL_CATEGORIES.map((category) => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {selectedCategory && (
-                <div className="col-span-2">
-                  <div className="flex justify-between items-center mb-2">
-                    <Label className="text-white">Select {selectedCategory}</Label>
-                    {filteredTools.length === 0 && (
-                      <span className="text-sm text-yellow-400">
-                        No equipment found in this category
-                      </span>
-                    )}
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={clearToolSelection}
-                      className="text-red-400 border-red-400 hover:bg-red-950 hover:text-white"
-                    >
-                      <X className="w-3 h-3 mr-1" />
-                      Change Category
-                    </Button>
-                  </div>
+            <div className="space-y-6 py-3">
+              {/* Current Item Selection */}
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-4 bg-slate-800 rounded-lg">
+                <div className="md:col-span-4">
+                  <Label className="text-white">Equipment Category</Label>
                   <Select
-                    value={selectedTool?.id || ""}
-                    onValueChange={handleToolSelect}
+                    value={currentItem.selectedCategory}
+                    onValueChange={handleCategorySelect}
                   >
-                    <SelectTrigger className="bg-blue-950 text-white border-gray-300">
-                      <SelectValue placeholder={`-- Select ${selectedCategory} --`} />
+                    <SelectTrigger className="bg-slate-700 text-white border-gray-600">
+                      <SelectValue placeholder="Select Category" />
                     </SelectTrigger>
                     <SelectContent className="bg-black text-white border-gray-700">
-                      {filteredTools.map((tool) => (
-                        <SelectItem key={tool.id} value={tool.id}>
-                          {tool.name} {tool.cost ? `- $${tool.cost}` : ''}
+                      {TOOL_CATEGORIES.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-              )}
 
-              {!selectedCustomer && (
-                <>
-                  <div>
-                    <Label className="text-white">Client Name</Label>
-                    <Input 
-                      value={newSale.name || ""} 
-                      onChange={(e) => setNewSale(prev => ({ ...prev, name: e.target.value }))}
-                      className="text-white bg-blue-950 border-gray-300"
-                      placeholder="Enter client name"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-white">Phone</Label>
-                    <Input 
-                      value={newSale.phone || ""} 
-                      onChange={(e) => setNewSale(prev => ({ ...prev, phone: e.target.value }))}
-                      className="text-white bg-blue-950 border-gray-300"
-                      placeholder="Enter phone number"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-white">State</Label>
-                    <Input 
-                      value={newSale.state || ""} 
-                      onChange={(e) => setNewSale(prev => ({ ...prev, state: e.target.value }))}
-                      className="text-white bg-blue-950 border-gray-300"
-                      placeholder="Enter state"
-                    />
-                  </div>
-                </>
-              )}
+                <div className="md:col-span-4">
+                  <Label className="text-white">Select Equipment</Label>
+                  <Select
+                    value={currentItem.selectedTool?.id || ""}
+                    onValueChange={handleToolSelect}
+                    disabled={!currentItem.selectedCategory}
+                  >
+                    <SelectTrigger className="bg-slate-700 text-white border-gray-600">
+                      <SelectValue placeholder={currentItem.selectedCategory ? `Select ${currentItem.selectedCategory}` : "Select category first"} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black text-white border-gray-700">
+                      {filteredTools.map((tool) => (
+                        <SelectItem key={tool.id} value={tool.id}>
+                          {tool.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {selectedCustomer && (
-                <>
-                  <div>
-                    <Label className="text-white">Client Name</Label>
-                    <Input 
-                      value={newSale.name || ""} 
-                      readOnly 
-                      className="text-white bg-blue-950 border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-white">Phone</Label>
-                    <Input 
-                      value={newSale.phone || ""} 
-                      readOnly 
-                      className="text-white bg-blue-950 border-gray-300"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-white">State</Label>
-                    <Input 
-                      value={newSale.state || ""} 
-                      readOnly 
-                      className="text-white bg-blue-950 border-gray-300"
-                    />
-                  </div>
-                </>
-              )}
-
-              <div className="col-span-2">
-                <Label className="text-white">Equipment</Label>
-                <Input
-                  value={newSale.equipment || ""}
-                  onChange={(e) => setNewSale(prev => ({ ...prev, equipment: e.target.value }))}
-                  className="text-white bg-blue-950 border-gray-300"
-                  placeholder={selectedCategory ? `Select a ${selectedCategory.toLowerCase()} from the dropdown above` : "Select a category first"}
-                  readOnly={!!selectedTool}
-                />
-                {selectedTool && (
-                  <p className="text-sm text-green-400 mt-1">
-                    Equipment auto-filled from selection.
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label className="text-white">Cost Sold</Label>
-                <Input
-                  type="number"
-                  value={newSale.cost_sold || ""}
-                  onChange={(e) => setNewSale(prev => ({ ...prev, cost_sold: e.target.value }))}
-                  className="text-white bg-blue-950 border-gray-300"
-                  placeholder="Enter cost"
-                />
-              </div>
-
-              {[
-                ["payment_plan", "Payment Plan", "text"],
-                ["expiry_date", "Expiry Date", "date"],
-              ].map(([key, label, type]) => (
-                <div key={key}>
-                  <Label htmlFor={key} className="text-white">{label}</Label>
+                <div className="md:col-span-3">
+                  <Label className="text-white">Cost (₦)</Label>
                   <Input
-                    id={key}
-                    type={type}
-                    value={(newSale[key as keyof Sale] as string) || ""}
-                    onChange={(e) =>
-                      setNewSale((prev) => ({
-                        ...prev,
-                        [key]: e.target.value,
-                      }))
-                    }
-                    className="text-white bg-blue-950 border-gray-300"
+                    type="number"
+                    value={currentItem.cost}
+                    onChange={(e) => setCurrentItem(prev => ({ ...prev, cost: e.target.value }))}
+                    className="bg-slate-700 text-white border-gray-600"
+                    placeholder="Enter cost"
+                    disabled={!currentItem.selectedTool}
                   />
                 </div>
-              ))}
 
-              <div>
-                <Label className="text-white">Status</Label>
-                <Input
-                  readOnly
-                  value={calculateStatus(newSale)}
-                  className="bg-gray-100 text-gray-900"
-                />
+                <div className="md:col-span-1">
+                  <Button
+                    onClick={addItemToSale}
+                    disabled={!currentItem.selectedTool || !currentItem.cost}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Sale Items Summary */}
+              {saleItems.length > 0 && (
+                <div className="bg-slate-800 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="text-white font-semibold">Items in this Sale ({saleItems.length})</h3>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-400">
+                        Total: ₦{totalCost.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {saleItems.map((item, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-slate-700 rounded border border-slate-600">
+                        <div className="flex-1">
+                          <div className="text-white font-medium">{item.equipment}</div>
+                          <div className="text-sm text-gray-300">{item.category}</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="text-lg font-bold text-white">
+                            ₦{parseFloat(item.cost).toLocaleString()}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeItemFromSale(index)}
+                            className="text-red-400 hover:text-red-600 hover:bg-red-950"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Sale Details */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-white">Payment Plan</Label>
+                  <Input
+                    value={saleDetails.payment_plan}
+                    onChange={(e) => setSaleDetails(prev => ({ ...prev, payment_plan: e.target.value }))}
+                    className="bg-slate-700 text-white border-gray-600"
+                    placeholder="e.g., Full Payment, 3-month Installment"
+                  />
+                </div>
+                <div>
+                  <Label className="text-white">Expiry Date</Label>
+                  <Input
+                    type="date"
+                    value={saleDetails.expiry_date}
+                    onChange={(e) => setSaleDetails(prev => ({ ...prev, expiry_date: e.target.value }))}
+                    className="bg-slate-700 text-white border-gray-600"
+                  />
+                </div>
               </div>
             </div>
 
@@ -694,22 +667,23 @@ export default function SalesPage() {
               <Button
                 variant="secondary"
                 onClick={() => handleAction("draft")}
-                disabled={isSubmitting}
+                disabled={isSubmitting || saleItems.length === 0}
                 className="bg-gray-500 hover:bg-gray-600 text-white"
               >
                 {isSubmitting ? "Saving..." : "Save to Draft"}
               </Button>
               <Button
                 onClick={() => handleAction("send")}
-                disabled={isSubmitting}
+                disabled={isSubmitting || saleItems.length === 0}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {isSubmitting ? "Saving..." : "Save & Send"}
+                {isSubmitting ? "Saving..." : "Save & Send Bill"}
               </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
+        {/* Sales Table - Updated to show multiple items */}
         <Card>
           <CardHeader>
             <CardTitle className="text-white dark:text-white">Sales Overview</CardTitle>
@@ -725,9 +699,9 @@ export default function SalesPage() {
                       {[
                         "Client",
                         "Phone",
-                        "State",
-                        "Equipment",
-                        "Cost",
+                        "State", 
+                        "Items",
+                        "Total Cost",
                         "Date Sold",
                         "Invoice",
                         "Payment Plan",
@@ -743,24 +717,26 @@ export default function SalesPage() {
                   <tbody>
                     {sales.length === 0 ? (
                       <tr>
-                        <td
-                          colSpan={10}
-                          className="text-center p-4 text-gray-500"
-                        >
+                        <td colSpan={10} className="text-center p-4 text-gray-500">
                           No records yet. Add a sale to begin.
                         </td>
                       </tr>
                     ) : (
                       sales.map((sale) => (
-                        <tr
-                          key={sale.id}
-                          className="border-b hover:bg-gray-50 text-gray-700"
-                        >
+                        <tr key={sale.id} className="border-b hover:bg-gray-50 text-gray-700">
                           <td className="p-2">{sale.name}</td>
                           <td className="p-2">{sale.phone}</td>
                           <td className="p-2">{sale.state}</td>
-                          <td className="p-2 capitalize">{sale.equipment}</td>
-                          <td className="p-2">₦{sale.cost_sold}</td>
+<td className="p-2">
+  <div className="max-w-xs">
+    {sale.items?.map((item, index) => (
+      <div key={index} className="text-xs mb-1">
+        • {item.equipment}
+      </div>
+    )) || "No items"}
+  </div>
+</td>
+                          <td className="p-2 font-semibold">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
                           <td className="p-2">{sale.date_sold}</td>
                           <td className="p-2">{sale.invoice_number || "-"}</td>
                           <td className="p-2">{sale.payment_plan || "-"}</td>

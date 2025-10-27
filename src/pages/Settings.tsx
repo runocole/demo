@@ -505,169 +505,180 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        {/* Invoice Management */}
-        <Card className="border-[#1e3a78]/80 bg-gradient-to-br from-[#0f1f3d] to-[#162a52]">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2 text-xl">
-                  <FileText className="h-5 w-5 text-blue-400" />
-                  Invoice Management
-                </CardTitle>
-                <CardDescription className="text-gray-400">
-                  Manage invoices and add equipment to existing invoices
-                </CardDescription>
-              </div>
-              <Button onClick={openAddInvoiceDialog} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg">
-                <Plus className="h-4 w-4" />
-                New Invoice
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {invoices.length === 0 ? (
-              <div className="text-center py-12 space-y-3 bg-[#0a1628]/50 rounded-lg border border-[#1e3a78]/30">
-                <div className="mx-auto w-16 h-16 bg-blue-950/50 rounded-full flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-blue-400" />
-                </div>
-                <p className="text-gray-400 font-medium">No invoices created</p>
-                <p className="text-sm text-gray-500">
-                  Create your first invoice to start adding equipment
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {invoices.map((invoice) => {
-                  const isExpanded = expandedInvoices.has(invoice.invoice_number);
-                  const invoiceEquipment = equipmentByInvoice[invoice.invoice_number] || [];
-                  
-                  return (
-                    <Card key={invoice.id} className="bg-[#0a1628]/40 border-[#1e3a78]/40">
-                      <CardContent className="p-0">
-                        {/* Invoice Header */}
-                        <div 
-                          className="p-4 hover:bg-[#162a52]/30 transition-colors cursor-pointer"
-                          onClick={() => toggleInvoiceExpansion(invoice.invoice_number)}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="p-2 bg-blue-600/20 rounded-lg">
-                                <FileText className="h-5 w-5 text-blue-400" />
-                              </div>
-                              <div>
-                                <h3 className="font-semibold text-white text-lg">
-                                  {invoice.invoice_number}
-                                </h3>
-                                <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
-                                  <span className="flex items-center gap-1">
-                                    <Calendar className="h-3 w-3" />
-                                    {new Date(invoice.created_at).toLocaleDateString()}
-                                  </span>
-                                  <span>{invoice.equipment_count} items</span>
-                                  <span className="text-green-400 font-semibold">
-                                    ${invoice.total_value.toLocaleString()}
-                                  </span>
-                                  {invoice.exchange_rate && (
-                                    <span className="text-blue-400 font-semibold">
-                                      ₦{invoice.exchange_rate}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <Button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openAddEquipmentDialog(invoice.invoice_number);
-                                }}
-                                className="gap-2 bg-green-600 hover:bg-green-700"
-                                size="sm"
-                              >
-                                <Plus className="h-4 w-4" />
-                                Add Equipment
-                              </Button>
-                              {isExpanded ? (
-                                <ChevronUp className="h-5 w-5 text-blue-400" />
-                              ) : (
-                                <ChevronDown className="h-5 w-5 text-blue-400" />
-                              )}
-                            </div>
-                          </div>
+{/* Invoice Management */}
+<Card className="border-[#1e3a78]/80 bg-gradient-to-br from-[#0f1f3d] to-[#162a52]">
+  <CardHeader>
+    <div className="flex items-center justify-between">
+      <div>
+        <CardTitle className="flex items-center gap-2 text-xl">
+          <FileText className="h-5 w-5 text-blue-400" />
+          Invoice Management
+        </CardTitle>
+        <CardDescription className="text-gray-400">
+          Manage invoices and add equipment to existing invoices
+        </CardDescription>
+      </div>
+      <Button onClick={openAddInvoiceDialog} className="gap-2 bg-blue-600 hover:bg-blue-700 shadow-lg">
+        <Plus className="h-4 w-4" />
+        New Invoice
+      </Button>
+    </div>
+  </CardHeader>
+  <CardContent>
+    {invoices.length === 0 ? (
+      <div className="text-center py-12 space-y-3 bg-[#0a1628]/50 rounded-lg border border-[#1e3a78]/30">
+        <div className="mx-auto w-16 h-16 bg-blue-950/50 rounded-full flex items-center justify-center">
+          <FileText className="h-8 w-8 text-blue-400" />
+        </div>
+        <p className="text-gray-400 font-medium">No invoices created</p>
+        <p className="text-sm text-gray-500">
+          Create your first invoice to start adding equipment
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-4">
+        {invoices
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .map((invoice) => {
+            const isExpanded = expandedInvoices.has(invoice.invoice_number);
+            const invoiceEquipment = equipmentByInvoice[invoice.invoice_number] || [];
+            
+            return (
+              <Card key={invoice.id} className="bg-[#0a1628]/40 border-[#1e3a78]/40">
+                <CardContent className="p-0">
+                  {/* Invoice Header */}
+                  <div 
+                    className="p-4 hover:bg-[#162a52]/30 transition-colors cursor-pointer"
+                    onClick={() => toggleInvoiceExpansion(invoice.invoice_number)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-blue-600/20 rounded-lg">
+                          <FileText className="h-5 w-5 text-blue-400" />
                         </div>
-
-                        {/* Expandable Equipment List */}
-                        {isExpanded && (
-                          <div className="border-t border-[#1e3a78]/50 bg-[#0a1628]/60">
-                            {invoiceEquipment.length === 0 ? (
-                              <div className="p-6 text-center text-gray-400">
-                                No equipment added to this invoice yet
-                              </div>
-                            ) : (
-                              <Table>
-                                <TableHeader>
-                                  <TableRow className="bg-[#162a52]/40 border-[#1e3a78]/50">
-                                    <TableHead className="text-blue-300 font-semibold">Category</TableHead>
-                                    <TableHead className="text-blue-300 font-semibold">Equipment Type</TableHead>
-                                    <TableHead className="text-blue-300 font-semibold">Cost (USD)</TableHead>
-                                    <TableHead className="text-blue-300 font-semibold text-right">Actions</TableHead>
-                                  </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                  {invoiceEquipment.map((equipment) => {
-                                    const CategoryIcon = CATEGORY_ICONS[equipment.category as keyof typeof CATEGORY_ICONS] || Box;
-                                    return (
-                                      <TableRow key={equipment.id} className="border-[#1e3a78]/30">
-                                        <TableCell>
-                                          <div className="flex items-center gap-2">
-                                            <CategoryIcon className="h-4 w-4 text-blue-400" />
-                                            <span className="text-white">{equipment.category}</span>
-                                          </div>
-                                        </TableCell>
-                                        <TableCell className="font-medium text-white">
-                                          {equipment.name}
-                                        </TableCell>
-                                        <TableCell>
-                                          <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-950/40 text-green-400 rounded-md font-semibold border border-green-800/30">
-                                            ${equipment.default_cost}
-                                          </span>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                          <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => openEditEquipmentDialog(equipment)}
-                                              className="h-8 w-8 text-blue-400 hover:bg-blue-950/50 hover:text-blue-300"
-                                            >
-                                              <Edit2 className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                              variant="ghost"
-                                              size="icon"
-                                              onClick={() => handleDeleteEquipment(equipment.id)}
-                                              className="h-8 w-8 text-red-400 hover:bg-red-950/50 hover:text-red-300"
-                                            >
-                                              <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                          </div>
-                                        </TableCell>
-                                      </TableRow>
-                                    );
-                                  })}
-                                </TableBody>
-                              </Table>
+                        <div>
+                          <h3 className="font-semibold text-white text-lg">
+                            {invoice.invoice_number}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-gray-400 mt-1">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="h-3 w-3" />
+                              {new Date(invoice.created_at).toLocaleDateString()}
+                            </span>
+                            <span>{invoice.equipment_count} items</span>
+                            <span className="text-green-400 font-semibold">
+                              ${invoice.total_value.toLocaleString()}
+                            </span>
+                            {invoice.exchange_rate && (
+                              <span className="text-blue-400 font-semibold">
+                                ₦{(invoice.total_value * parseFloat(invoice.exchange_rate)).toLocaleString()}
+                              </span>
                             )}
                           </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openAddEquipmentDialog(invoice.invoice_number);
+                          }}
+                          className="gap-2 bg-green-600 hover:bg-green-700"
+                          size="sm"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Equipment
+                        </Button>
+                        {isExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-blue-400" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-blue-400" />
                         )}
-                      </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expandable Equipment List */}
+                  {isExpanded && (
+                    <div className="border-t border-[#1e3a78]/50 bg-[#0a1628]/60">
+                      {invoiceEquipment.length === 0 ? (
+                        <div className="p-6 text-center text-gray-400">
+                          No equipment added to this invoice yet
+                        </div>
+                      ) : (
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="bg-[#162a52]/40 border-[#1e3a78]/50">
+                              <TableHead className="text-blue-300 font-semibold">Category</TableHead>
+                              <TableHead className="text-blue-300 font-semibold">Equipment Type</TableHead>
+                              <TableHead className="text-blue-300 font-semibold">Cost (USD)</TableHead>
+                              <TableHead className="text-blue-300 font-semibold">Cost (NGN)</TableHead>
+                              <TableHead className="text-blue-300 font-semibold text-right">Actions</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {invoiceEquipment.map((equipment) => {
+                              const CategoryIcon = CATEGORY_ICONS[equipment.category as keyof typeof CATEGORY_ICONS] || Box;
+                              const costUSD = parseFloat(equipment.default_cost) || 0;
+                              const costNGN = invoice.exchange_rate ? costUSD * parseFloat(invoice.exchange_rate) : 0;
+                              
+                              return (
+                                <TableRow key={equipment.id} className="border-[#1e3a78]/30">
+                                  <TableCell>
+                                    <div className="flex items-center gap-2">
+                                      <CategoryIcon className="h-4 w-4 text-blue-400" />
+                                      <span className="text-white">{equipment.category}</span>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="font-medium text-white">
+                                    {equipment.name}
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-950/40 text-green-400 rounded-md font-semibold border border-green-800/30">
+                                      ${costUSD.toLocaleString()}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-950/40 text-blue-400 rounded-md font-semibold border border-blue-800/30">
+                                      ₦{(costNGN || 0).toLocaleString()}
+                                    </span>
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => openEditEquipmentDialog(equipment)}
+                                        className="h-8 w-8 text-blue-400 hover:bg-blue-950/50 hover:text-blue-300"
+                                      >
+                                        <Edit2 className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleDeleteEquipment(equipment.id)}
+                                        className="h-8 w-8 text-red-400 hover:bg-red-950/50 hover:text-red-300"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
+                          </TableBody>
+                        </Table>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
+      </div>
+    )}
+  </CardContent>
+</Card>
 
         {/* Equipment Categories Grid */}
         <Card className="border-[#1e3a78]/80 bg-gradient-to-br from-[#0f1f3d] to-[#162a52]">

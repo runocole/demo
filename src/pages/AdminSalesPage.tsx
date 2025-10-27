@@ -45,7 +45,7 @@ const AdminSalesPage: React.FC = () => {
     fetchSales();
   }, []);
 
-  // --- Search ---
+// --- Search ---
   useEffect(() => {
     const filtered = sales.filter(
       (s) =>

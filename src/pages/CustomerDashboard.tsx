@@ -119,7 +119,7 @@ const StaffDashboard = () => {
                     dashboardData.recentSales.map((sale: any) => (
                       <TableRow key={sale.invoice_number}>
                         <TableCell>{sale.invoice_number}</TableCell>
-                        <TableCell>{sale.name}</TableCell>
+                        <TableCell>{sale.customer__name}</TableCell>
                         <TableCell>{sale.equipment}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
                         <TableCell>

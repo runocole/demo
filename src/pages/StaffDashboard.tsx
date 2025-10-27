@@ -117,8 +117,8 @@ const StaffDashboard = () => {
                     dashboardData.recentSales.map((sale: any) => (
                       <TableRow key={sale.invoice_number}>
                         <TableCell>{sale.invoice_number}</TableCell>
-                        <TableCell>{sale.name}</TableCell>
-                        <TableCell>{sale.equipment}</TableCell>
+                        <TableCell>{sale.customer_name}</TableCell>
+                        <TableCell>{sale.tool_name}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
                       </TableRow>
                     ))

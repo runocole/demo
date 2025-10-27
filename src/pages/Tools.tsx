@@ -89,13 +89,13 @@ interface Invoice {
 /* ---------------- Constants ---------------- */
 const CATEGORY_OPTIONS = [
   "Receiver",
-  "Accessory",
-  "Total Station",
-  "Level",
+  "Accessories",
+  "Total Stations",
+  "Levels",
   "Drones",
-  "EcoSounder",
-  "Laser Scanner",
-  "Other",
+  "EcoSounders",
+  "Laser Scanners",
+  "Others",
 ];
 
 // Toast Component
@@ -128,6 +128,7 @@ const Tools: React.FC = () => {
   // Search & filter
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState(""); // NEW: Invoice search
 
   // Equipment types
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
@@ -417,7 +418,7 @@ const Tools: React.FC = () => {
     setOpen(true);
   };
 
-  const getTimeAgo = (dateString: string): string => {
+  /*const getTimeAgo = (dateString: string): string => {
     try {
       const date = new Date(dateString);
       const now = new Date();
@@ -429,7 +430,7 @@ const Tools: React.FC = () => {
     } catch {
       return "—";
     }
-  };
+  };*/
 
   /* ---------------- Serial extras logic ---------------- */
   const effectiveCategory = selectedCategoryCard || form.category;
@@ -465,169 +466,171 @@ const Tools: React.FC = () => {
     setForm((prev: any) => ({ ...prev, serials: updated }));
   };
 
-  /* ---------------- Equipment type selection ---------------- */
-  const handleEquipmentTypeSelect = (val: string) => {
-    const found = equipmentTypes.find((e) => String(e.id) === String(val) || e.name === val);
+/* ---------------- Equipment type selection ---------------- */
+const handleEquipmentTypeSelect = (val: string) => {
+  const found = equipmentTypes.find((e) => String(e.id) === String(val) || e.name === val);
+  if (found) {
+    setSelectedEquipmentType(String(found.id));
+    setForm((prev: any) => ({
+      ...prev,
+      equipment_type_id: found.id, 
+      equipment_type: found.name,
+      name: found.name,
+      cost: String(found.default_cost ?? prev.cost),
+      category: selectedCategoryCard || prev.category,
+      invoice_number: selectedInvoice || prev.invoice_number,
+    }));
+  } else {
+    setSelectedEquipmentType(val);
+    setForm((prev: any) => ({ 
+      ...prev, 
+      equipment_type_id: val, 
+      equipment_type: val,
+      category: selectedCategoryCard || prev.category,
+      invoice_number: selectedInvoice || prev.invoice_number,
+    }));
+  }
+  
+  setModalStep("form");
+};
+  /* ---------------- Save / Update ---------------- */
+const handleSaveTool = async () => {
+  if (!String(form.name || "").trim() || !String(form.code || "").trim() || !String(form.cost || "").trim()) {
+    alert("Please fill in required fields: Name, Serial (Code), Cost.");
+    return;
+  }
+
+  const parsedStock = Math.max(0, Number(form.stock) || 0);
+  const finalCategory = selectedCategoryCard || form.category || "";
+  let finalEquipmentTypeName = "";
+  let finalEquipmentTypeId: any = form.equipment_type_id || "";
+
+  if (selectedEquipmentType) {
+    const found = equipmentTypes.find((e) => String(e.id) === String(selectedEquipmentType));
     if (found) {
-      setSelectedEquipmentType(String(found.id));
-      setForm((prev: any) => ({
-        ...prev,
-        equipment_type_id: found.id,
-        equipment_type: found.name,
-        name: found.name,
-        cost: String(found.default_cost ?? prev.cost),
-        category: selectedCategoryCard || prev.category,
-        invoice_number: selectedInvoice || prev.invoice_number, // NEW: Set invoice number
-      }));
+      finalEquipmentTypeName = found.name;
+      finalEquipmentTypeId = found.id;
     } else {
-      setSelectedEquipmentType(val);
-      setForm((prev: any) => ({ 
-        ...prev, 
-        equipment_type_id: "", 
-        equipment_type: val,
-        category: selectedCategoryCard || prev.category,
-        invoice_number: selectedInvoice || prev.invoice_number, // NEW: Set invoice number
-      }));
+      finalEquipmentTypeName = selectedEquipmentType;
+      finalEquipmentTypeId = selectedEquipmentType;
     }
-    
-    // AUTOMATICALLY proceed to form after selection
-    setModalStep("form");
+  } else if (form.equipment_type) {
+    finalEquipmentTypeName = form.equipment_type;
+    finalEquipmentTypeId = form.equipment_type_id || "";
+  }
+
+  const payload: any = {
+    name: String(form.name).trim(),
+    code: String(form.code).trim(),
+    cost: String(form.cost).trim(),
+    stock: parsedStock,
+    description: form.description || "",
+    supplier: form.supplier || "",
+    category: finalCategory,
+    invoice_number: selectedInvoice || form.invoice_number || "",
+    expiry_date: form.expiry_date || "",
+    date_added: new Date().toISOString(),
   };
 
-  /* ---------------- Save / Update ---------------- */
-  const handleSaveTool = async () => {
-    if (!String(form.name || "").trim() || !String(form.code || "").trim() || !String(form.cost || "").trim()) {
-      alert("Please fill in required fields: Name, Serial (Code), Cost.");
-      return;
-    }
+  const extrasArr = (Array.isArray(form.serials) ? form.serials : [])
+    .map((s: any) => String(s || "").trim())
+    .filter((s: string) => s !== "");
 
-    const parsedStock = Math.max(0, Number(form.stock) || 0);
-    const finalCategory = selectedCategoryCard || form.category || "";
-    let finalEquipmentTypeName = "";
-    let finalEquipmentTypeId: any = form.equipment_type_id || "";
+  if (finalCategory === "Receiver") {
+    payload.serials = [String(form.code).trim(), ...extrasArr];
+  } else {
+    const allSerials = [String(form.code).trim(), ...extrasArr].filter(Boolean);
+    if (allSerials.length > 0) payload.serials = allSerials;
+  }
 
-    if (selectedEquipmentType) {
-      const found = equipmentTypes.find((e) => String(e.id) === String(selectedEquipmentType));
-      if (found) {
-        finalEquipmentTypeName = found.name;
-        finalEquipmentTypeId = found.id;
-      } else {
-        finalEquipmentTypeName = selectedEquipmentType;
-        finalEquipmentTypeId = selectedEquipmentType;
-      }
-    } else if (form.equipment_type) {
-      finalEquipmentTypeName = form.equipment_type;
-      finalEquipmentTypeId = form.equipment_type_id || "";
-    }
+  // FIX: Only send equipment_type_id, not equipment_type name
+  if (finalEquipmentTypeId) {
+    payload.equipment_type_id = finalEquipmentTypeId;
+  }
+  // Remove this line - don't send equipment_type as string
+  // if (finalEquipmentTypeName && String(finalEquipmentTypeName).trim() !== "") {
+  //   payload.equipment_type = String(finalEquipmentTypeName).trim();
+  // }
 
-    const payload: any = {
-      name: String(form.name).trim(),
-      code: String(form.code).trim(),
-      cost: String(form.cost).trim(),
-      stock: parsedStock,
-      description: form.description || "",
-      supplier: form.supplier || "",
-      category: finalCategory,
-      invoice_number: selectedInvoice || form.invoice_number || "", // NEW: Use selected invoice
-      expiry_date: form.expiry_date || "",
-      date_added: new Date().toISOString(),
-    };
-
-    const extrasArr = (Array.isArray(form.serials) ? form.serials : [])
-      .map((s: any) => String(s || "").trim())
-      .filter((s: string) => s !== "");
-
-    if (finalCategory === "Receiver") {
-      payload.serials = [String(form.code).trim(), ...extrasArr];
-    } else {
-      const allSerials = [String(form.code).trim(), ...extrasArr].filter(Boolean);
-      if (allSerials.length > 0) payload.serials = allSerials;
-    }
-
-    if (finalEquipmentTypeName && String(finalEquipmentTypeName).trim() !== "") {
-      payload.equipment_type = String(finalEquipmentTypeName).trim();
-    }
-    if (finalEquipmentTypeId) payload.equipment_type_id = finalEquipmentTypeId;
-
-    if (isEditMode && editingToolId) {
-      try {
-        const updated = await updateTool(editingToolId, payload);
-        const normalized: Tool = {
-          ...updated,
-          stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || parsedStock),
-          serials: Array.isArray(updated.serials) ? updated.serials : payload.serials || [],
-          equipment_type: updated.equipment_type ?? payload.equipment_type ?? "",
-          equipment_type_id: updated.equipment_type_id ?? payload.equipment_type_id ?? "",
-          expiry_date: updated.expiry_date || form.expiry_date || "",
-        };
-        setTools((prev) => prev.map((t) => (t.id === editingToolId ? normalized : t)));
-        
-        // Show success feedback
-        setToastMessage("Tool updated successfully!");
-        setShowToast(true);
-        setRecentlyAddedId(editingToolId);
-        
-        setOpen(false);
-        resetForm();
-        setIsEditMode(false);
-        setEditingToolId(null);
-        setSelectedInvoice(null);
-        setSelectedCategoryCard(null);
-        setSelectedEquipmentType(null);
-      } catch (err) {
-        console.error("Error updating tool:", err);
-        alert("Failed to update tool.");
-      }
-      return;
-    }
-
+  if (isEditMode && editingToolId) {
     try {
-      const existing = tools.find((t) => t.code && t.code.toLowerCase() === payload.code.toLowerCase());
-      if (existing) {
-        const newStock = (existing.stock || 0) + parsedStock;
-        const updatePayload: any = { stock: newStock };
-        if (payload.serials) updatePayload.serials = payload.serials;
-        if (payload.expiry_date) updatePayload.expiry_date = payload.expiry_date;
-        const updated = await updateTool(existing.id, updatePayload);
-        const normalized = {
-          ...updated,
-          stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || newStock),
-          serials: Array.isArray(updated.serials) ? updated.serials : updatePayload.serials || [],
-          expiry_date: updated.expiry_date || payload.expiry_date || "",
-        };
-        setTools((prev) => prev.map((t) => (t.id === existing.id ? normalized : t)));
-        
-        // Show success feedback
-        setToastMessage(`Tool "${existing.code}" quantity increased by ${parsedStock}!`);
-        setShowToast(true);
-        setRecentlyAddedId(existing.id);
-      } else {
-        const created = await createTool(payload);
-        const normalizedCreated: Tool = {
-          ...created,
-          stock: typeof created.stock === "number" ? created.stock : Number(created.stock || parsedStock),
-          serials: Array.isArray(created.serials) ? created.serials : payload.serials || [],
-          equipment_type: created.equipment_type ?? payload.equipment_type ?? "",
-          equipment_type_id: created.equipment_type_id ?? payload.equipment_type_id ?? "",
-          expiry_date: created.expiry_date || payload.expiry_date || "",
-        };
-        setTools((prev) => [normalizedCreated, ...prev]);
-        
-        // Show success feedback
-        setToastMessage("New tool added successfully!");
-        setShowToast(true);
-        setRecentlyAddedId(created.id);
-      }
+      const updated = await updateTool(editingToolId, payload);
+      const normalized: Tool = {
+        ...updated,
+        stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || parsedStock),
+        serials: Array.isArray(updated.serials) ? updated.serials : payload.serials || [],
+        equipment_type: updated.equipment_type ?? finalEquipmentTypeName ?? "",
+        equipment_type_id: updated.equipment_type_id ?? payload.equipment_type_id ?? "",
+        expiry_date: updated.expiry_date || form.expiry_date || "",
+      };
+      setTools((prev) => prev.map((t) => (t.id === editingToolId ? normalized : t)));
+      
+      // Show success feedback
+      setToastMessage("Tool updated successfully!");
+      setShowToast(true);
+      setRecentlyAddedId(editingToolId);
+      
       setOpen(false);
       resetForm();
+      setIsEditMode(false);
+      setEditingToolId(null);
       setSelectedInvoice(null);
       setSelectedCategoryCard(null);
       setSelectedEquipmentType(null);
-    } catch (error) {
-      console.error("Error saving tool:", error);
-      alert("Failed to save tool.");
+    } catch (err) {
+      console.error("Error updating tool:", err);
+      alert("Failed to update tool.");
     }
-  };
+    return;
+  }
+
+  try {
+    const existing = tools.find((t) => t.code && t.code.toLowerCase() === payload.code.toLowerCase());
+    if (existing) {
+      const newStock = (existing.stock || 0) + parsedStock;
+      const updatePayload: any = { stock: newStock };
+      if (payload.serials) updatePayload.serials = payload.serials;
+      if (payload.expiry_date) updatePayload.expiry_date = payload.expiry_date;
+      const updated = await updateTool(existing.id, updatePayload);
+      const normalized = {
+        ...updated,
+        stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || newStock),
+        serials: Array.isArray(updated.serials) ? updated.serials : updatePayload.serials || [],
+        expiry_date: updated.expiry_date || payload.expiry_date || "",
+      };
+      setTools((prev) => prev.map((t) => (t.id === existing.id ? normalized : t)));
+      
+      // Show success feedback
+      setToastMessage(`Tool "${existing.code}" quantity increased by ${parsedStock}!`);
+      setShowToast(true);
+      setRecentlyAddedId(existing.id);
+    } else {
+      const created = await createTool(payload);
+      const normalizedCreated: Tool = {
+        ...created,
+        stock: typeof created.stock === "number" ? created.stock : Number(created.stock || parsedStock),
+        serials: Array.isArray(created.serials) ? created.serials : payload.serials || [],
+        equipment_type: created.equipment_type ?? finalEquipmentTypeName ?? "",
+        equipment_type_id: created.equipment_type_id ?? payload.equipment_type_id ?? "",
+        expiry_date: created.expiry_date || payload.expiry_date || "",
+      };
+      setTools((prev) => [normalizedCreated, ...prev]);
+      
+      // Show success feedback
+      setToastMessage("New tool added successfully!");
+      setShowToast(true);
+      setRecentlyAddedId(created.id);
+    }
+    setOpen(false);
+    resetForm();
+    setSelectedInvoice(null);
+    setSelectedCategoryCard(null);
+    setSelectedEquipmentType(null);
+  } catch (error) {
+    console.error("Error saving tool:", error);
+    alert("Failed to save tool.");
+  }
+};
 
   /* ---------------- Delete ---------------- */
   const handleDeleteTool = async (id: string) => {
@@ -943,45 +946,58 @@ const Tools: React.FC = () => {
                   <FileText className="h-5 w-5 text-blue-400" />
                   Select Invoice
                 </Label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {invoices.length === 0 ? (
-                    <div className="col-span-2 text-center py-8 text-gray-400">
-                      <FileText className="h-12 w-12 mx-auto mb-3 text-gray-500" />
-                      <p>No invoices available</p>
-                      <p className="text-sm">Please create invoices in Admin Settings first</p>
-                    </div>
-                  ) : (
-                    invoices.map((invoice) => (
-                      <Card
-                        key={invoice.id}
-                        className={`p-4 cursor-pointer hover:scale-105 transform ${
-                          selectedInvoice === invoice.invoice_number ? "ring-2 ring-blue-500" : ""
-                        }`}
-                        onClick={() => {
-                          setSelectedInvoice(invoice.invoice_number);
-                          // Fetch equipment types for this specific invoice
-                          fetchEquipmentTypes(invoice.invoice_number);
-                          setModalStep("select-category");
-                        }}
-                      >
-                        <CardContent className="p-0">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <div className="text-lg font-semibold">{invoice.invoice_number}</div>
-                              <div className="text-xs text-gray-400 mt-1">
-                                {invoice.equipment_count} items • ${invoice.total_value.toLocaleString()}
-                              </div>
-                              <div className="text-xs text-blue-400 mt-1">
-                                Click to select
-                              </div>
-                            </div>
-                            <FileText className="h-8 w-8 text-blue-400" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  )}
+                
+                {/* Invoice Search Bar */}
+                <div className="mb-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
+                    <Input
+                      placeholder="Search invoices..."
+                      className="pl-10"
+                      value={invoiceSearchTerm}
+                      onChange={(e) => setInvoiceSearchTerm(e.target.value)}
+                    />
+                  </div>
                 </div>
+
+                <div className="space-y-3 max-h-96 overflow-y-auto overflow-x-hidden">
+  {invoices.length === 0 ? (
+    <div className="text-center py-8 text-gray-400">
+      <FileText className="h-12 w-12 mx-auto mb-3 text-gray-500" />
+      <p>No invoices available</p>
+      <p className="text-sm">Please create invoices in Admin Settings first</p>
+    </div>
+  ) : (
+    invoices
+      .filter(invoice =>
+        invoice.invoice_number.toLowerCase().includes(invoiceSearchTerm.toLowerCase())
+      )
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .map((invoice) => (
+        <Card
+          key={invoice.id}
+          className={`p-3 cursor-pointer hover:scale-[1.02] transform max-w-full ${
+            selectedInvoice === invoice.invoice_number ? "ring-2 ring-blue-500" : ""
+          }`}
+          onClick={() => {
+            setSelectedInvoice(invoice.invoice_number);
+            // Fetch equipment types for this specific invoice
+            fetchEquipmentTypes(invoice.invoice_number);
+            setModalStep("select-category");
+          }}
+        >
+          <CardContent className="p-0">
+            <div className="flex items-center justify-between">
+              <div className="min-w-0 flex-1">
+                <div className="text-lg font-semibold truncate">{invoice.invoice_number}</div>
+              </div>
+              <FileText className="h-6 w-6 text-blue-400 flex-shrink-0 ml-2" />
+            </div>
+          </CardContent>
+        </Card>
+      ))
+  )}
+</div>
               </div>
             )}
 
@@ -1105,7 +1121,6 @@ const Tools: React.FC = () => {
                       </div>
                       <div className="text-sm text-gray-400 mt-1">
                         Category: {selectedCategoryCard || form.category}
-                        {selectedEquipmentType && ` • Type: ${selectedEquipmentType}`}
                       </div>
                     </div>
                     <Button

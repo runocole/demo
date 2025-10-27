@@ -20,7 +20,7 @@ import {
   Tooltip,
 } from "recharts";
 
-const StaffDashboard = () => {
+const DashboardPage = () => {
   const [userName, setUserName] = useState("");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -117,8 +117,8 @@ const StaffDashboard = () => {
                     dashboardData.recentSales.map((sale: any) => (
                       <TableRow key={sale.invoice_number}>
                         <TableCell>{sale.invoice_number}</TableCell>
-                        <TableCell>{sale.name}</TableCell>
-                        <TableCell>{sale.equipment}</TableCell>
+                        <TableCell>{sale.customer_name}</TableCell>
+                        <TableCell>{sale.tool_name}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
                       </TableRow>
                     ))
@@ -264,4 +264,4 @@ const StaffDashboard = () => {
   );
 };
 
-export default StaffDashboard;
+export default DashboardPage;

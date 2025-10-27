@@ -238,7 +238,7 @@ export const fetchDashboardData = async () => {
 };
 
 // ----------------------------
-//EQUIPMENT TYPES
+// EQUIPMENT TYPES
 // ----------------------------
 export interface EquipmentType {
   id: string;
@@ -249,48 +249,55 @@ export interface EquipmentType {
   created_at?: string;
 }
 
-export const getEquipmentTypes = async () => {
-  const response = await axios.get(`${API_URL}/equipment-types/`, {
+// Get equipment by invoice
+export const getEquipmentByInvoice = async () => {
+  const response = await axios.get('/equipment-types/by-invoice/', {
     headers: authHeader(),
   });
   return response.data;
 };
 
-export const createEquipmentType = async (equipmentTypeData: {
+// Get equipment types with optional filters
+export const getEquipmentTypes = async (filters?: { invoice_number?: string; category?: string }) => {
+  const params = new URLSearchParams();
+  if (filters?.invoice_number) params.append('invoice_number', filters.invoice_number);
+  if (filters?.category) params.append('category', filters.category);
+  
+  const response = await axios.get(`/equipment-types/?${params}`, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+// Create equipment type
+export const createEquipmentType = async (data: {
   name: string;
   default_cost: string;
   category: string;
-  description?: string;
+  invoice_number?: string;
 }) => {
-  const response = await axios.post(`${API_URL}/equipment-types/`, equipmentTypeData, {
-    headers: {
-      ...authHeader(),
-      "Content-Type": "application/json",
-    },
+  const response = await axios.post('/equipment-types/', data, {
+    headers: authHeader(),
   });
   return response.data;
 };
 
-export const updateEquipmentType = async (
-  id: string,
-  equipmentTypeData: Partial<{
-    name: string;
-    default_cost: string;
-    category: string;
-    description?: string;
-  }>
-) => {
-  const response = await axios.patch(`${API_URL}/equipment-types/${id}/`, equipmentTypeData, {
-    headers: {
-      ...authHeader(),
-      "Content-Type": "application/json",
-    },
+// Update equipment type
+export const updateEquipmentType = async (id: string, data: {
+  name: string;
+  default_cost: string;
+  category: string;
+  invoice_number?: string;
+}) => {
+  const response = await axios.put(`/equipment-types/${id}/`, data, {
+    headers: authHeader(),
   });
   return response.data;
 };
 
+// Delete equipment type
 export const deleteEquipmentType = async (id: string) => {
-  const response = await axios.delete(`${API_URL}/equipment-types/${id}/`, {
+  const response = await axios.delete(`/equipment-types/${id}/`, {
     headers: authHeader(),
   });
   return response.data;

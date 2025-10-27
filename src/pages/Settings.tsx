@@ -47,7 +47,8 @@ import {
   FileText,
   Calendar,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  DollarSign
 } from "lucide-react";
 import { 
   getEquipmentTypes, 
@@ -84,6 +85,7 @@ interface Invoice {
   created_at: string;
   equipment_count: number;
   total_value: number;
+  exchange_rate?: string; // NEW: Added exchange rate
 }
 
 type DialogType = 'invoice' | 'equipment' | 'supplier' | null;
@@ -121,6 +123,7 @@ const Settings: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [exchangeRate, setExchangeRate] = useState(""); // NEW: Exchange rate state
   const [selectedInvoice, setSelectedInvoice] = useState<string>("");
   const [expandedInvoices, setExpandedInvoices] = useState<Set<string>>(new Set());
 
@@ -201,7 +204,8 @@ const Settings: React.FC = () => {
             invoice_number: equipment.invoice_number,
             created_at: equipment.created_at || new Date().toISOString(),
             equipment_count: 0,
-            total_value: 0
+            total_value: 0,
+            exchange_rate: "" // Default exchange rate
           });
         }
         const invoice = invoiceMap.get(equipment.invoice_number);
@@ -245,6 +249,7 @@ const Settings: React.FC = () => {
 
   const resetForms = () => {
     setInvoiceNumber("");
+    setExchangeRate(""); // NEW: Reset exchange rate
     setSelectedInvoice("");
     setEquipmentForm({ name: "", default_cost: "", category: "Receiver" });
     setSupplierForm({ name: "" });
@@ -312,7 +317,8 @@ const Settings: React.FC = () => {
       invoice_number: invoiceNumber.trim(),
       created_at: new Date().toISOString(),
       equipment_count: 0,
-      total_value: 0
+      total_value: 0,
+      exchange_rate: exchangeRate || "" // NEW: Save exchange rate
     };
 
     setInvoices(prev => [...prev, newInvoice]);
@@ -561,6 +567,11 @@ const Settings: React.FC = () => {
                                   <span className="text-green-400 font-semibold">
                                     ${invoice.total_value.toLocaleString()}
                                   </span>
+                                  {invoice.exchange_rate && (
+                                    <span className="text-blue-400 font-semibold">
+                                      ₦{invoice.exchange_rate}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -800,7 +811,7 @@ const Settings: React.FC = () => {
         </Card>
       </div>
 
-      {/* Invoice Creation Dialog */}
+      {/* Invoice Creation Dialog - UPDATED WITH EXCHANGE RATE */}
       <Dialog open={dialogType === 'invoice'} onOpenChange={(open) => !open && setDialogType(null)}>
         <DialogContent className="max-w-md bg-[#0f1f3d] border-[#1e3a78]">
           <DialogHeader>
@@ -827,6 +838,26 @@ const Settings: React.FC = () => {
               />
               <p className="text-xs text-gray-400">
                 This invoice number will be used to group equipment items
+              </p>
+            </div>
+
+            {/* NEW: Exchange Rate Field */}
+            <div className="space-y-2">
+              <Label htmlFor="exchange-rate" className="text-sm font-medium text-gray-300 flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-green-400" />
+                Exchange Rate (USD to NGN) <span className="text-gray-400">(Optional)</span>
+              </Label>
+              <Input
+                id="exchange-rate"
+                type="number"
+                step="0.01"
+                value={exchangeRate}
+                onChange={(e) => setExchangeRate(e.target.value)}
+                placeholder="e.g. 1500.00"
+                className="bg-[#162a52] border-[#2a4375] text-white text-lg font-medium"
+              />
+              <p className="text-xs text-gray-400">
+                Set the exchange rate for this invoice (1 USD = ? NGN)
               </p>
             </div>
           </div>

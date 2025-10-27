@@ -3,7 +3,7 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
-import { Search, Plus, Trash2, Edit2, Download, CheckCircle, X } from "lucide-react";
+import { Search, Plus, Trash2, Edit2, Download, CheckCircle, X, FileText } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -70,11 +70,20 @@ interface EquipmentType {
   name: string;
   default_cost?: string | number;
   category?: string;
+  invoice_number?: string; // NEW: Added invoice number
 }
 
 interface Supplier {
   id: number | string;
   name: string;
+}
+
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  created_at: string;
+  equipment_count: number;
+  total_value: number;
 }
 
 /* ---------------- Constants ---------------- */
@@ -105,11 +114,12 @@ const Tools: React.FC = () => {
   const [tools, setTools] = useState<Tool[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal & form state
+  // Modal & form state - UPDATED FLOW
   const [open, setOpen] = useState(false);
   const [modalStep, setModalStep] = useState<
-    "select-category" | "select-equipment-type" | "form"
-  >("select-category");
+    "select-invoice" | "select-category" | "select-equipment-type" | "form"
+  >("select-invoice"); // NEW: Start with invoice selection
+  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null); // NEW: Selected invoice
   const [selectedCategoryCard, setSelectedCategoryCard] = useState<string | null>(null);
   const [selectedEquipmentType, setSelectedEquipmentType] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -126,6 +136,9 @@ const Tools: React.FC = () => {
   // Suppliers
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(false);
+
+  // Invoices - NEW: State for invoices
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
   // Toast state
   const [showToast, setShowToast] = useState(false);
@@ -246,11 +259,15 @@ const Tools: React.FC = () => {
     fetchTools();
   }, []);
 
-  // Fetch equipment types
-  const fetchEquipmentTypes = async () => {
+  // Fetch equipment types - UPDATED to filter by invoice
+  const fetchEquipmentTypes = async (invoiceNumber?: string) => {
     setIsLoadingEquipmentTypes(true);
     try {
-      const data = await getEquipmentTypes();
+      const filters: any = {};
+      if (invoiceNumber) {
+        filters.invoice_number = invoiceNumber;
+      }
+      const data = await getEquipmentTypes(filters);
       setEquipmentTypes(data || []);
     } catch (err) {
       console.warn("Could not fetch equipment types:", err);
@@ -274,9 +291,40 @@ const Tools: React.FC = () => {
     }
   };
 
+  // NEW: Fetch invoices
+  const fetchInvoices = async () => {
+    try {
+      const data = await getEquipmentTypes(); // We'll get invoices from equipment types
+      const invoiceMap = new Map();
+      
+      data.forEach((item: any) => {
+        if (item.invoice_number) {
+          if (!invoiceMap.has(item.invoice_number)) {
+            invoiceMap.set(item.invoice_number, {
+              id: item.invoice_number,
+              invoice_number: item.invoice_number,
+              created_at: item.created_at || new Date().toISOString(),
+              equipment_count: 0,
+              total_value: 0
+            });
+          }
+          const invoice = invoiceMap.get(item.invoice_number);
+          invoice.equipment_count += 1;
+          invoice.total_value += parseFloat(item.default_cost) || 0;
+        }
+      });
+
+      setInvoices(Array.from(invoiceMap.values()));
+    } catch (err) {
+      console.warn("Could not fetch invoices:", err);
+      setInvoices([]);
+    }
+  };
+
   useEffect(() => {
     fetchEquipmentTypes();
     fetchSuppliers();
+    fetchInvoices(); // NEW: Fetch invoices
   }, []);
 
   // Toast auto-hide
@@ -311,9 +359,10 @@ const Tools: React.FC = () => {
     resetForm();
     setIsEditMode(false);
     setEditingToolId(null);
+    setSelectedInvoice(null); // NEW: Reset invoice
     setSelectedCategoryCard(null);
     setSelectedEquipmentType(null);
-    setModalStep("select-category");
+    setModalStep("select-invoice"); // NEW: Start with invoice selection
     setOpen(true);
   };
 
@@ -353,7 +402,7 @@ const Tools: React.FC = () => {
     setSelectedCategoryCard(tool.category || null);
 
     if (tool.category === "Receiver") {
-      fetchEquipmentTypes().then(() => {
+      fetchEquipmentTypes(tool.invoice_number).then(() => {
         const etId = tool.equipment_type_id ? String(tool.equipment_type_id) : "";
         const found = equipmentTypes.find((e) => String(e.id) === String(etId) || e.name === tool.equipment_type);
         if (found) {
@@ -428,6 +477,7 @@ const Tools: React.FC = () => {
         name: found.name,
         cost: String(found.default_cost ?? prev.cost),
         category: selectedCategoryCard || prev.category,
+        invoice_number: selectedInvoice || prev.invoice_number, // NEW: Set invoice number
       }));
     } else {
       setSelectedEquipmentType(val);
@@ -436,6 +486,7 @@ const Tools: React.FC = () => {
         equipment_type_id: "", 
         equipment_type: val,
         category: selectedCategoryCard || prev.category,
+        invoice_number: selectedInvoice || prev.invoice_number, // NEW: Set invoice number
       }));
     }
     
@@ -477,7 +528,7 @@ const Tools: React.FC = () => {
       description: form.description || "",
       supplier: form.supplier || "",
       category: finalCategory,
-      invoice_number: form.invoice_number || "",
+      invoice_number: selectedInvoice || form.invoice_number || "", // NEW: Use selected invoice
       expiry_date: form.expiry_date || "",
       date_added: new Date().toISOString(),
     };
@@ -520,6 +571,7 @@ const Tools: React.FC = () => {
         resetForm();
         setIsEditMode(false);
         setEditingToolId(null);
+        setSelectedInvoice(null);
         setSelectedCategoryCard(null);
         setSelectedEquipmentType(null);
       } catch (err) {
@@ -568,6 +620,7 @@ const Tools: React.FC = () => {
       }
       setOpen(false);
       resetForm();
+      setSelectedInvoice(null);
       setSelectedCategoryCard(null);
       setSelectedEquipmentType(null);
     } catch (error) {
@@ -861,9 +914,10 @@ const Tools: React.FC = () => {
             resetForm();
             setIsEditMode(false);
             setEditingToolId(null);
+            setSelectedInvoice(null);
             setSelectedCategoryCard(null);
             setSelectedEquipmentType(null);
-            setModalStep("select-category");
+            setModalStep("select-invoice");
           }
         }}
       >
@@ -871,8 +925,10 @@ const Tools: React.FC = () => {
           <DialogHeader>
             <DialogTitle>{isEditMode ? "Edit Tool" : "Add New Item"}</DialogTitle>
             <DialogDescription>
-              {modalStep === "select-category"
-                ? "Choose a category to start"
+              {modalStep === "select-invoice"
+                ? "Select an invoice to add items to"
+                : modalStep === "select-category"
+                ? "Choose a category for the item"
                 : modalStep === "select-equipment-type"
                 ? "Select the equipment type"
                 : `Fill in the fields below to ${isEditMode ? "update" : "create"} a tool.`}
@@ -880,53 +936,107 @@ const Tools: React.FC = () => {
           </DialogHeader>
 
           <div className="space-y-4 py-2">
-            {/* STEP 1: Category selection */}
-            {modalStep === "select-category" && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {CATEGORY_OPTIONS.map((cat) => (
-                  <Card
-                    key={cat}
-                    className={`p-4 cursor-pointer hover:scale-105 transform ${selectedCategoryCard === cat ? "ring-2 ring-blue-500" : ""}`}
-                    onClick={async () => {
-                      setSelectedCategoryCard(cat);
-                      
-                      // Always fetch equipment types first
-                      await fetchEquipmentTypes();
-                      
-                      // Check if there are equipment types for this category
-                      const categoryEquipmentTypes = equipmentTypes.filter(item => item.category === cat);
-                      
-                      if (categoryEquipmentTypes.length > 0) {
-                        // If there are equipment types for this category, show selection
-                        setModalStep("select-equipment-type");
-                      } else {
-                        // If no equipment types, go directly to form
-                        setForm((prev: any) => ({ 
-                          ...prev, 
-                          category: cat,
-                          name: "",
-                          cost: ""
-                        }));
-                        setModalStep("form");
-                      }
-                    }}
-                  >
-                    <CardContent>
-                      <div className="text-lg font-semibold">{cat}</div>
-                      <div className="text-xs text-gray-400 mt-1">Add {cat} items</div>
-                      <div className="text-xs text-blue-400 mt-1">
-                        {equipmentTypes.filter(item => item.category === cat).length} types available
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+            {/* STEP 1: Invoice selection - NEW STEP */}
+            {modalStep === "select-invoice" && (
+              <div>
+                <Label className="text-lg font-semibold mb-4 flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-blue-400" />
+                  Select Invoice
+                </Label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {invoices.length === 0 ? (
+                    <div className="col-span-2 text-center py-8 text-gray-400">
+                      <FileText className="h-12 w-12 mx-auto mb-3 text-gray-500" />
+                      <p>No invoices available</p>
+                      <p className="text-sm">Please create invoices in Admin Settings first</p>
+                    </div>
+                  ) : (
+                    invoices.map((invoice) => (
+                      <Card
+                        key={invoice.id}
+                        className={`p-4 cursor-pointer hover:scale-105 transform ${
+                          selectedInvoice === invoice.invoice_number ? "ring-2 ring-blue-500" : ""
+                        }`}
+                        onClick={() => {
+                          setSelectedInvoice(invoice.invoice_number);
+                          // Fetch equipment types for this specific invoice
+                          fetchEquipmentTypes(invoice.invoice_number);
+                          setModalStep("select-category");
+                        }}
+                      >
+                        <CardContent className="p-0">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-lg font-semibold">{invoice.invoice_number}</div>
+                              <div className="text-xs text-gray-400 mt-1">
+                                {invoice.equipment_count} items • ${invoice.total_value.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-blue-400 mt-1">
+                                Click to select
+                              </div>
+                            </div>
+                            <FileText className="h-8 w-8 text-blue-400" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  )}
+                </div>
               </div>
             )}
 
-            {/* STEP 2: Equipment type selection */}
+            {/* STEP 2: Category selection */}
+            {modalStep === "select-category" && (
+              <div>
+                <Label className="text-lg font-semibold mb-4">
+                  Select Category for Invoice: {selectedInvoice}
+                </Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {CATEGORY_OPTIONS.map((cat) => (
+                    <Card
+                      key={cat}
+                      className={`p-4 cursor-pointer hover:scale-105 transform ${selectedCategoryCard === cat ? "ring-2 ring-blue-500" : ""}`}
+                      onClick={async () => {
+                        setSelectedCategoryCard(cat);
+                        
+                        // Check if there are equipment types for this category in the selected invoice
+                        const categoryEquipmentTypes = equipmentTypes.filter(
+                          item => item.category === cat && item.invoice_number === selectedInvoice
+                        );
+                        
+                        if (categoryEquipmentTypes.length > 0) {
+                          // If there are equipment types for this category, show selection
+                          setModalStep("select-equipment-type");
+                        } else {
+                          // If no equipment types, go directly to form
+                          setForm((prev: any) => ({ 
+                            ...prev, 
+                            category: cat,
+                            invoice_number: selectedInvoice,
+                            name: "",
+                            cost: ""
+                          }));
+                          setModalStep("form");
+                        }
+                      }}
+                    >
+                      <CardContent>
+                        <div className="text-lg font-semibold">{cat}</div>
+                        <div className="text-xs text-gray-400 mt-1">Add {cat} items</div>
+                        <div className="text-xs text-blue-400 mt-1">
+                          {equipmentTypes.filter(item => item.category === cat && item.invoice_number === selectedInvoice).length} types available
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: Equipment type selection */}
             {modalStep === "select-equipment-type" && (
               <div>
-                <Label>Equipment Type for {selectedCategoryCard}</Label>
+                <Label>Equipment Type for {selectedCategoryCard} (Invoice: {selectedInvoice})</Label>
                 <Select
                   value={selectedEquipmentType ?? ""}
                   onValueChange={(val) => {
@@ -941,11 +1051,11 @@ const Tools: React.FC = () => {
                       <SelectItem value="loading" disabled>
                         Loading...
                       </SelectItem>
-                    ) : equipmentTypes.filter((item) => item.category === selectedCategoryCard).length === 0 ? (
-                      <SelectItem value="manual">No {selectedCategoryCard} types found</SelectItem>
+                    ) : equipmentTypes.filter((item) => item.category === selectedCategoryCard && item.invoice_number === selectedInvoice).length === 0 ? (
+                      <SelectItem value="manual">No {selectedCategoryCard} types found in this invoice</SelectItem>
                     ) : (
                       equipmentTypes
-                        .filter((item) => item.category === selectedCategoryCard)
+                        .filter((item) => item.category === selectedCategoryCard && item.invoice_number === selectedInvoice)
                         .map((item) => (
                           <SelectItem key={item.id} value={String(item.id)}>
                             {item.name} {item.default_cost ? `— $${item.default_cost}` : ""}
@@ -956,16 +1066,17 @@ const Tools: React.FC = () => {
                 </Select>
                 
                 {/* Show message and option to proceed without selection */}
-                {!isLoadingEquipmentTypes && equipmentTypes.filter((item) => item.category === selectedCategoryCard).length === 0 && (
+                {!isLoadingEquipmentTypes && equipmentTypes.filter((item) => item.category === selectedCategoryCard && item.invoice_number === selectedInvoice).length === 0 && (
                   <div className="mt-4 p-3 bg-amber-900/20 border border-amber-700/30 rounded-lg">
                     <p className="text-amber-400 text-sm mb-2">
-                      No {selectedCategoryCard} types configured in admin settings.
+                      No {selectedCategoryCard} types configured for invoice {selectedInvoice}.
                     </p>
                     <Button
                       onClick={() => {
                         setForm((prev: any) => ({ 
                           ...prev, 
                           category: selectedCategoryCard,
+                          invoice_number: selectedInvoice,
                           name: "",
                           cost: ""
                         }));
@@ -981,9 +1092,33 @@ const Tools: React.FC = () => {
               </div>
             )}
 
-            {/* STEP 3: Form */}
+            {/* STEP 4: Form */}
             {modalStep === "form" && (
               <>
+                {/* Show selected invoice and category info */}
+                <div className="bg-blue-900/20 border border-blue-700/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 text-blue-300">
+                        <FileText className="h-4 w-4" />
+                        <span className="font-medium">Invoice: {selectedInvoice}</span>
+                      </div>
+                      <div className="text-sm text-gray-400 mt-1">
+                        Category: {selectedCategoryCard || form.category}
+                        {selectedEquipmentType && ` • Type: ${selectedEquipmentType}`}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setModalStep("select-invoice")}
+                      className="text-xs"
+                    >
+                      Change Invoice
+                    </Button>
+                  </div>
+                </div>
+
                 <div>
                   <Label>Name</Label>
                   <Input
@@ -1087,7 +1222,7 @@ const Tools: React.FC = () => {
                             ...(val !== "Receiver" ? { description: "", serials: [], equipment_type_id: "", equipment_type: "" } : {}),
                           }));
                           if (val === "Receiver") {
-                            fetchEquipmentTypes();
+                            fetchEquipmentTypes(selectedInvoice || "");
                           }
                         }}
                       >
@@ -1128,7 +1263,7 @@ const Tools: React.FC = () => {
                         )}
 
                         {equipmentTypes
-                          .filter((item) => item.category === form.category)
+                          .filter((item) => item.category === form.category && item.invoice_number === selectedInvoice)
                           .map((item) => (
                             <SelectItem key={item.id} value={String(item.id)}>
                               {item.name} {item.default_cost ? `— $${item.default_cost}` : ""}
@@ -1183,12 +1318,13 @@ const Tools: React.FC = () => {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label>Invoice Number</Label>
+                  {/* Invoice number is now auto-filled from selection */}
+                  <div className="opacity-70">
+                    <Label>Invoice Number (Auto-filled)</Label>
                     <Input 
-                      value={form.invoice_number} 
-                      onChange={(e) => setForm({ ...form, invoice_number: e.target.value })} 
-                      placeholder="INV-2025-001" 
+                      value={selectedInvoice || ""} 
+                      readOnly
+                      className="bg-gray-800"
                     />
                   </div>
                 </div>
@@ -1212,7 +1348,7 @@ const Tools: React.FC = () => {
 
           <DialogFooter>
             <div className="flex gap-2">
-              {modalStep !== "select-category" && (
+              {modalStep !== "select-invoice" && (
                 <Button
                   variant="outline"
                   onClick={() => {
@@ -1226,6 +1362,9 @@ const Tools: React.FC = () => {
                     } else if (modalStep === "select-equipment-type") {
                       setModalStep("select-category");
                       setSelectedEquipmentType(null);
+                    } else if (modalStep === "select-category") {
+                      setModalStep("select-invoice");
+                      setSelectedCategoryCard(null);
                     }
                   }}
                 >
@@ -1249,9 +1388,10 @@ const Tools: React.FC = () => {
                   resetForm();
                   setIsEditMode(false);
                   setEditingToolId(null);
+                  setSelectedInvoice(null);
                   setSelectedCategoryCard(null);
                   setSelectedEquipmentType(null);
-                  setModalStep("select-category");
+                  setModalStep("select-invoice");
                 }}
                 variant="outline"
               >

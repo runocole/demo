@@ -236,7 +236,6 @@ export const fetchDashboardData = async () => {
     recentSales: data.recentSales ?? data.recent_sales ?? [],
   };
 };
-
 // ----------------------------
 // EQUIPMENT TYPES
 // ----------------------------
@@ -251,7 +250,7 @@ export interface EquipmentType {
 
 // Get equipment by invoice
 export const getEquipmentByInvoice = async () => {
-  const response = await axios.get('/equipment-types/by-invoice/', {
+  const response = await axios.get(`${API_URL}/equipment-types/by-invoice/`, { // ADD API_URL
     headers: authHeader(),
   });
   return response.data;
@@ -263,7 +262,7 @@ export const getEquipmentTypes = async (filters?: { invoice_number?: string; cat
   if (filters?.invoice_number) params.append('invoice_number', filters.invoice_number);
   if (filters?.category) params.append('category', filters.category);
   
-  const response = await axios.get(`/equipment-types/?${params}`, {
+  const response = await axios.get(`${API_URL}/equipment-types/?${params}`, { // ADD API_URL
     headers: authHeader(),
   });
   return response.data;
@@ -276,7 +275,7 @@ export const createEquipmentType = async (data: {
   category: string;
   invoice_number?: string;
 }) => {
-  const response = await axios.post('/equipment-types/', data, {
+  const response = await axios.post(`${API_URL}/equipment-types/`, data, { // ADD API_URL
     headers: authHeader(),
   });
   return response.data;
@@ -289,7 +288,7 @@ export const updateEquipmentType = async (id: string, data: {
   category: string;
   invoice_number?: string;
 }) => {
-  const response = await axios.put(`/equipment-types/${id}/`, data, {
+  const response = await axios.put(`${API_URL}/equipment-types/${id}/`, data, { // ADD API_URL
     headers: authHeader(),
   });
   return response.data;
@@ -297,11 +296,12 @@ export const updateEquipmentType = async (id: string, data: {
 
 // Delete equipment type
 export const deleteEquipmentType = async (id: string) => {
-  const response = await axios.delete(`/equipment-types/${id}/`, {
+  const response = await axios.delete(`${API_URL}/equipment-types/${id}/`, { // ADD API_URL
     headers: authHeader(),
   });
   return response.data;
 };
+
 // ----------------------------
 // SUPPLIERS
 // ----------------------------

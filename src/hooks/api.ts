@@ -208,3 +208,26 @@ export const fetchDashboardData = async () => {
     recentSales: data.recentSales ?? data.recent_sales ?? [],
   };
 };
+
+// Add CSRF token helper function
+const getCSRFToken = (): string => {
+  const name = 'csrftoken';
+  let cookieValue = '';
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+};
+
+// Update authHeader to include CSRF token
+const authHeader = () => ({
+  Authorization: `Bearer ${localStorage.getItem("access")}`,
+  'X-CSRFToken': getCSRFToken(),
+});

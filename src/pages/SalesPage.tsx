@@ -13,10 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogTrigger,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "../components/ui/select";
 import { DashboardLayout } from "../components/DashboardLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -25,7 +31,7 @@ import axios from "axios";
 interface Sale {
   id: number;
   customer_id?: number;
-  tool_id?: number;
+  tool_id?: string;
   name: string;
   phone: string;
   state: string;
@@ -44,15 +50,39 @@ interface Customer {
   phone: string;
   email: string;
   state: string;
+  user?: number; // User ID
 }
 
 interface Tool {
-  id: number;
+  id: string;
   name: string;
+  code: string;
   category: string;
+  cost: string | number;
+  stock: number;
+  description?: string;
+  supplier?: string;
+  supplier_name?: string;
+  invoice_number?: string;
+  expiry_date?: string;
+  date_added?: string;
+  serials?: string[];
+  equipment_type?: string | null;
+  equipment_type_id?: string | null;
 }
 
 const API_URL = "http://localhost:8000/api";
+
+const TOOL_CATEGORIES = [
+  "Receiver",
+  "Accessory",
+  "Total Station",
+  "Level",
+  "Drones",
+  "EcoSounder",
+  "Laser Scanner",
+  "Other",
+];
 
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
@@ -64,10 +94,13 @@ export default function SalesPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Search states
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false);
+
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
+  const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
 
   const token = localStorage.getItem("access");
 
@@ -77,7 +110,6 @@ export default function SalesPage() {
     },
   };
 
-  // ✅ Fetch sales, customers & tools
   useEffect(() => {
     const fetchAll = async () => {
       try {
@@ -90,7 +122,6 @@ export default function SalesPage() {
         setCustomers(custRes.data);
         setTools(toolsRes.data);
         
-        // Check if we have a customer from the customers page
         const storedCustomer = localStorage.getItem('selectedCustomer');
         if (storedCustomer) {
           const customerData = JSON.parse(storedCustomer);
@@ -101,9 +132,7 @@ export default function SalesPage() {
             phone: customerData.phone,
             state: customerData.state
           }));
-          // Clear the stored customer data
           localStorage.removeItem('selectedCustomer');
-          // Auto-open the add sale modal
           setOpen(true);
         }
       } catch (error) {
@@ -115,7 +144,17 @@ export default function SalesPage() {
     fetchAll();
   }, []);
 
-  // ✅ Search customers
+  useEffect(() => {
+    if (selectedCategory) {
+      const filtered = tools.filter(tool => 
+        tool.category?.toLowerCase() === selectedCategory.toLowerCase()
+      );
+      setFilteredTools(filtered);
+    } else {
+      setFilteredTools([]);
+    }
+  }, [selectedCategory, tools]);
+
   const handleSearch = (query: string) => {
     setSearchQuery(query);
     
@@ -136,7 +175,6 @@ export default function SalesPage() {
     setShowSearchResults(true);
   };
 
-  // ✅ Select customer from search results
   const handleSelectCustomer = (customer: Customer) => {
     setSelectedCustomer(customer);
     setNewSale(prev => ({
@@ -150,11 +188,46 @@ export default function SalesPage() {
     setOpen(true);
   };
 
-  // ✅ Clear search
   const clearSearch = () => {
     setSearchQuery("");
     setSearchResults([]);
     setShowSearchResults(false);
+  };
+
+  const handleCategorySelect = (category: string) => {
+    setSelectedCategory(category);
+    setSelectedTool(null);
+    setNewSale(prev => ({
+      ...prev,
+      tool_id: undefined,
+      equipment: "",
+      cost_sold: ""
+    }));
+  };
+
+  const handleToolSelect = (toolId: string) => {
+    const selected = tools.find(tool => tool.id === toolId);
+    
+    if (selected) {
+      setSelectedTool(selected);
+      setNewSale(prev => ({
+        ...prev,
+        tool_id: selected.id,
+        equipment: selected.name,
+      }));
+    }
+  };
+
+  const clearToolSelection = () => {
+    setSelectedCategory("");
+    setFilteredTools([]);
+    setSelectedTool(null);
+    setNewSale(prev => ({
+      ...prev,
+      tool_id: undefined,
+      equipment: "",
+      cost_sold: ""
+    }));
   };
 
   const calculateStatus = (sale: Partial<Sale>): string => {
@@ -173,11 +246,13 @@ export default function SalesPage() {
   const resetForm = () => {
     setNewSale({});
     setSelectedCustomer(null);
+    setSelectedCategory("");
+    setFilteredTools([]);
+    setSelectedTool(null);
     setOpen(false);
     setIsSubmitting(false);
   };
 
-  // ✅ Email sending
   const sendEmail = async (email: string, name: string) => {
     try {
       await axios.post(`${API_URL}/send-sale-email/`, {
@@ -189,54 +264,67 @@ export default function SalesPage() {
       console.error("Error sending email:", error);
     }
   };
+ const handleAction = async (action: "cancel" | "draft" | "send") => {
+  if (action === "cancel") return resetForm();
 
-  // ✅ Handle Sale actions
-  const handleAction = async (action: "cancel" | "draft" | "send") => {
-    if (action === "cancel") return resetForm();
+  if (!selectedCustomer && (!newSale.name || !newSale.phone || !newSale.state)) {
+    alert("Please select a customer or fill in all customer details first.");
+    return;
+  }
 
-    if (!selectedCustomer) {
-      alert("Please select a customer first.");
-      return;
-    }
+  if (!newSale.tool_id) {
+    alert("Please select a tool.");
+    return;
+  }
 
-    if (!newSale.tool_id) {
-      alert("Please select a tool.");
-      return;
-    }
+  if (!newSale.equipment) {
+    alert("Please ensure equipment field is filled.");
+    return;
+  }
 
-    if (action === "draft" || action === "send") {
-      setIsSubmitting(true);
-      try {
-        const payload = {
-          customer_id: selectedCustomer.id,
-          tool_id: newSale.tool_id,
-          name: newSale.name || selectedCustomer.name,
-          phone: newSale.phone || selectedCustomer.phone,
-          state: newSale.state || selectedCustomer.state,
-          equipment: newSale.equipment || "",
-          cost_sold: newSale.cost_sold,
-          payment_plan: newSale.payment_plan || "",
-          expiry_date: newSale.expiry_date || null,
-        };
+  if (action === "draft" || action === "send") {
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        // Don't send any customer fields since they're read-only in serializer
+        tool_id: newSale.tool_id,
+        name: newSale.name || selectedCustomer?.name,
+        phone: newSale.phone || selectedCustomer?.phone,
+        state: newSale.state || selectedCustomer?.state,
+        equipment: newSale.equipment || "",
+        cost_sold: newSale.cost_sold || "0",
+        payment_plan: newSale.payment_plan || "",
+        expiry_date: newSale.expiry_date || null,
+        date_sold: new Date().toISOString().split('T')[0],
+      };
 
-        const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
-        setSales((prev) => [res.data, ...prev]);
+      console.log("Sending payload:", payload);
 
-        if (action === "send") {
-          await sendEmail(selectedCustomer.email, selectedCustomer.name);
-        }
+      const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
+      setSales((prev) => [res.data, ...prev]);
 
-        resetForm();
-      } catch (error) {
-        console.error("Error adding sale:", error);
-        alert("Failed to save sale. Check if tool/customer exists.");
-      } finally {
-        setIsSubmitting(false);
+      if (action === "send" && selectedCustomer?.email) {
+        await sendEmail(selectedCustomer.email, selectedCustomer.name);
       }
-    }
-  };
 
-  // ✅ Export to PDF
+      resetForm();
+} catch (error) {
+  if (axios.isAxiosError(error)) {
+    console.error("Error adding sale:", error);
+    console.error("Error response:", error.response?.data);
+    alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
+  } else if (error instanceof Error) {
+    console.error("Unexpected error:", error.message);
+    alert("Unexpected error occurred.");
+  } else {
+    console.error("Unknown error:", error);
+  }
+} finally {
+  setIsSubmitting(false);
+}
+  }
+};
+
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("My Sales Records", 14, 15);
@@ -276,7 +364,6 @@ export default function SalesPage() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Customer Search Section */}
         <Card>
           <CardHeader>
             <CardTitle className="text-white dark:text-white">
@@ -313,7 +400,6 @@ export default function SalesPage() {
                 </Button>
               </div>
 
-              {/* Search Results Dropdown */}
               {showSearchResults && searchResults.length > 0 && (
                 <div className="absolute top-full left-0 right-0 bg-slate-900 border border-gray-200 rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
                   {searchResults.map((customer) => (
@@ -337,7 +423,6 @@ export default function SalesPage() {
                 </div>
               )}
 
-              {/* No Results Message */}
               {showSearchResults && searchQuery && searchResults.length === 0 && (
                 <div className="absolute top-full left-0 right-0 bg-slate-900 border border-gray-200 rounded-md shadow-lg z-10 mt-1 p-4">
                   <p className="text-white text-center">No customers found matching your search.</p>
@@ -345,7 +430,6 @@ export default function SalesPage() {
               )}
             </div>
 
-            {/* Selected Customer Info */}
             {selectedCustomer && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="flex justify-between items-center">
@@ -388,14 +472,12 @@ export default function SalesPage() {
           </Button>
         </div>
           
-        {/* Add Sale Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-2xl bg-blue-950 text-gray-900">
             <DialogHeader>
               <DialogTitle className="text-white">Add New Sale</DialogTitle>
             </DialogHeader>
 
-            {/* Customer Information */}
             {selectedCustomer ? (
               <div className="bg-blue-50 p-4 rounded-md mb-4 border border-blue-200">
                 <h3 className="font-semibold text-blue-800 mb-2">Customer Information</h3>
@@ -423,30 +505,64 @@ export default function SalesPage() {
               </div>
             )}
 
-            {/* Tool Selection and Form */}
             <div className="grid grid-cols-2 gap-4 py-3">
               <div className="col-span-2">
-                <Label className="text-gray-700">Select Tool</Label>
-                <select
-                  className="border rounded-md p-2 w-full bg-blue-950 text-white border-gray-300"
-                  value={newSale.tool_id || ""}
-                  onChange={(e) =>
-                    setNewSale((prev) => ({
-                      ...prev,
-                      tool_id: Number(e.target.value),
-                    }))
-                  }
+                <Label className="text-white">Select Equipment Category</Label>
+                <Select
+                  value={selectedCategory}
+                  onValueChange={handleCategorySelect}
                 >
-                  <option value="">-- Select Tool --</option>
-                  {tools.map((tool) => (
-                    <option key={tool.id} value={tool.id}>
-                      {tool.name} ({tool.category})
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="bg-blue-950 text-white border-gray-300">
+                    <SelectValue placeholder="-- Select Category --" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black text-white border-gray-700">
+                    {TOOL_CATEGORIES.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Customer Details - Editable if no customer selected */}
+              {selectedCategory && (
+                <div className="col-span-2">
+                  <div className="flex justify-between items-center mb-2">
+                    <Label className="text-white">Select {selectedCategory}</Label>
+                    {filteredTools.length === 0 && (
+                      <span className="text-sm text-yellow-400">
+                        No equipment found in this category
+                      </span>
+                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={clearToolSelection}
+                      className="text-red-400 border-red-400 hover:bg-red-950 hover:text-white"
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Change Category
+                    </Button>
+                  </div>
+                  <Select
+                    value={selectedTool?.id || ""}
+                    onValueChange={handleToolSelect}
+                  >
+                    <SelectTrigger className="bg-blue-950 text-white border-gray-300">
+                      <SelectValue placeholder={`-- Select ${selectedCategory} --`} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-black text-white border-gray-700">
+                      {filteredTools.map((tool) => (
+                        <SelectItem key={tool.id} value={tool.id}>
+                          {tool.name} {tool.cost ? `- $${tool.cost}` : ''}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               {!selectedCustomer && (
                 <>
                   <div>
@@ -454,7 +570,7 @@ export default function SalesPage() {
                     <Input 
                       value={newSale.name || ""} 
                       onChange={(e) => setNewSale(prev => ({ ...prev, name: e.target.value }))}
-                      className="text-white bg-blue-950"
+                      className="text-white bg-blue-950 border-gray-300"
                       placeholder="Enter client name"
                     />
                   </div>
@@ -463,7 +579,7 @@ export default function SalesPage() {
                     <Input 
                       value={newSale.phone || ""} 
                       onChange={(e) => setNewSale(prev => ({ ...prev, phone: e.target.value }))}
-                      className="text-white bg-blue-950"
+                      className="text-white bg-blue-950 border-gray-300"
                       placeholder="Enter phone number"
                     />
                   </div>
@@ -472,14 +588,13 @@ export default function SalesPage() {
                     <Input 
                       value={newSale.state || ""} 
                       onChange={(e) => setNewSale(prev => ({ ...prev, state: e.target.value }))}
-                      className="text-white bg-blue-950"
+                      className="text-white bg-blue-950 border-gray-300"
                       placeholder="Enter state"
                     />
                   </div>
                 </>
               )}
 
-              {/* Read-only fields when customer is selected */}
               {selectedCustomer && (
                 <>
                   <div>
@@ -487,7 +602,7 @@ export default function SalesPage() {
                     <Input 
                       value={newSale.name || ""} 
                       readOnly 
-                      className="text-white bg-blue-950"
+                      className="text-white bg-blue-950 border-gray-300"
                     />
                   </div>
                   <div>
@@ -495,7 +610,7 @@ export default function SalesPage() {
                     <Input 
                       value={newSale.phone || ""} 
                       readOnly 
-                      className="text-white bg-blue-950"
+                      className="text-white bg-blue-950 border-gray-300"
                     />
                   </div>
                   <div>
@@ -503,16 +618,40 @@ export default function SalesPage() {
                     <Input 
                       value={newSale.state || ""} 
                       readOnly 
-                      className="text-white bg-blue-950"
+                      className="text-white bg-blue-950 border-gray-300"
                     />
                   </div>
                 </>
               )}
 
-              {/* Editable fields */}
+              <div className="col-span-2">
+                <Label className="text-white">Equipment</Label>
+                <Input
+                  value={newSale.equipment || ""}
+                  onChange={(e) => setNewSale(prev => ({ ...prev, equipment: e.target.value }))}
+                  className="text-white bg-blue-950 border-gray-300"
+                  placeholder={selectedCategory ? `Select a ${selectedCategory.toLowerCase()} from the dropdown above` : "Select a category first"}
+                  readOnly={!!selectedTool}
+                />
+                {selectedTool && (
+                  <p className="text-sm text-green-400 mt-1">
+                    Equipment auto-filled from selection.
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <Label className="text-white">Cost Sold</Label>
+                <Input
+                  type="number"
+                  value={newSale.cost_sold || ""}
+                  onChange={(e) => setNewSale(prev => ({ ...prev, cost_sold: e.target.value }))}
+                  className="text-white bg-blue-950 border-gray-300"
+                  placeholder="Enter cost"
+                />
+              </div>
+
               {[
-                ["equipment", "Equipment", "text"],
-                ["cost_sold", "Cost Sold", "number"],
                 ["payment_plan", "Payment Plan", "text"],
                 ["expiry_date", "Expiry Date", "date"],
               ].map(([key, label, type]) => (
@@ -528,12 +667,11 @@ export default function SalesPage() {
                         [key]: e.target.value,
                       }))
                     }
-                    className="text-white bg-blue-950"
+                    className="text-white bg-blue-950 border-gray-300"
                   />
                 </div>
               ))}
 
-              {/* Status */}
               <div>
                 <Label className="text-white">Status</Label>
                 <Input
@@ -572,7 +710,6 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Sales Table */}
         <Card>
           <CardHeader>
             <CardTitle className="text-white dark:text-white">Sales Overview</CardTitle>

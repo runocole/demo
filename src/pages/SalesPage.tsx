@@ -1,5 +1,3 @@
-// Replace the entire SalesPage.tsx with this updated version
-
 import { useEffect, useState } from "react";
 import { Plus, FileText, Search, X, Trash2, Edit, Eye, Barcode } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -37,8 +35,8 @@ interface SaleItem {
   equipment: string;
   cost: string;
   category?: string;
-  serial_number?: string;
-  assigned_tool_id?: string; // NEW: Track the actual tool ID that was assigned
+  serial_set?: string[];  // CHANGED: Now an array of serials for the set
+  assigned_tool_id?: string;
 }
 
 interface Sale {
@@ -144,7 +142,7 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
-  const [groupedTools, setGroupedTools] = useState<GroupedTool[]>([]); // NEW: Grouped tools
+  const [groupedTools, setGroupedTools] = useState<GroupedTool[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -159,7 +157,7 @@ export default function SalesPage() {
   const [currentItem, setCurrentItem] = useState<{
     selectedCategory: string;
     selectedEquipmentType: string;
-    selectedTool: GroupedTool | null; // CHANGED: Now using GroupedTool
+    selectedTool: GroupedTool | null;
     cost: string;
   }>({
     selectedCategory: "",
@@ -168,7 +166,7 @@ export default function SalesPage() {
     cost: ""
   });
 
-  const [filteredGroupedTools, setFilteredGroupedTools] = useState<GroupedTool[]>([]); // CHANGED: Filtered grouped tools
+  const [filteredGroupedTools, setFilteredGroupedTools] = useState<GroupedTool[]>([]);
   const [saleDetails, setSaleDetails] = useState({
     payment_plan: "",
     expiry_date: ""
@@ -194,11 +192,13 @@ export default function SalesPage() {
     soldSerials: []
   });
 
-  // NEW: Assignment confirmation state
+  // UPDATED: Assignment confirmation state for serial SETS
   const [assignmentResult, setAssignmentResult] = useState<{
     open: boolean;
     toolName: string;
-    serialNumber: string;
+    serialSet: string[];
+    serialCount: number;
+    setType: string;
     assignedToolId: string;
   } | null>(null);
 
@@ -237,7 +237,7 @@ export default function SalesPage() {
     fetchAll();
   }, []);
 
-  // NEW: Fetch grouped tools when category changes
+  // Fetch grouped tools when category changes
   useEffect(() => {
     const fetchGroupedTools = async () => {
       if (currentItem.selectedCategory) {
@@ -331,7 +331,7 @@ export default function SalesPage() {
     setShowEquipmentTypeModal(false);
   };
 
-  // CHANGED: Handle tool selection from grouped tools
+  // Handle tool selection from grouped tools
   const handleToolSelect = (groupedToolName: string) => {
     const selected = groupedTools.find(tool => tool.name === groupedToolName);
     
@@ -344,11 +344,13 @@ export default function SalesPage() {
     }
   };
 
-  // NEW: Assign random tool from group
+  // UPDATED: Assign random tool from group - now returns serial SET
   const assignRandomTool = async (): Promise<{
     assigned_tool_id: string;
     tool_name: string;
-    serial_number: string;
+    serial_set: string[];  // CHANGED: Now returns array of serials
+    serial_count: number;
+    set_type: string;
     cost: string;
   }> => {
     if (!currentItem.selectedTool) {
@@ -370,16 +372,16 @@ export default function SalesPage() {
       console.error("Error assigning random tool:", error);
       
       if (error.response?.status === 404) {
-        throw new Error(error.response.data.error || "No tools available in stock");
+        throw new Error(error.response.data.error || "No complete equipment sets available in stock");
       } else if (error.response?.status === 400) {
         throw new Error("Invalid request for tool assignment");
       } else {
-        throw new Error("Failed to assign tool from inventory");
+        throw new Error("Failed to assign equipment set from inventory");
       }
     }
   };
 
-  // UPDATED: Add item to sale with random assignment
+  // UPDATED: Add item to sale with random assignment of serial SET
   const addItemToSale = async () => {
     if (!currentItem.selectedTool || !currentItem.cost) {
       alert("Please select equipment and enter a cost.");
@@ -391,21 +393,23 @@ export default function SalesPage() {
       const assignment = await assignRandomTool();
       
       const newItem: SaleItem = {
-        tool_id: assignment.assigned_tool_id, // Use the actual assigned tool ID
+        tool_id: assignment.assigned_tool_id,
         equipment: assignment.tool_name,
         cost: currentItem.cost,
         category: currentItem.selectedCategory,
-        serial_number: assignment.serial_number,
-        assigned_tool_id: assignment.assigned_tool_id // Store for reference
+        serial_set: assignment.serial_set,  // CHANGED: Store the array of serials
+        assigned_tool_id: assignment.assigned_tool_id
       };
 
       setSaleItems(prev => [...prev, newItem]);
       
-      // Show assignment confirmation
+      // Show assignment confirmation with serial SET
       setAssignmentResult({
         open: true,
         toolName: assignment.tool_name,
-        serialNumber: assignment.serial_number,
+        serialSet: assignment.serial_set,
+        serialCount: assignment.serial_count,
+        setType: assignment.set_type,
         assignedToolId: assignment.assigned_tool_id
       });
 
@@ -433,7 +437,7 @@ export default function SalesPage() {
         setGroupedTools(response.data);
       }
     } catch (error: any) {
-      alert(error.message || "Failed to assign equipment from inventory.");
+      alert(error.message || "Failed to assign equipment set from inventory.");
       console.error("Error adding item to sale:", error);
     }
   };
@@ -489,7 +493,7 @@ export default function SalesPage() {
   const sendEmail = async (email: string, name: string, items: SaleItem[], total: number, invoiceNumber?: string) => {
     try {
       const itemList = items.map(item => 
-        `• ${item.equipment} ${item.serial_number ? `(SN: ${item.serial_number})` : ''} - ₦${parseFloat(item.cost).toLocaleString()}`
+        `• ${item.equipment} ${item.serial_set ? `(Serials: ${item.serial_set.join(', ')})` : ''} - ₦${parseFloat(item.cost).toLocaleString()}`
       ).join('\n');
       
       await axios.post(`${API_URL}/send-sale-email/`, {
@@ -784,13 +788,13 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Assignment Confirmation Modal - NEW */}
+        {/* UPDATED: Assignment Confirmation Modal for Serial SETS */}
         <Dialog open={!!assignmentResult} onOpenChange={(open) => !open && setAssignmentResult(null)}>
           <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
               <DialogTitle className="text-white flex items-center gap-2">
                 <Barcode className="w-5 h-5 text-green-400" />
-                Equipment Assigned Successfully!
+                Equipment Set Assigned Successfully!
               </DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-3">
@@ -800,21 +804,22 @@ export default function SalesPage() {
                     <div className="text-lg font-semibold text-green-300 mb-2">
                       {assignmentResult.toolName}
                     </div>
+                    <div className="text-sm text-gray-300 mb-3">
+                      {assignmentResult.setType} • {assignmentResult.serialCount} serials
+                    </div>
                     <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Serial Number:</span>
-                        <span className="text-white font-mono">{assignmentResult.serialNumber}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-300">Tool ID:</span>
-                        <span className="text-white font-mono text-xs">{assignmentResult.assignedToolId}</span>
-                      </div>
+                      {assignmentResult.serialSet.map((serial, index) => (
+                        <div key={index} className="flex justify-between">
+                          <span className="text-gray-300">Serial {index + 1}:</span>
+                          <span className="text-white font-mono">{serial}</span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
               )}
               <p className="text-gray-300 text-sm text-center">
-                The equipment has been randomly assigned from inventory and added to your sale.
+                Complete equipment set has been assigned from inventory.
               </p>
             </div>
             <DialogFooter>
@@ -931,7 +936,7 @@ export default function SalesPage() {
                   </Select>
                   {currentItem.selectedTool && (
                     <p className="text-xs text-gray-400 mt-1">
-                      {currentItem.selectedTool.total_stock} units available - will assign randomly
+                      {currentItem.selectedTool.total_stock} complete sets available
                     </p>
                   )}
                 </div>
@@ -959,7 +964,7 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              {/* Sale Items Summary */}
+              {/* UPDATED: Sale Items Summary showing serial SETS */}
               {saleItems.length > 0 && (
                 <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
                   <div className="flex justify-between items-center mb-3">
@@ -978,10 +983,10 @@ export default function SalesPage() {
                           <div className="text-white font-medium">{item.equipment}</div>
                           <div className="text-sm text-gray-300">
                             {item.category}
-                            {item.serial_number && (
-                              <span className="ml-2 text-blue-400">
-                                • SN: {item.serial_number}
-                              </span>
+                            {item.serial_set && (
+                              <div className="mt-1 text-blue-400">
+                                Serials: {item.serial_set.join(', ')}
+                              </div>
                             )}
                           </div>
                         </div>

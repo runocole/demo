@@ -492,7 +492,6 @@ const ToolsSummary: React.FC = () => {
     doc.setFontSize(10);
     doc.text(`Exported: ${new Date().toLocaleString()}`, 14, 22);
     doc.text(`Total Items: ${filteredSerials.length}`, 14, 28);
-    doc.text(`Available Serials: ${filteredSerials.reduce((acc, t) => acc + (t.available_serials?.length || 0), 0)} | Sold Serials: ${filteredSerials.reduce((acc, t) => acc + (t.sold_serials?.length || 0), 0)}`, 14, 34);
 
     const body: any[] = [];
     
@@ -539,7 +538,7 @@ const ToolsSummary: React.FC = () => {
     });
 
     autoTable(doc, {
-      head: [["Box Type", "Serial Numbers", "Supplier", "Invoice No", "Date Added", "Expiry Date", "Available", "Sold"]],
+      head: [["Box Type", "Serial Numbers", "Supplier", "Invoice No", "Date Added", "Expiry Date"]],
       body,
       startY: 40,
       styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
@@ -740,19 +739,6 @@ const ToolsSummary: React.FC = () => {
                 {t.totalStock}
               </span>
             </td>
-
-            <td className="px-4 py-3 text-center align-top">
-              <div className="flex flex-col gap-1 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Available:</span>
-                  <span className="text-green-400 font-medium">{t.totalAvailableSerials}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Sold:</span>
-                  <span className="text-blue-400 font-medium">{t.totalSoldSerials}</span>
-                </div>
-              </div>
-            </td>
           </tr>
         );
       });
@@ -820,12 +806,6 @@ const ToolsSummary: React.FC = () => {
               • {filteredSerials.filter(t => t.expiry_date).length} items with expiry dates
             </span>
           )}
-          <span className="ml-4">
-            • {filteredSerials.reduce((acc, t) => acc + (t.available_serials?.length || 0), 0)} available serials
-          </span>
-          <span className="ml-4">
-            • {filteredSerials.reduce((acc, t) => acc + (t.sold_serials?.length || 0), 0)} sold serials
-          </span>
         </div>
 
         <div className="overflow-auto border rounded-md">
@@ -838,8 +818,6 @@ const ToolsSummary: React.FC = () => {
                 <th className="px-4 py-2 text-left w-40">Invoice No</th>
                 <th className="px-4 py-2 text-left w-40">Date Added</th>
                 <th className="px-4 py-2 text-left w-40">Expiry Date</th>
-                <th className="px-4 py-2 text-left w-20">Available</th>
-                <th className="px-4 py-2 text-left w-20">Sold</th>
               </tr>
             </thead>
 
@@ -849,8 +827,6 @@ const ToolsSummary: React.FC = () => {
                   const hasExpiryDate = !!item.expiry_date;
                   const isExpired = hasExpiryDate && isDateExpired(item.expiry_date);
                   const isExpiringSoon = hasExpiryDate && isDateExpiringSoon(item.expiry_date);
-                  const availableSerials = item.available_serials?.length || 0;
-                  const soldSerials = item.sold_serials?.length || 0;
                   
                   return (
                     <tr key={`${item.id}-${index}`} className="border-b border-slate-700">
@@ -862,12 +838,6 @@ const ToolsSummary: React.FC = () => {
                       {/* Serial Numbers */}
                       <td className="px-4 py-2 align-top">
                         <div className="space-y-1 text-sm">
-                          {/* Show main code */}
-                          {item.code && (
-                            <div>
-                              <span className="text-gray-400">Code:</span> {item.code}
-                            </div>
-                          )}
                           
                           {/* Show serials based on box type */}
                           {item.serials && isSerialObject(item.serials) && (
@@ -995,20 +965,6 @@ const ToolsSummary: React.FC = () => {
                         ) : (
                           <span className="text-gray-500">—</span>
                         )}
-                      </td>
-
-                      {/* Available Serials */}
-                      <td className="px-4 py-2 align-top text-center">
-                        <span className="text-green-400 font-medium">
-                          {availableSerials}
-                        </span>
-                      </td>
-
-                      {/* Sold Serials */}
-                      <td className="px-4 py-2 align-top text-center">
-                        <span className="text-blue-400 font-medium">
-                          {soldSerials}
-                        </span>
                       </td>
                     </tr>
                   );
@@ -1172,12 +1128,6 @@ const ToolsSummary: React.FC = () => {
               </Card>
               <Card className="border-border bg-blue-950">
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-400">Available Serials</p>
-                  <h3 className="text-2xl font-bold text-green-400">{totalAvailableSerials}</h3>
-                </CardContent>
-              </Card>
-              <Card className="border-border bg-blue-950">
-                <CardContent className="p-4">
                   <p className="text-sm text-gray-400">Sold Serials</p>
                   <h3 className="text-2xl font-bold text-blue-400">{totalSoldSerials}</h3>
                 </CardContent>
@@ -1191,7 +1141,6 @@ const ToolsSummary: React.FC = () => {
                     <th className="px-4 py-3 text-left w-56">Category</th>
                     <th className="px-4 py-3 text-left">Item Name</th>
                     <th className="px-4 py-3 text-center w-28">Quantity</th>
-                    <th className="px-4 py-3 text-center w-40">Serial Numbers</th>
                   </tr>
                 </thead>
 
@@ -1216,12 +1165,6 @@ const ToolsSummary: React.FC = () => {
               <div className="flex gap-4">
                 <div>
                   Total stock: <strong>{totalStock}</strong>
-                </div>
-                <div>
-                  Available serials: <strong className="text-green-400">{totalAvailableSerials}</strong>
-                </div>
-                <div>
-                  Sold serials: <strong className="text-blue-400">{totalSoldSerials}</strong>
                 </div>
               </div>
             </div>

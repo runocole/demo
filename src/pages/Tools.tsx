@@ -953,23 +953,12 @@ const handleSaveTool = async () => {
               <h3 className="text-2xl font-bold">{lowStock}</h3>
             </CardContent>
           </Card>
-          <Card className="border-border bg-blue-950">
-            <CardContent className="p-4">
-              <p className="text-sm text-gray-400">Total Sold Serials</p>
-              <h3 className="text-2xl font-bold">
-                {tools.reduce((acc, tool) => acc + (tool.sold_serials?.length || 0), 0)}
-              </h3>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Tools Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {groupedTools.map((group) => {
             const isRecentlyAdded = group.tools.some(tool => tool.id === recentlyAddedId);
-            const totalSoldSerials = group.tools.reduce((acc, tool) => acc + (tool.sold_serials?.length || 0), 0);
-            const totalAvailableSerials = group.tools.reduce((acc, tool) => acc + (tool.available_serials?.length || 0), 0);
-            
             return (
               <Card 
                 key={group.id} 
@@ -1069,20 +1058,6 @@ const handleSaveTool = async () => {
                         }`}
                       >
                         {group.totalStock}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Serial Number Summary - NEW */}
-                  <div className="pt-2 border-t border-slate-800">
-                    <div className="flex justify-between text-xs">
-                      <div>
-                        <span className="text-gray-400">Available:</span>
-                        <span className="text-green-400 ml-1 font-medium">{totalAvailableSerials}</span>
-                      </div>
-                      <div>
-                        <span className="text-gray-400">Sold:</span>
-                        <span className="text-blue-400 ml-1 font-medium">{totalSoldSerials}</span>
                       </div>
                     </div>
                   </div>

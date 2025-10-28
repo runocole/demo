@@ -543,14 +543,9 @@ const handleSaveTool = async () => {
     if (allSerials.length > 0) payload.serials = allSerials;
   }
 
-  // FIX: Only send equipment_type_id, not equipment_type name
   if (finalEquipmentTypeId) {
     payload.equipment_type_id = finalEquipmentTypeId;
   }
-  // Remove this line - don't send equipment_type as string
-  // if (finalEquipmentTypeName && String(finalEquipmentTypeName).trim() !== "") {
-  //   payload.equipment_type = String(finalEquipmentTypeName).trim();
-  // }
 
   if (isEditMode && editingToolId) {
     try {

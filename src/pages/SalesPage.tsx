@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Plus, FileText, Search, X, Trash2 } from "lucide-react";
+import { Plus, FileText, Search, X, Trash2, Edit } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -91,6 +91,15 @@ const TOOL_CATEGORIES = [
   "Other",
 ];
 
+// Payment status options
+const PAYMENT_STATUSES = [
+  "pending",
+  "completed",
+  "installment",
+  "failed",
+  "cancelled"
+];
+
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -121,6 +130,12 @@ export default function SalesPage() {
     payment_plan: "",
     expiry_date: ""
   });
+
+  // Edit status state
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [editStatusOpen, setEditStatusOpen] = useState(false);
+  const [newPaymentStatus, setNewPaymentStatus] = useState("");
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const token = localStorage.getItem("access");
 
@@ -352,6 +367,44 @@ export default function SalesPage() {
     }
   };
 
+  // Edit status functions
+  const openEditStatus = (sale: Sale) => {
+    setEditingSale(sale);
+    setNewPaymentStatus(sale.payment_status || "pending");
+    setEditStatusOpen(true);
+  };
+
+  const closeEditStatus = () => {
+    setEditingSale(null);
+    setNewPaymentStatus("");
+    setEditStatusOpen(false);
+  };
+
+  const updatePaymentStatus = async () => {
+    if (!editingSale || !newPaymentStatus) return;
+
+    setIsUpdatingStatus(true);
+    try {
+      const payload = {
+        payment_status: newPaymentStatus
+      };
+
+      const res = await axios.patch(`${API_URL}/sales/${editingSale.id}/`, payload, axiosConfig);
+      
+      // Update the sale in local state
+      setSales(prev => prev.map(sale => 
+        sale.id === editingSale.id ? { ...sale, payment_status: newPaymentStatus } : sale
+      ));
+
+      closeEditStatus();
+    } catch (error) {
+      console.error("Error updating payment status:", error);
+      alert("Failed to update payment status. Please try again.");
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+  };
+
   const exportPDF = () => {
     const doc = new jsPDF();
     doc.text("My Sales Records", 14, 15);
@@ -391,10 +444,10 @@ export default function SalesPage() {
   return (
     <DashboardLayout>
       <div className="p-6 space-y-6">
-        {/* Customer Search Section - Unchanged */}
-        <Card>
+        {/* Customer Search Section */}
+        <Card className="bg-slate-900 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white dark:text-white">
+            <CardTitle className="text-white">
               Find Customer for New Sale
             </CardTitle>
           </CardHeader>
@@ -408,12 +461,12 @@ export default function SalesPage() {
                     placeholder="Search customers by name, phone, email, or state..."
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-10 pr-10 text-white bg-slate-900 border-gray-300 focus:border-blue-500"
+                    className="pl-10 pr-10 text-white bg-slate-800 border-slate-600 focus:border-blue-500 placeholder-gray-400"
                   />
                   {searchQuery && (
                     <button
                       onClick={clearSearch}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-300"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -429,21 +482,21 @@ export default function SalesPage() {
               </div>
 
               {showSearchResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 bg-slate-900 border border-gray-200 rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
+                <div className="absolute top-full left-0 right-0 bg-slate-800 border border-slate-600 rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
                   {searchResults.map((customer) => (
                     <div
                       key={customer.id}
-                      className="p-3 hover:bg-blue-950 cursor-pointer border-b border-gray-100 last:border-b-0"
+                      className="p-3 hover:bg-slate-700 cursor-pointer border-b border-slate-600 last:border-b-0 transition-colors"
                       onClick={() => handleSelectCustomer(customer)}
                     >
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium text-white">{customer.name}</p>
-                          <p className="text-sm text-white">{customer.phone}</p>
+                          <p className="text-sm text-gray-300">{customer.phone}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm text-white">{customer.email}</p>
-                          <p className="text-sm text-white">{customer.state}</p>
+                          <p className="text-sm text-gray-300">{customer.email}</p>
+                          <p className="text-sm text-gray-300">{customer.state}</p>
                         </div>
                       </div>
                     </div>
@@ -452,18 +505,18 @@ export default function SalesPage() {
               )}
 
               {showSearchResults && searchQuery && searchResults.length === 0 && (
-                <div className="absolute top-full left-0 right-0 bg-slate-900 border border-gray-200 rounded-md shadow-lg z-10 mt-1 p-4">
-                  <p className="text-white text-center">No customers found matching your search.</p>
+                <div className="absolute top-full left-0 right-0 bg-slate-800 border border-slate-600 rounded-md shadow-lg z-10 mt-1 p-4">
+                  <p className="text-gray-300 text-center">No customers found matching your search.</p>
                 </div>
               )}
             </div>
 
             {selectedCustomer && (
-              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+              <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded-md">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h3 className="font-semibold text-blue-800">Selected Customer</h3>
-                    <p className="text-sm text-gray-700">
+                    <h3 className="font-semibold text-blue-300">Selected Customer</h3>
+                    <p className="text-sm text-gray-300">
                       {selectedCustomer.name} • {selectedCustomer.phone} • {selectedCustomer.email} • {selectedCustomer.state}
                     </p>
                   </div>
@@ -474,7 +527,7 @@ export default function SalesPage() {
                       setSelectedCustomer(null);
                       resetForm();
                     }}
-                    className="text-red-600 border-red-200 hover:bg-red-50"
+                    className="text-red-400 border-red-600 hover:bg-red-900/30 hover:text-red-300"
                   >
                     <X className="w-3 h-3 mr-1" />
                     Clear
@@ -497,33 +550,33 @@ export default function SalesPage() {
           
         {/* Updated Sale Dialog with Multi-Item Support */}
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogContent className="max-w-4xl bg-blue-950 text-gray-900 max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-4xl bg-slate-900 border-slate-700 text-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-white">Add New Sale</DialogTitle>
             </DialogHeader>
 
             {selectedCustomer ? (
-              <div className="bg-blue-50 p-4 rounded-md mb-4 border border-blue-200">
-                <h3 className="font-semibold text-blue-800 mb-2">Customer Information</h3>
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
+              <div className="bg-blue-900/20 p-4 rounded-md mb-4 border border-blue-700">
+                <h3 className="font-semibold text-blue-300 mb-2">Customer Information</h3>
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
                   <div>
-                    <span className="font-medium">Name:</span> {selectedCustomer.name}
+                    <span className="font-medium text-blue-300">Name:</span> {selectedCustomer.name}
                   </div>
                   <div>
-                    <span className="font-medium">Email:</span> {selectedCustomer.email}
+                    <span className="font-medium text-blue-300">Email:</span> {selectedCustomer.email}
                   </div>
                   <div>
-                    <span className="font-medium">Phone:</span> {selectedCustomer.phone}
+                    <span className="font-medium text-blue-300">Phone:</span> {selectedCustomer.phone}
                   </div>
                   <div>
-                    <span className="font-medium">State:</span> {selectedCustomer.state}
+                    <span className="font-medium text-blue-300">State:</span> {selectedCustomer.state}
                   </div>
                 </div>
               </div>
             ) : (
-              <div className="bg-yellow-50 p-4 rounded-md mb-4 border border-yellow-200">
-                <h3 className="font-semibold text-yellow-800 mb-2">No Customer Selected</h3>
-                <p className="text-sm text-yellow-700">
+              <div className="bg-yellow-900/20 p-4 rounded-md mb-4 border border-yellow-700">
+                <h3 className="font-semibold text-yellow-300 mb-2">No Customer Selected</h3>
+                <p className="text-sm text-yellow-300">
                   Please search and select a customer above.
                 </p>
               </div>
@@ -531,19 +584,19 @@ export default function SalesPage() {
 
             <div className="space-y-6 py-3">
               {/* Current Item Selection */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-4 bg-slate-800 rounded-lg">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end p-4 bg-slate-800 rounded-lg border border-slate-700">
                 <div className="md:col-span-4">
                   <Label className="text-white">Equipment Category</Label>
                   <Select
                     value={currentItem.selectedCategory}
                     onValueChange={handleCategorySelect}
                   >
-                    <SelectTrigger className="bg-slate-700 text-white border-gray-600">
+                    <SelectTrigger className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
                       <SelectValue placeholder="Select Category" />
                     </SelectTrigger>
-                    <SelectContent className="bg-black text-white border-gray-700">
+                    <SelectContent className="bg-slate-800 text-white border-slate-600">
                       {TOOL_CATEGORIES.map((category) => (
-                        <SelectItem key={category} value={category}>
+                        <SelectItem key={category} value={category} className="hover:bg-slate-700">
                           {category}
                         </SelectItem>
                       ))}
@@ -558,12 +611,12 @@ export default function SalesPage() {
                     onValueChange={handleToolSelect}
                     disabled={!currentItem.selectedCategory}
                   >
-                    <SelectTrigger className="bg-slate-700 text-white border-gray-600">
+                    <SelectTrigger className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
                       <SelectValue placeholder={currentItem.selectedCategory ? `Select ${currentItem.selectedCategory}` : "Select category first"} />
                     </SelectTrigger>
-                    <SelectContent className="bg-black text-white border-gray-700">
+                    <SelectContent className="bg-slate-800 text-white border-slate-600">
                       {filteredTools.map((tool) => (
-                        <SelectItem key={tool.id} value={tool.id}>
+                        <SelectItem key={tool.id} value={tool.id} className="hover:bg-slate-700">
                           {tool.name}
                         </SelectItem>
                       ))}
@@ -577,7 +630,7 @@ export default function SalesPage() {
                     type="number"
                     value={currentItem.cost}
                     onChange={(e) => setCurrentItem(prev => ({ ...prev, cost: e.target.value }))}
-                    className="bg-slate-700 text-white border-gray-600"
+                    className="bg-slate-700 text-white border-slate-600 placeholder-gray-400"
                     placeholder="Enter cost"
                     disabled={!currentItem.selectedTool}
                   />
@@ -596,7 +649,7 @@ export default function SalesPage() {
 
               {/* Sale Items Summary */}
               {saleItems.length > 0 && (
-                <div className="bg-slate-800 rounded-lg p-4">
+                <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
                   <div className="flex justify-between items-center mb-3">
                     <h3 className="text-white font-semibold">Items in this Sale ({saleItems.length})</h3>
                     <div className="text-right">
@@ -621,7 +674,7 @@ export default function SalesPage() {
                             variant="ghost"
                             size="icon"
                             onClick={() => removeItemFromSale(index)}
-                            className="text-red-400 hover:text-red-600 hover:bg-red-950"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/30"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -639,7 +692,7 @@ export default function SalesPage() {
                   <Input
                     value={saleDetails.payment_plan}
                     onChange={(e) => setSaleDetails(prev => ({ ...prev, payment_plan: e.target.value }))}
-                    className="bg-slate-700 text-white border-gray-600"
+                    className="bg-slate-700 text-white border-slate-600 placeholder-gray-400"
                     placeholder="e.g., Full Payment, 3-month Installment"
                   />
                 </div>
@@ -649,7 +702,7 @@ export default function SalesPage() {
                     type="date"
                     value={saleDetails.expiry_date}
                     onChange={(e) => setSaleDetails(prev => ({ ...prev, expiry_date: e.target.value }))}
-                    className="bg-slate-700 text-white border-gray-600"
+                    className="bg-slate-700 text-white border-slate-600"
                   />
                 </div>
               </div>
@@ -660,7 +713,7 @@ export default function SalesPage() {
                 variant="outline"
                 onClick={() => handleAction("cancel")}
                 disabled={isSubmitting}
-                className="text-gray-700"
+                className="text-gray-300 border-slate-600 hover:bg-slate-700 hover:text-white"
               >
                 Cancel
               </Button>
@@ -668,7 +721,7 @@ export default function SalesPage() {
                 variant="secondary"
                 onClick={() => handleAction("draft")}
                 disabled={isSubmitting || saleItems.length === 0}
-                className="bg-gray-500 hover:bg-gray-600 text-white"
+                className="bg-gray-600 hover:bg-gray-700 text-white"
               >
                 {isSubmitting ? "Saving..." : "Save to Draft"}
               </Button>
@@ -683,19 +736,80 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Sales Table - Updated to show multiple items */}
-        <Card>
+        {/* Edit Status Dialog */}
+        <Dialog open={editStatusOpen} onOpenChange={setEditStatusOpen}>
+          <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Edit Payment Status</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-3">
+              {editingSale && (
+                <div className="bg-blue-900/20 p-3 rounded-md border border-blue-700">
+                  <h4 className="font-semibold text-blue-300 mb-2">Sale Information</h4>
+                  <p className="text-sm text-gray-300">
+                    <strong className="text-blue-300">Customer:</strong> {editingSale.name}
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    <strong className="text-blue-300">Invoice:</strong> {editingSale.invoice_number || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    <strong className="text-blue-300">Total:</strong> ₦{parseFloat(editingSale.total_cost).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              
+              <div>
+                <Label className="text-white">Payment Status</Label>
+                <Select
+                  value={newPaymentStatus}
+                  onValueChange={setNewPaymentStatus}
+                >
+                  <SelectTrigger className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
+                    <SelectValue placeholder="Select Status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 text-white border-slate-600">
+                    {PAYMENT_STATUSES.map((status) => (
+                      <SelectItem key={status} value={status} className="hover:bg-slate-700">
+                        {status.charAt(0).toUpperCase() + status.slice(1)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={closeEditStatus}
+                disabled={isUpdatingStatus}
+                className="text-gray-300 border-slate-600 hover:bg-slate-700 hover:text-white"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={updatePaymentStatus}
+                disabled={isUpdatingStatus || !newPaymentStatus}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isUpdatingStatus ? "Updating..." : "Update Status"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Sales Table - Updated with better UI */}
+        <Card className="bg-slate-900 border-slate-700">
           <CardHeader>
-            <CardTitle className="text-white dark:text-white">Sales Overview</CardTitle>
+            <CardTitle className="text-white">Sales Overview</CardTitle>
           </CardHeader>
           <CardContent>
             {loading ? (
-              <p className="text-gray-500 text-center py-4">Loading...</p>
+              <p className="text-gray-400 text-center py-4">Loading...</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm border-collapse">
                   <thead>
-                    <tr className="text-left border-b bg-slate-900">
+                    <tr className="text-left border-b border-slate-700 bg-slate-800">
                       {[
                         "Client",
                         "Phone",
@@ -707,8 +821,9 @@ export default function SalesPage() {
                         "Payment Plan",
                         "Expiry",
                         "Status",
+                        "Actions",
                       ].map((col) => (
-                        <th key={col} className="p-2 text-white font-medium">
+                        <th key={col} className="p-3 text-white font-medium">
                           {col}
                         </th>
                       ))}
@@ -717,44 +832,58 @@ export default function SalesPage() {
                   <tbody>
                     {sales.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="text-center p-4 text-gray-500">
+                        <td colSpan={11} className="text-center p-4 text-gray-400">
                           No records yet. Add a sale to begin.
                         </td>
                       </tr>
                     ) : (
                       sales.map((sale) => (
-                        <tr key={sale.id} className="border-b hover:bg-gray-50 text-gray-700">
-                          <td className="p-2">{sale.name}</td>
-                          <td className="p-2">{sale.phone}</td>
-                          <td className="p-2">{sale.state}</td>
-<td className="p-2">
-  <div className="max-w-xs">
-    {sale.items?.map((item, index) => (
-      <div key={index} className="text-xs mb-1">
-        • {item.equipment}
-      </div>
-    )) || "No items"}
-  </div>
-</td>
-                          <td className="p-2 font-semibold">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
-                          <td className="p-2">{sale.date_sold}</td>
-                          <td className="p-2">{sale.invoice_number || "-"}</td>
-                          <td className="p-2">{sale.payment_plan || "-"}</td>
-                          <td className="p-2">{sale.expiry_date || "-"}</td>
-                          <td className="p-2">
+                        <tr 
+                          key={sale.id} 
+                          className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors text-gray-300"
+                        >
+                          <td className="p-3 text-white">{sale.name}</td>
+                          <td className="p-3">{sale.phone}</td>
+                          <td className="p-3">{sale.state}</td>
+                          <td className="p-3">
+                            <div className="max-w-xs">
+                              {sale.items?.map((item, index) => (
+                                <div key={index} className="text-xs mb-1 text-gray-300">
+                                  • {item.equipment}
+                                </div>
+                              )) || "No items"}
+                            </div>
+                          </td>
+                          <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
+                          <td className="p-3">{sale.date_sold}</td>
+                          <td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
+                          <td className="p-3">{sale.payment_plan || "-"}</td>
+                          <td className="p-3">{sale.expiry_date || "-"}</td>
+                          <td className="p-3">
                             <span
-                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
                                 sale.payment_status === "completed"
-                                  ? "bg-green-100 text-green-800"
+                                  ? "bg-green-900/50 text-green-300 border border-green-700"
                                   : sale.payment_status === "installment"
-                                  ? "bg-blue-100 text-blue-800"
+                                  ? "bg-blue-900/50 text-blue-300 border border-blue-700"
                                   : sale.payment_status === "failed"
-                                  ? "bg-red-100 text-red-800"
-                                  : "bg-gray-100 text-gray-800"
+                                  ? "bg-red-900/50 text-red-300 border border-red-700"
+                                  : "bg-gray-900/50 text-gray-300 border border-gray-700"
                               }`}
                             >
                               {sale.payment_status || "pending"}
                             </span>
+                          </td>
+                          <td className="p-3">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditStatus(sale)}
+                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+                              title="Edit payment status"
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
                           </td>
                         </tr>
                       ))

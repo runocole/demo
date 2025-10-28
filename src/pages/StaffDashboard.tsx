@@ -61,6 +61,32 @@ const StaffDashboard = () => {
       maximumFractionDigits: 2,
     })}`;
 
+  // Function to group low stock items by name and category
+  const getGroupedLowStockItems = () => {
+    if (!dashboardData?.lowStockItems) return [];
+
+    const groupedItems: { [key: string]: any } = {};
+
+    dashboardData.lowStockItems.forEach((tool: any) => {
+      const key = `${tool.name}-${tool.category}`;
+      
+      if (groupedItems[key]) {
+        // If item already exists, sum the stock
+        groupedItems[key].stock += tool.stock;
+      } else {
+        // If item doesn't exist, create new entry
+        groupedItems[key] = {
+          id: tool.id, // Keep the first ID or generate a new one
+          name: tool.name,
+          category: tool.category,
+          stock: tool.stock
+        };
+      }
+    });
+
+    return Object.values(groupedItems);
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -70,6 +96,8 @@ const StaffDashboard = () => {
       </DashboardLayout>
     );
   }
+
+  const groupedLowStockItems = getGroupedLowStockItems();
 
   return (
     <DashboardLayout>
@@ -143,17 +171,15 @@ const StaffDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Stock</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dashboardData?.lowStockItems?.length > 0 ? (
-                    dashboardData.lowStockItems.map((tool: any) => (
-                      <TableRow key={tool.id}>
-                        <TableCell>{tool.code}</TableCell>
+                  {groupedLowStockItems.length > 0 ? (
+                    groupedLowStockItems.map((tool: any) => (
+                      <TableRow key={`${tool.name}-${tool.category}`}>
                         <TableCell>{tool.name}</TableCell>
                         <TableCell>{tool.category}</TableCell>
                         <TableCell>{tool.stock}</TableCell>
@@ -217,7 +243,7 @@ const StaffDashboard = () => {
                         style={{ backgroundColor: COLORS[i % COLORS.length] }}
                       ></div>
                       <span className="text-gray-300">
-                        {item.receiver_type}: <span className="font-semibold">{item.count}</span> {/* CHANGED: from category to receiver_type */}
+                        {item.receiver_type}: <span className="font-semibold">{item.count}</span>
                       </span>
                     </div>
                   ))}

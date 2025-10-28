@@ -611,7 +611,6 @@ export default function SalesPage() {
           "Phone", 
           "State",
           "Items",
-          "Serial Numbers",
           "Cost",
           "Date Sold",
           "Invoice",
@@ -625,7 +624,6 @@ export default function SalesPage() {
         s.phone,
         s.state,
         s.items.map(item => item.equipment).join(', '),
-        s.items.map(item => item.serial_number || 'N/A').join(', '),
         `₦${s.total_cost}`,
         s.date_sold,
         s.invoice_number || "-",
@@ -1194,7 +1192,6 @@ export default function SalesPage() {
                         "Phone",
                         "State", 
                         "Items",
-                        "Serial Numbers",
                         "Total Cost",
                         "Date Sold",
                         "Invoice",
@@ -1212,7 +1209,7 @@ export default function SalesPage() {
                   <tbody>
                     {sales.length === 0 ? (
                       <tr>
-                        <td colSpan={12} className="text-center p-4 text-gray-400">
+                        <td colSpan={11} className="text-center p-4 text-gray-400">
                           No records yet. Add a sale to begin.
                         </td>
                       </tr>
@@ -1230,15 +1227,6 @@ export default function SalesPage() {
                               {sale.items?.map((item, index) => (
                                 <div key={index} className="text-xs mb-1 text-gray-300">
                                   • {item.equipment}
-                                </div>
-                              )) || "No items"}
-                            </div>
-                          </td>
-                          <td className="p-3">
-                            <div className="max-w-xs">
-                              {sale.items?.map((item, index) => (
-                                <div key={index} className="text-xs mb-1 text-blue-300">
-                                  {item.serial_number || "N/A"}
                                 </div>
                               )) || "No items"}
                             </div>

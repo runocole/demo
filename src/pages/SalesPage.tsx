@@ -1,5 +1,7 @@
+// Replace the entire SalesPage.tsx with this updated version
+
 import { useEffect, useState } from "react";
-import { Plus, FileText, Search, X, Trash2, Edit } from "lucide-react";
+import { Plus, FileText, Search, X, Trash2, Edit, Eye, Barcode } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -13,6 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "../components/ui/dialog";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
@@ -28,12 +31,14 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import axios from "axios";
 
-// New interfaces for multi-item sales
+// Interfaces
 interface SaleItem {
   tool_id: string;
   equipment: string;
   cost: string;
   category?: string;
+  serial_number?: string;
+  assigned_tool_id?: string; // NEW: Track the actual tool ID that was assigned
 }
 
 interface Sale {
@@ -74,8 +79,37 @@ interface Tool {
   expiry_date?: string;
   date_added?: string;
   serials?: string[];
+  available_serials?: string[];
+  sold_serials?: any[];
   equipment_type?: string | null;
   equipment_type_id?: string | null;
+}
+
+// NEW: Interface for grouped tools
+interface GroupedTool {
+  name: string;
+  category: string;
+  cost: string | number;
+  total_stock: number;
+  tool_count: number;
+  description?: string;
+  supplier_name?: string;
+  group_id: string;
+}
+
+interface EquipmentType {
+  id: number | string;
+  name: string;
+  default_cost?: string | number;
+  category?: string;
+}
+
+interface SoldSerialInfo {
+  serial: string;
+  sale_id: number;
+  customer_name: string;
+  date_sold: string;
+  invoice_number?: string;
 }
 
 const API_URL = "http://localhost:8000/api";
@@ -91,7 +125,13 @@ const TOOL_CATEGORIES = [
   "Other",
 ];
 
-// Payment status options
+const RECEIVER_EQUIPMENT_TYPES = [
+  "Base Only",
+  "Rover Only", 
+  "Base & Rover Combo",
+  "Accessories"
+];
+
 const PAYMENT_STATUSES = [
   "pending",
   "completed",
@@ -104,6 +144,7 @@ export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [tools, setTools] = useState<Tool[]>([]);
+  const [groupedTools, setGroupedTools] = useState<GroupedTool[]>([]); // NEW: Grouped tools
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -117,25 +158,49 @@ export default function SalesPage() {
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [currentItem, setCurrentItem] = useState<{
     selectedCategory: string;
-    selectedTool: Tool | null;
+    selectedEquipmentType: string;
+    selectedTool: GroupedTool | null; // CHANGED: Now using GroupedTool
     cost: string;
   }>({
     selectedCategory: "",
+    selectedEquipmentType: "",
     selectedTool: null,
     cost: ""
   });
 
-  const [filteredTools, setFilteredTools] = useState<Tool[]>([]);
+  const [filteredGroupedTools, setFilteredGroupedTools] = useState<GroupedTool[]>([]); // CHANGED: Filtered grouped tools
   const [saleDetails, setSaleDetails] = useState({
     payment_plan: "",
     expiry_date: ""
   });
+
+  // Equipment type modal state
+  const [showEquipmentTypeModal, setShowEquipmentTypeModal] = useState(false);
 
   // Edit status state
   const [editingSale, setEditingSale] = useState<Sale | null>(null);
   const [editStatusOpen, setEditStatusOpen] = useState(false);
   const [newPaymentStatus, setNewPaymentStatus] = useState("");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+
+  // Serial number viewing state
+  const [viewingSerials, setViewingSerials] = useState<{
+    open: boolean;
+    tool: Tool | null;
+    soldSerials: SoldSerialInfo[];
+  }>({
+    open: false,
+    tool: null,
+    soldSerials: []
+  });
+
+  // NEW: Assignment confirmation state
+  const [assignmentResult, setAssignmentResult] = useState<{
+    open: boolean;
+    toolName: string;
+    serialNumber: string;
+    assignedToolId: string;
+  } | null>(null);
 
   const token = localStorage.getItem("access");
 
@@ -172,16 +237,38 @@ export default function SalesPage() {
     fetchAll();
   }, []);
 
+  // NEW: Fetch grouped tools when category changes
   useEffect(() => {
-    if (currentItem.selectedCategory) {
-      const filtered = tools.filter(tool => 
-        tool.category?.toLowerCase() === currentItem.selectedCategory.toLowerCase()
-      );
-      setFilteredTools(filtered);
-    } else {
-      setFilteredTools([]);
-    }
-  }, [currentItem.selectedCategory, tools]);
+    const fetchGroupedTools = async () => {
+      if (currentItem.selectedCategory) {
+        try {
+          const params = new URLSearchParams({
+            category: currentItem.selectedCategory
+          });
+          
+          if (currentItem.selectedCategory === "Receiver" && currentItem.selectedEquipmentType) {
+            params.append('equipment_type', currentItem.selectedEquipmentType);
+          }
+          
+          const response = await axios.get(
+            `${API_URL}/tools/grouped/?${params}`,
+            axiosConfig
+          );
+          setGroupedTools(response.data);
+          setFilteredGroupedTools(response.data);
+        } catch (error) {
+          console.error("Error fetching grouped tools:", error);
+          setGroupedTools([]);
+          setFilteredGroupedTools([]);
+        }
+      } else {
+        setGroupedTools([]);
+        setFilteredGroupedTools([]);
+      }
+    };
+
+    fetchGroupedTools();
+  }, [currentItem.selectedCategory, currentItem.selectedEquipmentType]);
 
   // Calculate total cost
   const totalCost = saleItems.reduce((sum, item) => sum + parseFloat(item.cost || "0"), 0);
@@ -219,49 +306,136 @@ export default function SalesPage() {
     setShowSearchResults(false);
   };
 
+  // Handle category selection with equipment type modal
   const handleCategorySelect = (category: string) => {
     setCurrentItem(prev => ({
       ...prev,
       selectedCategory: category,
+      selectedEquipmentType: "",
       selectedTool: null,
       cost: ""
     }));
+
+    // Show equipment type modal only for Receiver category
+    if (category === "Receiver") {
+      setShowEquipmentTypeModal(true);
+    }
   };
 
-  const handleToolSelect = (toolId: string) => {
-    const selected = tools.find(tool => tool.id === toolId);
+  // Handle equipment type selection
+  const handleEquipmentTypeSelect = (equipmentType: string) => {
+    setCurrentItem(prev => ({
+      ...prev,
+      selectedEquipmentType: equipmentType
+    }));
+    setShowEquipmentTypeModal(false);
+  };
+
+  // CHANGED: Handle tool selection from grouped tools
+  const handleToolSelect = (groupedToolName: string) => {
+    const selected = groupedTools.find(tool => tool.name === groupedToolName);
     
     if (selected) {
       setCurrentItem(prev => ({
         ...prev,
         selectedTool: selected,
-        cost: prev.cost || String(selected.cost || "") // Pre-fill with tool cost as suggestion
+        cost: prev.cost || String(selected.cost || "")
       }));
     }
   };
 
-  const addItemToSale = () => {
+  // NEW: Assign random tool from group
+  const assignRandomTool = async (): Promise<{
+    assigned_tool_id: string;
+    tool_name: string;
+    serial_number: string;
+    cost: string;
+  }> => {
+    if (!currentItem.selectedTool) {
+      throw new Error("No tool selected");
+    }
+
+    try {
+      const response = await axios.post(
+        `${API_URL}/tools/assign-random/`,
+        {
+          tool_name: currentItem.selectedTool.name,
+          category: currentItem.selectedCategory
+        },
+        axiosConfig
+      );
+      
+      return response.data;
+    } catch (error: any) {
+      console.error("Error assigning random tool:", error);
+      
+      if (error.response?.status === 404) {
+        throw new Error(error.response.data.error || "No tools available in stock");
+      } else if (error.response?.status === 400) {
+        throw new Error("Invalid request for tool assignment");
+      } else {
+        throw new Error("Failed to assign tool from inventory");
+      }
+    }
+  };
+
+  // UPDATED: Add item to sale with random assignment
+  const addItemToSale = async () => {
     if (!currentItem.selectedTool || !currentItem.cost) {
       alert("Please select equipment and enter a cost.");
       return;
     }
 
-    const newItem: SaleItem = {
-      tool_id: currentItem.selectedTool.id,
-      equipment: currentItem.selectedTool.name,
-      cost: currentItem.cost,
-      category: currentItem.selectedCategory
-    };
+    try {
+      // Assign random tool from the group
+      const assignment = await assignRandomTool();
+      
+      const newItem: SaleItem = {
+        tool_id: assignment.assigned_tool_id, // Use the actual assigned tool ID
+        equipment: assignment.tool_name,
+        cost: currentItem.cost,
+        category: currentItem.selectedCategory,
+        serial_number: assignment.serial_number,
+        assigned_tool_id: assignment.assigned_tool_id // Store for reference
+      };
 
-    setSaleItems(prev => [...prev, newItem]);
-    
-    // Reset current item form
-    setCurrentItem({
-      selectedCategory: "",
-      selectedTool: null,
-      cost: ""
-    });
-    setFilteredTools([]);
+      setSaleItems(prev => [...prev, newItem]);
+      
+      // Show assignment confirmation
+      setAssignmentResult({
+        open: true,
+        toolName: assignment.tool_name,
+        serialNumber: assignment.serial_number,
+        assignedToolId: assignment.assigned_tool_id
+      });
+
+      // Reset current item form
+      setCurrentItem({
+        selectedCategory: "",
+        selectedEquipmentType: "",
+        selectedTool: null,
+        cost: ""
+      });
+      setFilteredGroupedTools([]);
+      
+      // Refresh grouped tools to update stock counts
+      if (currentItem.selectedCategory) {
+        const params = new URLSearchParams({
+          category: currentItem.selectedCategory
+        });
+        if (currentItem.selectedCategory === "Receiver" && currentItem.selectedEquipmentType) {
+          params.append('equipment_type', currentItem.selectedEquipmentType);
+        }
+        const response = await axios.get(
+          `${API_URL}/tools/grouped/?${params}`,
+          axiosConfig
+        );
+        setGroupedTools(response.data);
+      }
+    } catch (error: any) {
+      alert(error.message || "Failed to assign equipment from inventory.");
+      console.error("Error adding item to sale:", error);
+    }
   };
 
   const removeItemFromSale = (index: number) => {
@@ -271,16 +445,18 @@ export default function SalesPage() {
   const clearCurrentSelection = () => {
     setCurrentItem({
       selectedCategory: "",
+      selectedEquipmentType: "",
       selectedTool: null,
       cost: ""
     });
-    setFilteredTools([]);
+    setFilteredGroupedTools([]);
   };
 
   const resetForm = () => {
     setSaleItems([]);
     setCurrentItem({
       selectedCategory: "",
+      selectedEquipmentType: "",
       selectedTool: null,
       cost: ""
     });
@@ -291,11 +467,30 @@ export default function SalesPage() {
     setSelectedCustomer(null);
     setOpen(false);
     setIsSubmitting(false);
+    setShowEquipmentTypeModal(false);
+    setAssignmentResult(null);
+  };
+
+  // View serial numbers for a tool
+  const viewSerialNumbers = async (tool: Tool) => {
+    try {
+      const response = await axios.get(`${API_URL}/tools/${tool.id}/sold-serials/`, axiosConfig);
+      setViewingSerials({
+        open: true,
+        tool,
+        soldSerials: response.data
+      });
+    } catch (error) {
+      console.error("Error fetching sold serials:", error);
+      alert("Failed to load serial number history");
+    }
   };
 
   const sendEmail = async (email: string, name: string, items: SaleItem[], total: number, invoiceNumber?: string) => {
     try {
-      const itemList = items.map(item => `• ${item.equipment} - ₦${parseFloat(item.cost).toLocaleString()}`).join('\n');
+      const itemList = items.map(item => 
+        `• ${item.equipment} ${item.serial_number ? `(SN: ${item.serial_number})` : ''} - ₦${parseFloat(item.cost).toLocaleString()}`
+      ).join('\n');
       
       await axios.post(`${API_URL}/send-sale-email/`, {
         to_email: email,
@@ -415,7 +610,8 @@ export default function SalesPage() {
           "Client",
           "Phone", 
           "State",
-          "Equipment",
+          "Items",
+          "Serial Numbers",
           "Cost",
           "Date Sold",
           "Invoice",
@@ -429,6 +625,7 @@ export default function SalesPage() {
         s.phone,
         s.state,
         s.items.map(item => item.equipment).join(', '),
+        s.items.map(item => item.serial_number || 'N/A').join(', '),
         `₦${s.total_cost}`,
         s.date_sold,
         s.invoice_number || "-",
@@ -548,7 +745,92 @@ export default function SalesPage() {
           </Button>
         </div>
           
-        {/* Updated Sale Dialog with Multi-Item Support */}
+        {/* Equipment Type Selection Modal */}
+        <Dialog open={showEquipmentTypeModal} onOpenChange={setShowEquipmentTypeModal}>
+          <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Select Equipment Type</DialogTitle>
+              <DialogDescription className="text-gray-300">
+                Choose the type of Receiver equipment you want to sell
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-4">
+              {RECEIVER_EQUIPMENT_TYPES.map((type) => (
+                <Card
+                  key={type}
+                  className={`p-4 cursor-pointer hover:scale-105 transform transition-all ${
+                    currentItem.selectedEquipmentType === type 
+                      ? "ring-2 ring-blue-500 bg-blue-900/20" 
+                      : "bg-slate-800 hover:bg-slate-700"
+                  }`}
+                  onClick={() => handleEquipmentTypeSelect(type)}
+                >
+                  <CardContent className="p-0">
+                    <div className="text-lg font-semibold text-center">{type}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowEquipmentTypeModal(false);
+                  setCurrentItem(prev => ({ ...prev, selectedCategory: "" }));
+                }}
+                className="text-gray-300 border-slate-600 hover:bg-slate-700"
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Assignment Confirmation Modal - NEW */}
+        <Dialog open={!!assignmentResult} onOpenChange={(open) => !open && setAssignmentResult(null)}>
+          <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Barcode className="w-5 h-5 text-green-400" />
+                Equipment Assigned Successfully!
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-3">
+              {assignmentResult && (
+                <div className="bg-green-900/20 p-4 rounded-md border border-green-700">
+                  <div className="text-center">
+                    <div className="text-lg font-semibold text-green-300 mb-2">
+                      {assignmentResult.toolName}
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Serial Number:</span>
+                        <span className="text-white font-mono">{assignmentResult.serialNumber}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-300">Tool ID:</span>
+                        <span className="text-white font-mono text-xs">{assignmentResult.assignedToolId}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              <p className="text-gray-300 text-sm text-center">
+                The equipment has been randomly assigned from inventory and added to your sale.
+              </p>
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => setAssignmentResult(null)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Continue
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Updated Sale Dialog with Grouped Tools */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-4xl bg-slate-900 border-slate-700 text-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -602,26 +884,58 @@ export default function SalesPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                  
+                  {/* Show selected equipment type for Receiver */}
+                  {currentItem.selectedCategory === "Receiver" && currentItem.selectedEquipmentType && (
+                    <div className="mt-2 p-2 bg-blue-900/30 rounded border border-blue-700">
+                      <p className="text-sm text-blue-300">
+                        Type: <span className="font-semibold">{currentItem.selectedEquipmentType}</span>
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="md:col-span-4">
                   <Label className="text-white">Select Equipment</Label>
                   <Select
-                    value={currentItem.selectedTool?.id || ""}
+                    value={currentItem.selectedTool?.name || ""}
                     onValueChange={handleToolSelect}
-                    disabled={!currentItem.selectedCategory}
+                    disabled={!currentItem.selectedCategory || (currentItem.selectedCategory === "Receiver" && !currentItem.selectedEquipmentType)}
                   >
                     <SelectTrigger className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
-                      <SelectValue placeholder={currentItem.selectedCategory ? `Select ${currentItem.selectedCategory}` : "Select category first"} />
+                      <SelectValue 
+                        placeholder={
+                          currentItem.selectedCategory === "Receiver" && !currentItem.selectedEquipmentType
+                            ? "Select equipment type first"
+                            : currentItem.selectedCategory
+                            ? `Select ${currentItem.selectedCategory}`
+                            : "Select category first"
+                        } 
+                      />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-800 text-white border-slate-600">
-                      {filteredTools.map((tool) => (
-                        <SelectItem key={tool.id} value={tool.id} className="hover:bg-slate-700">
-                          {tool.name}
+                      {filteredGroupedTools.map((tool) => (
+                        <SelectItem key={tool.group_id} value={tool.name} className="hover:bg-slate-700">
+                          <div className="flex justify-between items-center w-full">
+                            <span>{tool.name}</span>
+                            <span className="text-xs text-gray-400 ml-2">
+                              Stock: {tool.total_stock}
+                            </span>
+                          </div>
                         </SelectItem>
                       ))}
+                      {filteredGroupedTools.length === 0 && currentItem.selectedCategory && (
+                        <SelectItem value="no-tools" disabled>
+                          No equipment found for selected criteria
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
+                  {currentItem.selectedTool && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      {currentItem.selectedTool.total_stock} units available - will assign randomly
+                    </p>
+                  )}
                 </div>
 
                 <div className="md:col-span-3">
@@ -664,7 +978,14 @@ export default function SalesPage() {
                       <div key={index} className="flex items-center justify-between p-3 bg-slate-700 rounded border border-slate-600">
                         <div className="flex-1">
                           <div className="text-white font-medium">{item.equipment}</div>
-                          <div className="text-sm text-gray-300">{item.category}</div>
+                          <div className="text-sm text-gray-300">
+                            {item.category}
+                            {item.serial_number && (
+                              <span className="ml-2 text-blue-400">
+                                • SN: {item.serial_number}
+                              </span>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="text-lg font-bold text-white">
@@ -797,7 +1118,65 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Sales Table - Updated with better UI */}
+        {/* View Serial Numbers Dialog */}
+        <Dialog open={viewingSerials.open} onOpenChange={(open) => setViewingSerials(prev => ({ ...prev, open }))}>
+          <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white flex items-center gap-2">
+                <Barcode className="w-5 h-5" />
+                Serial Number History - {viewingSerials.tool?.name}
+              </DialogTitle>
+              <DialogDescription className="text-gray-300">
+                Track which serial numbers have been sold and to whom
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-3">
+              {viewingSerials.soldSerials.length > 0 ? (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {viewingSerials.soldSerials.map((serialInfo, index) => (
+                    <Card key={index} className="bg-slate-800 border-slate-600">
+                      <CardContent className="p-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <span className="text-blue-300 font-medium">Serial:</span>
+                            <p className="text-white font-mono">{serialInfo.serial}</p>
+                          </div>
+                          <div>
+                            <span className="text-blue-300 font-medium">Customer:</span>
+                            <p className="text-white">{serialInfo.customer_name}</p>
+                          </div>
+                          <div>
+                            <span className="text-blue-300 font-medium">Sale Date:</span>
+                            <p className="text-white">{new Date(serialInfo.date_sold).toLocaleDateString()}</p>
+                          </div>
+                          <div>
+                            <span className="text-blue-300 font-medium">Invoice:</span>
+                            <p className="text-white">{serialInfo.invoice_number || "N/A"}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <Barcode className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                  <p>No serial numbers have been sold for this tool yet.</p>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                onClick={() => setViewingSerials({ open: false, tool: null, soldSerials: [] })}
+                className="bg-slate-700 hover:bg-slate-600 text-white"
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Sales Table */}
         <Card className="bg-slate-900 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white">Sales Overview</CardTitle>
@@ -815,6 +1194,7 @@ export default function SalesPage() {
                         "Phone",
                         "State", 
                         "Items",
+                        "Serial Numbers",
                         "Total Cost",
                         "Date Sold",
                         "Invoice",
@@ -832,7 +1212,7 @@ export default function SalesPage() {
                   <tbody>
                     {sales.length === 0 ? (
                       <tr>
-                        <td colSpan={11} className="text-center p-4 text-gray-400">
+                        <td colSpan={12} className="text-center p-4 text-gray-400">
                           No records yet. Add a sale to begin.
                         </td>
                       </tr>
@@ -850,6 +1230,15 @@ export default function SalesPage() {
                               {sale.items?.map((item, index) => (
                                 <div key={index} className="text-xs mb-1 text-gray-300">
                                   • {item.equipment}
+                                </div>
+                              )) || "No items"}
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="max-w-xs">
+                              {sale.items?.map((item, index) => (
+                                <div key={index} className="text-xs mb-1 text-blue-300">
+                                  {item.serial_number || "N/A"}
                                 </div>
                               )) || "No items"}
                             </div>
@@ -875,15 +1264,34 @@ export default function SalesPage() {
                             </span>
                           </td>
                           <td className="p-3">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => openEditStatus(sale)}
-                              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
-                              title="Edit payment status"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditStatus(sale)}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+                                title="Edit payment status"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  // Find the first tool in the sale to view serials
+                                  if (sale.items.length > 0) {
+                                    const tool = tools.find(t => t.id === sale.items[0].tool_id);
+                                    if (tool) {
+                                      viewSerialNumbers(tool);
+                                    }
+                                  }
+                                }}
+                                className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
+                                title="View serial numbers"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))

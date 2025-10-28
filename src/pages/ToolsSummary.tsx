@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { getTools } from "../services/api";
 import { Button } from "../components/ui/button";
 import { DashboardLayout } from "../components/DashboardLayout";
+import { Card, CardContent } from "../components/ui/card"; // ADDED: Missing imports
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -32,6 +33,8 @@ interface Tool {
   box_type?: string; // Base / Rover / Single Box
   expiry_date?: string; // Added expiry date
   serials?: string[] | SerialNumbers; // For Receivers only
+  available_serials?: string[]; // NEW: Available serial numbers
+  sold_serials?: any[]; // NEW: Sold serial numbers with sale info
 }
 
 // --------------------
@@ -40,6 +43,15 @@ interface Tool {
 interface Accessory {
   name: string;
   quantity: number;
+}
+
+// FIXED: Updated SoldSerialInfo interface to allow null values
+interface SoldSerialInfo {
+  serial: string;
+  sale_id?: number | null;
+  customer_name: string;
+  date_sold?: string | null;
+  invoice_number?: string | null;
 }
 
 // --------------------
@@ -57,6 +69,41 @@ const getSerialValue = (serials: any, key: string): string => {
   return '';
 };
 
+// Format date for display
+const formatDate = (dateString: string | null | undefined): string => {
+  if (!dateString) return "—";
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString();
+  } catch {
+    return "—";
+  }
+};
+
+// Check if date is expired
+const isDateExpired = (dateString: string | null | undefined): boolean => {
+  if (!dateString) return false;
+  try {
+    const date = new Date(dateString);
+    return date < new Date();
+  } catch {
+    return false;
+  }
+};
+
+// Check if date is expiring soon (within 30 days)
+const isDateExpiringSoon = (dateString: string | null | undefined): boolean => {
+  if (!dateString) return false;
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+    const thirtyDaysFromNow = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+    return date > now && date <= thirtyDaysFromNow;
+  } catch {
+    return false;
+  }
+};
+
 // --------------------
 // MAIN COMPONENT
 // --------------------
@@ -69,6 +116,17 @@ const ToolsSummary: React.FC = () => {
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<{invoiceNo: string, boxType: string} | null>(null);
   const [serialSearch, setSerialSearch] = useState("");
+
+  // NEW: Serial number viewing state
+  const [viewingSerials, setViewingSerials] = useState<{
+    open: boolean;
+    tool: Tool | null;
+    soldSerials: SoldSerialInfo[];
+  }>({
+    open: false,
+    tool: null,
+    soldSerials: []
+  });
 
   // --------------------
   // ACCESSORY DEFINITIONS
@@ -112,7 +170,7 @@ const ToolsSummary: React.FC = () => {
   };
 
   // --------------------
-  // LOAD TOOLS - FIXED DATA NORMALIZATION
+  // LOAD TOOLS - FIXED DATA NORMALIZATION WITH EXPIRY DATE AND SERIAL TRACKING
   // --------------------
   useEffect(() => {
     let mounted = true;
@@ -156,6 +214,35 @@ const ToolsSummary: React.FC = () => {
             serialsData = t.serials;
           }
           
+          // Handle expiry date - check multiple possible property names
+          let expiryDate = "";
+          if (t.expiry_date) {
+            expiryDate = t.expiry_date;
+          } else if (t.expiration_date) {
+            expiryDate = t.expiration_date;
+          } else if (t.warranty_expiry) {
+            expiryDate = t.warranty_expiry;
+          }
+          
+          // Handle available_serials and sold_serials
+          let availableSerials: string[] = [];
+          if (Array.isArray(t.available_serials)) {
+            availableSerials = t.available_serials;
+          } else if (!t.available_serials && t.serials) {
+            // Initialize available_serials with serials if not set
+            availableSerials = Array.isArray(t.serials) ? t.serials : Object.values(serialsData).filter(Boolean);
+          }
+          
+          let soldSerials: any[] = [];
+          if (Array.isArray(t.sold_serials)) {
+            soldSerials = t.sold_serials;
+          }
+          
+          // Debug expiry date
+          if (expiryDate) {
+            console.log('Found expiry date for tool:', t.name, expiryDate);
+          }
+          
           return {
             id: t.id,
             name: t.name,
@@ -168,12 +255,21 @@ const ToolsSummary: React.FC = () => {
             date_added: t.date_added,
             updated_at: t.updated_at,
             box_type: t.box_type || t.description || "",
-            expiry_date: t.expiry_date || "", // Fixed expiry date mapping
+            expiry_date: expiryDate, // Fixed expiry date mapping
             serials: serialsData,
+            available_serials: availableSerials, // NEW
+            sold_serials: soldSerials, // NEW
           };
         });
 
-        console.log('Normalized tools:', normalized); // Debug log
+        console.log('Normalized tools with expiry dates and serial tracking:', normalized.map(t => ({
+          name: t.name,
+          expiry_date: t.expiry_date,
+          hasExpiry: !!t.expiry_date,
+          available_serials: t.available_serials?.length || 0,
+          sold_serials: t.sold_serials?.length || 0
+        }))); // Debug log
+        
         setTools(normalized);
       } catch (err) {
         console.error("Failed to load tools:", err);
@@ -185,6 +281,44 @@ const ToolsSummary: React.FC = () => {
       mounted = false;
     };
   }, []);
+
+  // NEW: View serial numbers for a tool
+  const viewSerialNumbers = async (tool: Tool) => {
+    try {
+      const soldSerials: SoldSerialInfo[] = [];
+      
+      for (const serialInfo of tool.sold_serials || []) {
+        if (typeof serialInfo === 'object') {
+          // FIXED: Properly handle null values
+          soldSerials.push({
+            serial: serialInfo.serial || 'Unknown',
+            sale_id: serialInfo.sale_id || null,
+            customer_name: serialInfo.customer_name || 'Unknown',
+            date_sold: serialInfo.date_sold || null,
+            invoice_number: serialInfo.invoice_number || null
+          });
+        } else {
+          // Handle case where serialInfo is just a string
+          soldSerials.push({
+            serial: serialInfo,
+            sale_id: null,
+            customer_name: 'Unknown',
+            date_sold: null,
+            invoice_number: null
+          });
+        }
+      }
+      
+      setViewingSerials({
+        open: true,
+        tool,
+        soldSerials
+      });
+    } catch (error) {
+      console.error("Error fetching sold serials:", error);
+      alert("Failed to load serial number history");
+    }
+  };
 
   // --------------------
   // LAST UPDATED
@@ -233,7 +367,7 @@ const ToolsSummary: React.FC = () => {
 
     const map = new Map<
       string,
-      { name: string; totalStock: number; suppliers: string[]; serials: Tool[] }[]
+      { name: string; totalStock: number; suppliers: string[]; serials: Tool[]; totalAvailableSerials: number; totalSoldSerials: number }[]
     >();
 
     for (const t of filtered) {
@@ -248,12 +382,16 @@ const ToolsSummary: React.FC = () => {
         if (t.supplier_name && !existing.suppliers.includes(t.supplier_name))
           existing.suppliers.push(t.supplier_name);
         existing.serials.push(t);
+        existing.totalAvailableSerials += t.available_serials?.length || 0;
+        existing.totalSoldSerials += t.sold_serials?.length || 0;
       } else {
         toolGroup.push({
           name: t.name,
           totalStock: t.stock,
           suppliers: t.supplier_name ? [t.supplier_name] : [],
           serials: [t],
+          totalAvailableSerials: t.available_serials?.length || 0,
+          totalSoldSerials: t.sold_serials?.length || 0,
         });
       }
     }
@@ -265,7 +403,7 @@ const ToolsSummary: React.FC = () => {
   }, [tools, search, categoryFilter, lowStockOnly]);
 
   // --------------------
-  // TOTAL STOCK
+  // TOTAL STOCK AND SERIALS
   // --------------------
   const totalStock = useMemo(
     () =>
@@ -277,8 +415,18 @@ const ToolsSummary: React.FC = () => {
     [grouped]
   );
 
+  const totalAvailableSerials = useMemo(
+    () => tools.reduce((acc, tool) => acc + (tool.available_serials?.length || 0), 0),
+    [tools]
+  );
+
+  const totalSoldSerials = useMemo(
+    () => tools.reduce((acc, tool) => acc + (tool.sold_serials?.length || 0), 0),
+    [tools]
+  );
+
   // --------------------
-  // EXPORT TO PDF (MAIN PAGE)
+  // EXPORT TO PDF (MAIN PAGE) - UPDATED WITH SERIAL INFO
   // --------------------
   const exportPDF = () => {
     const doc = new jsPDF();
@@ -286,6 +434,7 @@ const ToolsSummary: React.FC = () => {
     doc.text("Inventory Summary", 14, 15);
     doc.setFontSize(10);
     doc.text(`Exported: ${new Date().toLocaleString()}`, 14, 22);
+    doc.text(`Total Available Serials: ${totalAvailableSerials} | Total Sold Serials: ${totalSoldSerials}`, 14, 28);
 
     const body: any[] = [];
     grouped.forEach((cat) => {
@@ -294,14 +443,16 @@ const ToolsSummary: React.FC = () => {
           i === 0 ? cat.category : "",
           t.name,
           String(t.totalStock ?? 0),
+          String(t.totalAvailableSerials ?? 0),
+          String(t.totalSoldSerials ?? 0),
         ]);
       });
     });
 
     autoTable(doc, {
-      head: [["Category", "Tool Name", "Quantity"]],
+      head: [["Category", "Tool Name", "Quantity", "Available Serials", "Sold Serials"]],
       body,
-      startY: 28,
+      startY: 35,
       styles: { fontSize: 9, cellPadding: 3, valign: "top" },
       headStyles: { fillColor: [15, 23, 42] },
       didDrawPage: () => {
@@ -320,7 +471,7 @@ const ToolsSummary: React.FC = () => {
   };
 
   // --------------------
-  // EXPORT TOOL DETAILS PDF (INNER PAGE)
+  // EXPORT TOOL DETAILS PDF (INNER PAGE) - FIXED EXPIRY DATE AND SERIAL INFO
   // --------------------
   const exportToolDetailsPDF = () => {
     if (!selectedTool) return;
@@ -341,6 +492,7 @@ const ToolsSummary: React.FC = () => {
     doc.setFontSize(10);
     doc.text(`Exported: ${new Date().toLocaleString()}`, 14, 22);
     doc.text(`Total Items: ${filteredSerials.length}`, 14, 28);
+    doc.text(`Available Serials: ${filteredSerials.reduce((acc, t) => acc + (t.available_serials?.length || 0), 0)} | Sold Serials: ${filteredSerials.reduce((acc, t) => acc + (t.sold_serials?.length || 0), 0)}`, 14, 34);
 
     const body: any[] = [];
     
@@ -379,15 +531,17 @@ const ToolsSummary: React.FC = () => {
         serials.join('\n') || "—",
         item.supplier_name || "—",
         item.invoice_no || "—",
-        item.date_added ? new Date(item.date_added).toLocaleDateString() : "—",
-        item.expiry_date ? new Date(item.expiry_date).toLocaleDateString() : "—",
+        formatDate(item.date_added),
+        formatDate(item.expiry_date), // Fixed expiry date display
+        item.available_serials?.length || 0, // NEW: Available serials count
+        item.sold_serials?.length || 0, // NEW: Sold serials count
       ]);
     });
 
     autoTable(doc, {
-      head: [["Box Type", "Serial Numbers", "Supplier", "Invoice No", "Date Added", "Expiry Date"]],
+      head: [["Box Type", "Serial Numbers", "Supplier", "Invoice No", "Date Added", "Expiry Date", "Available", "Sold"]],
       body,
-      startY: 35,
+      startY: 40,
       styles: { fontSize: 8, cellPadding: 2, valign: 'top' },
       headStyles: { fillColor: [15, 23, 42] },
       didDrawPage: () => {
@@ -514,13 +668,13 @@ const ToolsSummary: React.FC = () => {
   };
 
   // --------------------
-  // RENDER MAIN TABLE
+  // RENDER MAIN TABLE - UPDATED WITH SERIAL INFO
   // --------------------
   const renderMainTable = () => {
     if (grouped.length === 0)
       return (
         <tr>
-          <td colSpan={3} className="p-6 text-center text-gray-500">
+          <td colSpan={4} className="p-6 text-center text-gray-500">
             No tools found.
           </td>
         </tr>
@@ -530,6 +684,9 @@ const ToolsSummary: React.FC = () => {
     grouped.forEach((cat) => {
       // Calculate total tools in this category
       const totalToolsInCategory = cat.tools.reduce((sum, tool) => sum + tool.totalStock, 0);
+      // REMOVED: Unused variables that were causing warnings
+      // const totalAvailableInCategory = cat.tools.reduce((sum, tool) => sum + tool.totalAvailableSerials, 0);
+      // const totalSoldInCategory = cat.tools.reduce((sum, tool) => sum + tool.totalSoldSerials, 0);
       
       cat.tools.forEach((t, i) => {
         rows.push(
@@ -554,7 +711,22 @@ const ToolsSummary: React.FC = () => {
               className="px-4 py-3 align-top text-blue-400 cursor-pointer hover:underline"
               onClick={() => setSelectedTool(t.serials[0])}
             >
-              {t.name}
+              <div className="flex items-center gap-2">
+                {t.name}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    viewSerialNumbers(t.serials[0]);
+                  }}
+                  className="text-green-400 hover:text-green-300"
+                  title="View serial numbers"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </div>
             </td>
 
             <td className="px-4 py-3 text-center align-top">
@@ -568,6 +740,19 @@ const ToolsSummary: React.FC = () => {
                 {t.totalStock}
               </span>
             </td>
+
+            <td className="px-4 py-3 text-center align-top">
+              <div className="flex flex-col gap-1 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Available:</span>
+                  <span className="text-green-400 font-medium">{t.totalAvailableSerials}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Sold:</span>
+                  <span className="text-blue-400 font-medium">{t.totalSoldSerials}</span>
+                </div>
+              </div>
+            </td>
           </tr>
         );
       });
@@ -577,7 +762,7 @@ const ToolsSummary: React.FC = () => {
   };
 
   // --------------------
-  // RENDER TOOL DETAILS - FIXED SERIAL NUMBER AND EXPIRY DATE DISPLAY
+  // RENDER TOOL DETAILS - FIXED EXPIRY DATE DISPLAY AND ADDED SERIAL INFO
   // --------------------
   const renderToolDetails = () => {
     if (!selectedTool) return null;
@@ -630,6 +815,17 @@ const ToolsSummary: React.FC = () => {
 
         <div className="mb-3 text-sm text-gray-300">
           Showing {filteredSerials.length} items
+          {filteredSerials.some(t => t.expiry_date) && (
+            <span className="ml-4">
+              • {filteredSerials.filter(t => t.expiry_date).length} items with expiry dates
+            </span>
+          )}
+          <span className="ml-4">
+            • {filteredSerials.reduce((acc, t) => acc + (t.available_serials?.length || 0), 0)} available serials
+          </span>
+          <span className="ml-4">
+            • {filteredSerials.reduce((acc, t) => acc + (t.sold_serials?.length || 0), 0)} sold serials
+          </span>
         </div>
 
         <div className="overflow-auto border rounded-md">
@@ -642,16 +838,19 @@ const ToolsSummary: React.FC = () => {
                 <th className="px-4 py-2 text-left w-40">Invoice No</th>
                 <th className="px-4 py-2 text-left w-40">Date Added</th>
                 <th className="px-4 py-2 text-left w-40">Expiry Date</th>
+                <th className="px-4 py-2 text-left w-20">Available</th>
+                <th className="px-4 py-2 text-left w-20">Sold</th>
               </tr>
             </thead>
 
             <tbody>
               {Object.entries(groupedByInvoice).map(([invoiceNo, group]) =>
                 group.map((item, index) => {
-                  const isExpired = item.expiry_date && new Date(item.expiry_date) < new Date();
-                  const isExpiringSoon = item.expiry_date && 
-                    new Date(item.expiry_date) > new Date() && 
-                    new Date(item.expiry_date) <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
+                  const hasExpiryDate = !!item.expiry_date;
+                  const isExpired = hasExpiryDate && isDateExpired(item.expiry_date);
+                  const isExpiringSoon = hasExpiryDate && isDateExpiringSoon(item.expiry_date);
+                  const availableSerials = item.available_serials?.length || 0;
+                  const soldSerials = item.sold_serials?.length || 0;
                   
                   return (
                     <tr key={`${item.id}-${index}`} className="border-b border-slate-700">
@@ -660,9 +859,16 @@ const ToolsSummary: React.FC = () => {
                         {item.box_type || "—"}
                       </td>
 
-                      {/* Serial Numbers - FIXED DISPLAY */}
+                      {/* Serial Numbers */}
                       <td className="px-4 py-2 align-top">
                         <div className="space-y-1 text-sm">
+                          {/* Show main code */}
+                          {item.code && (
+                            <div>
+                              <span className="text-gray-400">Code:</span> {item.code}
+                            </div>
+                          )}
+                          
                           {/* Show serials based on box type */}
                           {item.serials && isSerialObject(item.serials) && (
                             <>
@@ -765,14 +971,12 @@ const ToolsSummary: React.FC = () => {
 
                       {/* Date Added */}
                       <td className="px-4 py-2 align-top">
-                        {item.date_added
-                          ? new Date(item.date_added).toLocaleDateString()
-                          : "—"}
+                        {formatDate(item.date_added)}
                       </td>
 
                       {/* Expiry Date - FIXED DISPLAY */}
                       <td className="px-4 py-2 align-top">
-                        {item.expiry_date ? (
+                        {hasExpiryDate ? (
                           <span className={
                             isExpired 
                               ? "text-red-400 font-medium" 
@@ -780,7 +984,7 @@ const ToolsSummary: React.FC = () => {
                                 ? "text-amber-400 font-medium"
                                 : "text-green-400"
                           }>
-                            {new Date(item.expiry_date).toLocaleDateString()}
+                            {formatDate(item.expiry_date)}
                             {isExpired && (
                               <span className="text-xs text-red-400 block">Expired</span>
                             )}
@@ -789,8 +993,22 @@ const ToolsSummary: React.FC = () => {
                             )}
                           </span>
                         ) : (
-                          "—"
+                          <span className="text-gray-500">—</span>
                         )}
+                      </td>
+
+                      {/* Available Serials */}
+                      <td className="px-4 py-2 align-top text-center">
+                        <span className="text-green-400 font-medium">
+                          {availableSerials}
+                        </span>
+                      </td>
+
+                      {/* Sold Serials */}
+                      <td className="px-4 py-2 align-top text-center">
+                        <span className="text-blue-400 font-medium">
+                          {soldSerials}
+                        </span>
                       </td>
                     </tr>
                   );
@@ -799,7 +1017,7 @@ const ToolsSummary: React.FC = () => {
               
               {filteredSerials.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-4 text-center text-gray-400">
+                  <td colSpan={8} className="px-4 py-4 text-center text-gray-400">
                     No items found matching your search.
                   </td>
                 </tr>
@@ -812,10 +1030,76 @@ const ToolsSummary: React.FC = () => {
   };
 
   // --------------------
+  // VIEW SERIAL NUMBERS DIALOG
+  // --------------------
+  const renderSerialNumbersDialog = () => (
+    <div className={`fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 ${viewingSerials.open ? '' : 'hidden'}`}>
+      <div className="bg-slate-900 border border-slate-700 rounded-lg p-6 max-w-2xl w-full max-h-96 overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-semibold text-white">
+            Serial Number History - {viewingSerials.tool?.name}
+          </h3>
+          <button
+            onClick={() => setViewingSerials({ open: false, tool: null, soldSerials: [] })}
+            className="text-gray-400 hover:text-white"
+          >
+            ✕
+          </button>
+        </div>
+        
+        {viewingSerials.soldSerials.length > 0 ? (
+          <div className="space-y-3">
+            {viewingSerials.soldSerials.map((serialInfo, index) => (
+              <div key={index} className="bg-slate-800 p-4 rounded border border-slate-600">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-blue-300 font-medium">Serial:</span>
+                    <p className="text-white font-mono">{serialInfo.serial}</p>
+                  </div>
+                  <div>
+                    <span className="text-blue-300 font-medium">Customer:</span>
+                    <p className="text-white">{serialInfo.customer_name}</p>
+                  </div>
+                  <div>
+                    <span className="text-blue-300 font-medium">Sale Date:</span>
+                    <p className="text-white">{serialInfo.date_sold ? new Date(serialInfo.date_sold).toLocaleDateString() : 'Unknown'}</p>
+                  </div>
+                  <div>
+                    <span className="text-blue-300 font-medium">Invoice:</span>
+                    <p className="text-white">{serialInfo.invoice_number || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-400">
+            <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+            </svg>
+            <p>No serial numbers have been sold for this tool yet.</p>
+          </div>
+        )}
+        
+        <div className="mt-4 flex justify-end">
+          <Button
+            onClick={() => setViewingSerials({ open: false, tool: null, soldSerials: [] })}
+            className="bg-slate-700 hover:bg-slate-600 text-white"
+          >
+            Close
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
+  // --------------------
   // RETURN
   // --------------------
   return (
     <DashboardLayout>
+      {renderSerialNumbersDialog()}
+      
       <div className="p-6">
         {!selectedTool ? (
           // FIRST PAGE - Show header and search controls
@@ -872,6 +1156,34 @@ const ToolsSummary: React.FC = () => {
               </div>
             </div>
 
+            {/* Stock Summary - UPDATED WITH SERIAL INFO */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+              <Card className="border-border bg-blue-950">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-400">Total Tool Types</p>
+                  <h3 className="text-2xl font-bold">{grouped.reduce((acc, cat) => acc + cat.tools.length, 0)}</h3>
+                </CardContent>
+              </Card>
+              <Card className="border-border bg-blue-950">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-400">Items in Stock</p>
+                  <h3 className="text-2xl font-bold">{totalStock}</h3>
+                </CardContent>
+              </Card>
+              <Card className="border-border bg-blue-950">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-400">Available Serials</p>
+                  <h3 className="text-2xl font-bold text-green-400">{totalAvailableSerials}</h3>
+                </CardContent>
+              </Card>
+              <Card className="border-border bg-blue-950">
+                <CardContent className="p-4">
+                  <p className="text-sm text-gray-400">Sold Serials</p>
+                  <h3 className="text-2xl font-bold text-blue-400">{totalSoldSerials}</h3>
+                </CardContent>
+              </Card>
+            </div>
+
             <div className="overflow-auto border rounded-lg">
               <table className="min-w-full table-fixed">
                 <thead className="bg-slate-900 text-white sticky top-0">
@@ -879,13 +1191,14 @@ const ToolsSummary: React.FC = () => {
                     <th className="px-4 py-3 text-left w-56">Category</th>
                     <th className="px-4 py-3 text-left">Item Name</th>
                     <th className="px-4 py-3 text-center w-28">Quantity</th>
+                    <th className="px-4 py-3 text-center w-40">Serial Numbers</th>
                   </tr>
                 </thead>
 
                 <tbody className="text-white bg-blue-950">
                   {loading ? (
                     <tr>
-                      <td colSpan={3} className="p-6 text-center">
+                      <td colSpan={4} className="p-6 text-center">
                         Loading...
                       </td>
                     </tr>
@@ -900,8 +1213,16 @@ const ToolsSummary: React.FC = () => {
               <div>
                 Showing <strong>{grouped.length}</strong> categories
               </div>
-              <div>
-                Total stock: <strong>{totalStock}</strong>
+              <div className="flex gap-4">
+                <div>
+                  Total stock: <strong>{totalStock}</strong>
+                </div>
+                <div>
+                  Available serials: <strong className="text-green-400">{totalAvailableSerials}</strong>
+                </div>
+                <div>
+                  Sold serials: <strong className="text-blue-400">{totalSoldSerials}</strong>
+                </div>
               </div>
             </div>
           </>

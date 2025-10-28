@@ -159,6 +159,7 @@ export const createTool = async (toolData: {
   category?: string;
   stock?: number;
   supplier?: string;
+  expiry_date?: string; // Add expiry_date
 }) => {
   const response = await axios.post(`${API_URL}/tools/`, toolData, {
     headers: {
@@ -180,6 +181,7 @@ export const updateTool = async (
     category: string;
     stock: number;
     supplier: string;
+    expiry_date: string; // Add expiry_date
   }>
 ) => {
   const response = await axios.patch(`${API_URL}/tools/${id}/`, updatedData, {

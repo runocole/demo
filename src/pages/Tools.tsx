@@ -3,7 +3,7 @@ import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Card, CardContent } from "../components/ui/card";
-import { Search, Plus, Trash2, Edit2, Download, CheckCircle, X, FileText } from "lucide-react";
+import { Search, Plus, Trash2, Edit2, Download, CheckCircle, X, FileText, Barcode, Eye } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -46,6 +46,8 @@ interface Tool {
   expiry_date?: string;
   date_added?: string;
   serials?: string[];
+  available_serials?: string[]; // NEW: Available serial numbers
+  sold_serials?: any[]; // NEW: Sold serial numbers with sale info
   equipment_type?: string | null;
   equipment_type_id?: number | string | null;
 }
@@ -84,6 +86,15 @@ interface Invoice {
   created_at: string;
   equipment_count: number;
   total_value: number;
+}
+
+// FIXED: Updated SoldSerialInfo interface to allow null values
+interface SoldSerialInfo {
+  serial: string;
+  sale_id?: number | null;
+  customer_name: string;
+  date_sold?: string | null;
+  invoice_number?: string | null;
 }
 
 /* ---------------- Constants ---------------- */
@@ -146,6 +157,17 @@ const Tools: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null);
 
+  // Serial number viewing state - NEW
+  const [viewingSerials, setViewingSerials] = useState<{
+    open: boolean;
+    tool: Tool | null;
+    soldSerials: SoldSerialInfo[];
+  }>({
+    open: false,
+    tool: null,
+    soldSerials: []
+  });
+
   // Form model
   const [form, setForm] = useState<any>({
     name: "",
@@ -158,6 +180,7 @@ const Tools: React.FC = () => {
     invoice_number: "",
     expiry_date: "",
     serials: [],
+    available_serials: [], // NEW: Available serials
     equipment_type_id: "",
     equipment_type: "",
   });
@@ -239,11 +262,28 @@ const Tools: React.FC = () => {
               .map((k) => t.serials[k])
               .filter(Boolean);
           }
+          
+          // Handle available_serials and sold_serials
+          let availableSerials: string[] = [];
+          if (Array.isArray(t.available_serials)) {
+            availableSerials = t.available_serials;
+          } else if (!t.available_serials && t.serials) {
+            // Initialize available_serials with serials if not set
+            availableSerials = serialsArr;
+          }
+          
+          let soldSerials: any[] = [];
+          if (Array.isArray(t.sold_serials)) {
+            soldSerials = t.sold_serials;
+          }
+          
           return {
             ...t,
             stock: typeof t.stock === "number" ? t.stock : Number(t.stock || 0),
             category: t.category || "",
             serials: serialsArr,
+            available_serials: availableSerials, // NEW
+            sold_serials: soldSerials, // NEW
             equipment_type: t.equipment_type ?? t.equipment_type_name ?? "",
             equipment_type_id: t.equipment_type_id ?? "",
             expiry_date: t.expiry_date || "",
@@ -322,6 +362,45 @@ const Tools: React.FC = () => {
     }
   };
 
+  // NEW: View serial numbers for a tool
+  const viewSerialNumbers = async (tool: Tool) => {
+    try {
+      // Use the sold_serials data from the tool
+      const soldSerials: SoldSerialInfo[] = [];
+      
+      for (const serialInfo of tool.sold_serials || []) {
+        if (typeof serialInfo === 'object') {
+          // FIXED: Properly handle null values
+          soldSerials.push({
+            serial: serialInfo.serial || 'Unknown',
+            sale_id: serialInfo.sale_id || null,
+            customer_name: serialInfo.customer_name || 'Unknown',
+            date_sold: serialInfo.date_sold || null,
+            invoice_number: serialInfo.invoice_number || null
+          });
+        } else {
+          // Handle case where serialInfo is just a string
+          soldSerials.push({
+            serial: serialInfo,
+            sale_id: null,
+            customer_name: 'Unknown',
+            date_sold: null,
+            invoice_number: null
+          });
+        }
+      }
+      
+      setViewingSerials({
+        open: true,
+        tool,
+        soldSerials
+      });
+    } catch (error) {
+      console.error("Error fetching sold serials:", error);
+      alert("Failed to load serial number history");
+    }
+  };
+
   useEffect(() => {
     fetchEquipmentTypes();
     fetchSuppliers();
@@ -352,6 +431,7 @@ const Tools: React.FC = () => {
       invoice_number: "",
       expiry_date: "",
       serials: [],
+      available_serials: [], // NEW
       equipment_type_id: "",
       equipment_type: "",
     });
@@ -394,6 +474,7 @@ const Tools: React.FC = () => {
       invoice_number: tool.invoice_number || "",
       expiry_date: tool.expiry_date || "",
       serials: extras.length ? extras : [],
+      available_serials: tool.available_serials || [], // NEW
       equipment_type_id: tool.equipment_type_id || "",
       equipment_type: tool.equipment_type || "",
     });
@@ -417,20 +498,6 @@ const Tools: React.FC = () => {
     setModalStep("form");
     setOpen(true);
   };
-
-  /*const getTimeAgo = (dateString: string): string => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
-      if (diffInMinutes < 1) return "Just now";
-      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-      return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    } catch {
-      return "—";
-    }
-  };*/
 
   /* ---------------- Serial extras logic ---------------- */
   const effectiveCategory = selectedCategoryCard || form.category;
@@ -536,11 +603,31 @@ const handleSaveTool = async () => {
     .map((s: any) => String(s || "").trim())
     .filter((s: string) => s !== "");
 
+  // Handle serials and available_serials
   if (finalCategory === "Receiver") {
     payload.serials = [String(form.code).trim(), ...extrasArr];
+    // Initialize available_serials with all serials if not editing
+    if (!isEditMode) {
+      payload.available_serials = [String(form.code).trim(), ...extrasArr];
+    }
   } else {
     const allSerials = [String(form.code).trim(), ...extrasArr].filter(Boolean);
-    if (allSerials.length > 0) payload.serials = allSerials;
+    if (allSerials.length > 0) {
+      payload.serials = allSerials;
+      // Initialize available_serials with all serials if not editing
+      if (!isEditMode) {
+        payload.available_serials = allSerials;
+      }
+    }
+  }
+
+  // For edit mode, preserve existing available_serials and sold_serials
+  if (isEditMode) {
+    const existingTool = tools.find(t => t.id === editingToolId);
+    if (existingTool) {
+      payload.available_serials = form.available_serials || existingTool.available_serials || [];
+      payload.sold_serials = existingTool.sold_serials || [];
+    }
   }
 
   if (finalEquipmentTypeId) {
@@ -554,6 +641,8 @@ const handleSaveTool = async () => {
         ...updated,
         stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || parsedStock),
         serials: Array.isArray(updated.serials) ? updated.serials : payload.serials || [],
+        available_serials: updated.available_serials || payload.available_serials || [],
+        sold_serials: updated.sold_serials || [],
         equipment_type: updated.equipment_type ?? finalEquipmentTypeName ?? "",
         equipment_type_id: updated.equipment_type_id ?? payload.equipment_type_id ?? "",
         expiry_date: updated.expiry_date || form.expiry_date || "",
@@ -586,11 +675,15 @@ const handleSaveTool = async () => {
       const updatePayload: any = { stock: newStock };
       if (payload.serials) updatePayload.serials = payload.serials;
       if (payload.expiry_date) updatePayload.expiry_date = payload.expiry_date;
+      if (payload.available_serials) updatePayload.available_serials = payload.available_serials;
+      
       const updated = await updateTool(existing.id, updatePayload);
       const normalized = {
         ...updated,
         stock: typeof updated.stock === "number" ? updated.stock : Number(updated.stock || newStock),
         serials: Array.isArray(updated.serials) ? updated.serials : updatePayload.serials || [],
+        available_serials: updated.available_serials || updatePayload.available_serials || [],
+        sold_serials: updated.sold_serials || [],
         expiry_date: updated.expiry_date || payload.expiry_date || "",
       };
       setTools((prev) => prev.map((t) => (t.id === existing.id ? normalized : t)));
@@ -605,6 +698,8 @@ const handleSaveTool = async () => {
         ...created,
         stock: typeof created.stock === "number" ? created.stock : Number(created.stock || parsedStock),
         serials: Array.isArray(created.serials) ? created.serials : payload.serials || [],
+        available_serials: created.available_serials || payload.available_serials || [],
+        sold_serials: created.sold_serials || [],
         equipment_type: created.equipment_type ?? finalEquipmentTypeName ?? "",
         equipment_type_id: created.equipment_type_id ?? payload.equipment_type_id ?? "",
         expiry_date: created.expiry_date || payload.expiry_date || "",
@@ -671,7 +766,8 @@ const handleSaveTool = async () => {
       group.name,
       group.category,
       group.equipment_type || "—",
-      group.tools.reduce((acc, t) => acc + (t.serials?.length || 0), 0) + " serials",
+      group.tools.reduce((acc, t) => acc + (t.available_serials?.length || 0), 0) + " available",
+      group.tools.reduce((acc, t) => acc + (t.sold_serials?.length || 0), 0) + " sold",
       `$${group.cost}`,
       group.totalStock.toString(),
       group.supplier_name || "—",
@@ -685,7 +781,8 @@ const handleSaveTool = async () => {
           "Name",
           "Category",
           "Equipment Type",
-          "Serials",
+          "Available Serials",
+          "Sold Serials",
           "Cost (USD)",
           "Total Stock",
           "Supplier",
@@ -718,6 +815,66 @@ const handleSaveTool = async () => {
           }} 
         />
       )}
+
+      {/* View Serial Numbers Dialog - NEW */}
+      <Dialog open={viewingSerials.open} onOpenChange={(open) => setViewingSerials(prev => ({ ...prev, open }))}>
+        <DialogContent className="max-w-2xl bg-slate-900 border-slate-700 text-white">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Barcode className="w-5 h-5" />
+              Serial Number History - {viewingSerials.tool?.name}
+            </DialogTitle>
+            <DialogDescription className="text-gray-300">
+              Track which serial numbers have been sold and to whom
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-3">
+            {viewingSerials.soldSerials.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {viewingSerials.soldSerials.map((serialInfo, index) => (
+                  <Card key={index} className="bg-slate-800 border-slate-600">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="text-blue-300 font-medium">Serial:</span>
+                          <p className="text-white font-mono">{serialInfo.serial}</p>
+                        </div>
+                        <div>
+                          <span className="text-blue-300 font-medium">Customer:</span>
+                          <p className="text-white">{serialInfo.customer_name}</p>
+                        </div>
+                        <div>
+                          <span className="text-blue-300 font-medium">Sale Date:</span>
+                          <p className="text-white">
+                            {serialInfo.date_sold ? new Date(serialInfo.date_sold).toLocaleDateString() : 'Unknown'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-blue-300 font-medium">Invoice:</span>
+                          <p className="text-white">{serialInfo.invoice_number || "N/A"}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <Barcode className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>No serial numbers have been sold for this tool yet.</p>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={() => setViewingSerials({ open: false, tool: null, soldSerials: [] })}
+              className="bg-slate-700 hover:bg-slate-600 text-white"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="space-y-6">
         {/* Header */}
@@ -777,7 +934,7 @@ const handleSaveTool = async () => {
         </div>
 
         {/* Stock Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
           <Card className="border-border bg-blue-950">
             <CardContent className="p-4">
               <p className="text-sm text-gray-400">Total Tool Types</p>
@@ -796,12 +953,22 @@ const handleSaveTool = async () => {
               <h3 className="text-2xl font-bold">{lowStock}</h3>
             </CardContent>
           </Card>
+          <Card className="border-border bg-blue-950">
+            <CardContent className="p-4">
+              <p className="text-sm text-gray-400">Total Sold Serials</p>
+              <h3 className="text-2xl font-bold">
+                {tools.reduce((acc, tool) => acc + (tool.sold_serials?.length || 0), 0)}
+              </h3>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Tools Grid */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {groupedTools.map((group) => {
             const isRecentlyAdded = group.tools.some(tool => tool.id === recentlyAddedId);
+            const totalSoldSerials = group.tools.reduce((acc, tool) => acc + (tool.sold_serials?.length || 0), 0);
+            const totalAvailableSerials = group.tools.reduce((acc, tool) => acc + (tool.available_serials?.length || 0), 0);
             
             return (
               <Card 
@@ -836,6 +1003,15 @@ const handleSaveTool = async () => {
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => viewSerialNumbers(group.latestTool)}
+                        className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
+                        title="View serial numbers"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -893,6 +1069,20 @@ const handleSaveTool = async () => {
                         }`}
                       >
                         {group.totalStock}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Serial Number Summary - NEW */}
+                  <div className="pt-2 border-t border-slate-800">
+                    <div className="flex justify-between text-xs">
+                      <div>
+                        <span className="text-gray-400">Available:</span>
+                        <span className="text-green-400 ml-1 font-medium">{totalAvailableSerials}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Sold:</span>
+                        <span className="text-blue-400 ml-1 font-medium">{totalSoldSerials}</span>
                       </div>
                     </div>
                   </div>
@@ -1352,6 +1542,25 @@ const handleSaveTool = async () => {
                     Optional: Set the expiration date for this item (e.g., warranty, calibration expiry)
                   </p>
                 </div>
+
+                {/* NEW: Available Serials Display for Edit Mode */}
+                {isEditMode && form.available_serials && form.available_serials.length > 0 && (
+                  <div>
+                    <Label>Available Serial Numbers ({form.available_serials.length})</Label>
+                    <div className="bg-slate-800 p-3 rounded border border-slate-600 max-h-32 overflow-y-auto">
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {form.available_serials.map((serial: string, index: number) => (
+                          <div key={index} className="font-mono text-green-400">
+                            {serial}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      These serial numbers are available for sale. When sold, they will be moved to sold serials.
+                    </p>
+                  </div>
+                )}
               </>
             )}
           </div>

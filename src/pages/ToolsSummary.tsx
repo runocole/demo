@@ -1116,7 +1116,7 @@ const ToolsSummary: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
               <Card className="border-border bg-blue-950">
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-400">Total Tool Types</p>
+                  <p className="text-sm text-gray-400">Total Equipment Types</p>
                   <h3 className="text-2xl font-bold">{grouped.reduce((acc, cat) => acc + cat.tools.length, 0)}</h3>
                 </CardContent>
               </Card>
@@ -1128,7 +1128,7 @@ const ToolsSummary: React.FC = () => {
               </Card>
               <Card className="border-border bg-blue-950">
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-400">Sold Serials</p>
+                  <p className="text-sm text-gray-400">Sold Items</p>
                   <h3 className="text-2xl font-bold text-blue-400">{totalSoldSerials}</h3>
                 </CardContent>
               </Card>

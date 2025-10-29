@@ -97,7 +97,7 @@ const CATEGORY_OPTIONS = [
   "Total Station",
   "Level",
   "Drones",
-  "EcoSounder",
+  "EchoSounder",
   "Laser Scanner",
   "Other",
 ];
@@ -108,7 +108,7 @@ const CATEGORY_ICONS = {
   "Total Station": Navigation,
   "Level": Ruler,
   "Drones": Drone,
-  "EcoSounder": Waves,
+  "EchoSounder": Waves,
   "Laser Scanner": Scan,
   "Other": Box
 };

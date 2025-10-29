@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
-import { Package, DollarSign, Users, AlertCircle } from "lucide-react";
+import { Package, DollarSign, Users, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import {
   Table,
@@ -21,9 +22,11 @@ import {
 } from "recharts";
 
 const StaffDashboard = () => {
+  const navigate = useNavigate();
   const [userName, setUserName] = useState("");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showRevenue, setShowRevenue] = useState(false);
 
   const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#6366F1", "#A855F7"];
 
@@ -71,12 +74,10 @@ const StaffDashboard = () => {
       const key = `${tool.name}-${tool.category}`;
       
       if (groupedItems[key]) {
-        // If item already exists, sum the stock
         groupedItems[key].stock += tool.stock;
       } else {
-        // If item doesn't exist, create new entry
         groupedItems[key] = {
-          id: tool.id, // Keep the first ID or generate a new one
+          id: tool.id,
           name: tool.name,
           category: tool.category,
           stock: tool.stock
@@ -85,6 +86,19 @@ const StaffDashboard = () => {
     });
 
     return Object.values(groupedItems);
+  };
+
+  // Function to sort recent sales by date (most recent first)
+  const getSortedRecentSales = () => {
+    if (!dashboardData?.recentSales) return [];
+
+    return [...dashboardData.recentSales].sort((a, b) => {
+      // Use the date_sold field from your Sale model
+      const dateA = new Date(a.date_sold || 0);
+      const dateB = new Date(b.date_sold || 0);
+      
+      return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
+    });
   };
 
   if (loading) {
@@ -98,6 +112,7 @@ const StaffDashboard = () => {
   }
 
   const groupedLowStockItems = getGroupedLowStockItems();
+  const sortedRecentSales = getSortedRecentSales();
 
   return (
     <DashboardLayout>
@@ -117,8 +132,20 @@ const StaffDashboard = () => {
 
         {/* Stats Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard title="Total Stock" value={dashboardData?.totalTools || 0} icon={Package} />
-          <StatsCard title="Revenue (MTD)" value={formatCurrency(dashboardData?.mtdRevenue || 0)} icon={DollarSign} />
+          <StatsCard 
+            title="Total Stock" 
+            value={dashboardData?.totalTools || 0} 
+            icon={Package} 
+            onClick={() => navigate("/tools-summary")} 
+            clickable 
+          />
+          <StatsCard 
+            title="Revenue (MTD)" 
+            value={showRevenue ? formatCurrency(dashboardData?.mtdRevenue || 0) : "******"} 
+            icon={DollarSign}
+            actionIcon={showRevenue ? EyeOff : Eye}
+            onActionClick={() => setShowRevenue(!showRevenue)}
+          />
           <StatsCard title="Total Staff" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
           <StatsCard title="Active Customers" value={dashboardData?.activeCustomers || 0} icon={Users} />
         </div>
@@ -138,16 +165,20 @@ const StaffDashboard = () => {
                     <TableHead>Customer</TableHead>
                     <TableHead>Equipment</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Date Sold</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dashboardData?.recentSales?.length > 0 ? (
-                    dashboardData.recentSales.map((sale: any) => (
+                  {sortedRecentSales.length > 0 ? (
+                    sortedRecentSales.map((sale: any) => (
                       <TableRow key={sale.invoice_number}>
                         <TableCell>{sale.invoice_number}</TableCell>
                         <TableCell>{sale.customer_name}</TableCell>
                         <TableCell>{sale.tool_name}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
+                        <TableCell>
+                          {sale.date_sold ? new Date(sale.date_sold).toLocaleDateString() : 'N/A'}
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
@@ -198,6 +229,7 @@ const StaffDashboard = () => {
           </Card>
         </div>
 
+        {/* Rest of your component remains the same */}
         {/* Inventory Breakdown + Top Selling Tools */}
         <div className="grid gap-4 md:grid-cols-2">
           {/* Inventory Breakdown */}

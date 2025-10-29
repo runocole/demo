@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/AppSidebar";
-import { Power } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "../components/ui/button";
 
 interface DashboardLayoutProps {
@@ -51,7 +51,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
               className="rounded-full text-gray-300 hover:text-white hover:bg-gray-700/40 transition"
               title="Log out"
             >
-              <Power className="h-5 w-5" />
+              <LogOut className="h-5 w-5" />
             </Button>
           </header>
 

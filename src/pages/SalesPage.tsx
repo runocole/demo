@@ -118,7 +118,7 @@ const TOOL_CATEGORIES = [
   "Total Station",
   "Level",
   "Drones",
-  "EcoSounder",
+  "EchoSounder",
   "Laser Scanner",
   "Other",
 ];
@@ -384,7 +384,7 @@ export default function SalesPage() {
   // UPDATED: Add item to sale with random assignment of serial SET
   const addItemToSale = async () => {
     if (!currentItem.selectedTool || !currentItem.cost) {
-      alert("Please select equipment and enter a cost.");
+      alert("Please select equipment and enter a Selling Price.");
       return;
     }
 
@@ -493,13 +493,13 @@ export default function SalesPage() {
   const sendEmail = async (email: string, name: string, items: SaleItem[], total: number, invoiceNumber?: string) => {
     try {
       const itemList = items.map(item => 
-        `• ${item.equipment} ${item.serial_set ? `(Serials: ${item.serial_set.join(', ')})` : ''} - ₦${parseFloat(item.cost).toLocaleString()}`
+        `• ${item.equipment} - ₦${parseFloat(item.cost).toLocaleString()}`
       ).join('\n');
       
       await axios.post(`${API_URL}/send-sale-email/`, {
         to_email: email,
         subject: `Your Invoice ${invoiceNumber ? `- ${invoiceNumber}` : ''}`,
-        message: `Hello ${name},\n\nThank you for your purchase! Here's your invoice:\n\n${itemList}\n\nTotal: ₦${total.toLocaleString()}\n\nPayment link: [Paystack Link Here]\n\nBest regards,\nYour Company`,
+        message: `Hello ${name},\n\nThank you for your purchase! Here's your invoice:\n\n${itemList}\n\nTotal: ₦${total.toLocaleString()}\n\nPayment link: [Paystack Link Here]\n\nBest regards,\nOTIC Surveys`,
       });
     } catch (error) {
       console.error("Error sending email:", error);
@@ -615,7 +615,7 @@ export default function SalesPage() {
           "Phone", 
           "State",
           "Items",
-          "Cost",
+          "Price",
           "Date Sold",
           "Invoice",
           "Payment Plan",
@@ -942,13 +942,13 @@ export default function SalesPage() {
                 </div>
 
                 <div className="md:col-span-3">
-                  <Label className="text-white">Cost (₦)</Label>
+                  <Label className="text-white">Selling Price (₦)</Label>
                   <Input
                     type="number"
                     value={currentItem.cost}
                     onChange={(e) => setCurrentItem(prev => ({ ...prev, cost: e.target.value }))}
                     className="bg-slate-700 text-white border-slate-600 placeholder-gray-400"
-                    placeholder="Enter cost"
+                    placeholder="Enter Selling Price"
                     disabled={!currentItem.selectedTool}
                   />
                 </div>

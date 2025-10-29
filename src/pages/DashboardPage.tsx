@@ -91,7 +91,7 @@ const DashboardPage = () => {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatsCard title="Total Stock" value={dashboardData?.totalTools || 0} icon={Package} />
           <StatsCard title="Revenue (MTD)" value={formatCurrency(dashboardData?.mtdRevenue || 0)} icon={DollarSign} />
-          <StatsCard title="Total Staff" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
+          <StatsCard title="Total Users" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
           <StatsCard title="Active Customers" value={dashboardData?.activeCustomers || 0} icon={Users} />
         </div>
 
@@ -143,7 +143,7 @@ const DashboardPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Code</TableHead>
+                    <TableHead>Serial Number</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Stock</TableHead>

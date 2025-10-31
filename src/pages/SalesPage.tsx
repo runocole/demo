@@ -35,8 +35,10 @@ interface SaleItem {
   equipment: string;
   cost: string;
   category?: string;
-  serial_set?: string[];  // CHANGED: Now an array of serials for the set
+  serial_set?: string[];
+  datalogger_serial?: string;
   assigned_tool_id?: string;
+  import_invoice?: string; // NEW: Import invoice from tool
 }
 
 interface Sale {
@@ -49,6 +51,7 @@ interface Sale {
   total_cost: string;
   date_sold: string;
   invoice_number?: string;
+  import_invoice?: string;
   payment_plan?: string;
   expiry_date?: string;
   payment_status?: string;
@@ -73,7 +76,7 @@ interface Tool {
   description?: string;
   supplier?: string;
   supplier_name?: string;
-  invoice_number?: string;
+  invoice_number?: string; // Import invoice from tool entry
   expiry_date?: string;
   date_added?: string;
   serials?: string[];
@@ -83,7 +86,7 @@ interface Tool {
   equipment_type_id?: string | null;
 }
 
-// NEW: Interface for grouped tools
+// Grouped tool interface
 interface GroupedTool {
   name: string;
   category: string;
@@ -93,6 +96,7 @@ interface GroupedTool {
   description?: string;
   supplier_name?: string;
   group_id: string;
+  import_invoice?: string; // NEW: Import invoice from tools
 }
 
 interface EquipmentType {
@@ -192,7 +196,7 @@ export default function SalesPage() {
     soldSerials: []
   });
 
-  // UPDATED: Assignment confirmation state for serial SETS
+  // Assignment confirmation state
   const [assignmentResult, setAssignmentResult] = useState<{
     open: boolean;
     toolName: string;
@@ -200,6 +204,8 @@ export default function SalesPage() {
     serialCount: number;
     setType: string;
     assignedToolId: string;
+    dataloggerSerial?: string;
+    importInvoice?: string; // NEW: Import invoice from assignment
   } | null>(null);
 
   const token = localStorage.getItem("access");
@@ -316,7 +322,6 @@ export default function SalesPage() {
       cost: ""
     }));
 
-    // Show equipment type modal only for Receiver category
     if (category === "Receiver") {
       setShowEquipmentTypeModal(true);
     }
@@ -344,14 +349,16 @@ export default function SalesPage() {
     }
   };
 
-  // UPDATED: Assign random tool from group - now returns serial SET
+  // Assign random tool from group - automatically gets import invoice and serials
   const assignRandomTool = async (): Promise<{
     assigned_tool_id: string;
     tool_name: string;
-    serial_set: string[];  // CHANGED: Now returns array of serials
+    serial_set: string[];
     serial_count: number;
     set_type: string;
     cost: string;
+    datalogger_serial?: string;
+    import_invoice?: string; // NEW: Import invoice from backend
   }> => {
     if (!currentItem.selectedTool) {
       throw new Error("No tool selected");
@@ -381,7 +388,7 @@ export default function SalesPage() {
     }
   };
 
-  // UPDATED: Add item to sale with random assignment of serial SET
+  // Add item to sale with automatic import invoice and serial assignment
   const addItemToSale = async () => {
     if (!currentItem.selectedTool || !currentItem.cost) {
       alert("Please select equipment and enter a Selling Price.");
@@ -389,7 +396,7 @@ export default function SalesPage() {
     }
 
     try {
-      // Assign random tool from the group
+      // Assign random tool from the group - this returns import invoice and serials
       const assignment = await assignRandomTool();
       
       const newItem: SaleItem = {
@@ -397,20 +404,24 @@ export default function SalesPage() {
         equipment: assignment.tool_name,
         cost: currentItem.cost,
         category: currentItem.selectedCategory,
-        serial_set: assignment.serial_set,  // CHANGED: Store the array of serials
-        assigned_tool_id: assignment.assigned_tool_id
+        serial_set: assignment.serial_set,
+        datalogger_serial: assignment.datalogger_serial,
+        assigned_tool_id: assignment.assigned_tool_id,
+        import_invoice: assignment.import_invoice // NEW: Auto-filled from tool
       };
 
       setSaleItems(prev => [...prev, newItem]);
       
-      // Show assignment confirmation with serial SET
+      // Show assignment confirmation with all details
       setAssignmentResult({
         open: true,
         toolName: assignment.tool_name,
         serialSet: assignment.serial_set,
         serialCount: assignment.serial_count,
         setType: assignment.set_type,
-        assignedToolId: assignment.assigned_tool_id
+        assignedToolId: assignment.assigned_tool_id,
+        dataloggerSerial: assignment.datalogger_serial,
+        importInvoice: assignment.import_invoice // NEW: Show import invoice
       });
 
       // Reset current item form
@@ -505,67 +516,76 @@ export default function SalesPage() {
       console.error("Error sending email:", error);
     }
   };
+const handleAction = async (action: "cancel" | "draft" | "send") => {
+  if (action === "cancel") return resetForm();
 
-  const handleAction = async (action: "cancel" | "draft" | "send") => {
-    if (action === "cancel") return resetForm();
+  if (!selectedCustomer) {
+    alert("Please select a customer first.");
+    return;
+  }
 
-    if (!selectedCustomer) {
-      alert("Please select a customer first.");
-      return;
-    }
+  if (saleItems.length === 0) {
+    alert("Please add at least one item to the sale.");
+    return;
+  }
 
-    if (saleItems.length === 0) {
-      alert("Please add at least one item to the sale.");
-      return;
-    }
+  if (action === "draft" || action === "send") {
+    setIsSubmitting(true);
+    try {
+      // Get import invoice from the first item (all items should have the same import invoice)
+      const importInvoice = saleItems[0]?.import_invoice || "";
 
-    if (action === "draft" || action === "send") {
-      setIsSubmitting(true);
-      try {
-        const payload = {
-          name: selectedCustomer.name,
-          phone: selectedCustomer.phone,
-          state: selectedCustomer.state,
-          items: saleItems,
-          total_cost: totalCost.toString(),
-          payment_plan: saleDetails.payment_plan || "",
-          expiry_date: saleDetails.expiry_date || null,
-          date_sold: new Date().toISOString().split('T')[0],
-        };
+      // FIX: Create a pure date string without any datetime components
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, '0');
+      const day = String(today.getDate()).padStart(2, '0');
+      const dateSold = `${year}-${month}-${day}`;
 
-        console.log("Sending payload:", payload);
+      const payload = {
+        name: selectedCustomer.name,
+        phone: selectedCustomer.phone,
+        state: selectedCustomer.state,
+        items: saleItems,
+        total_cost: totalCost.toString(),
+        payment_plan: saleDetails.payment_plan || "",
+        expiry_date: saleDetails.expiry_date || null,
+        import_invoice: importInvoice, // NEW: Auto-filled from tools
+        date_sold: dateSold, // FIXED: Pure date string "YYYY-MM-DD"
+      };
 
-        const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
-        setSales((prev) => [res.data, ...prev]);
+      console.log("Sending payload:", payload);
 
-        if (action === "send" && selectedCustomer?.email) {
-          await sendEmail(
-            selectedCustomer.email, 
-            selectedCustomer.name, 
-            saleItems, 
-            totalCost,
-            res.data.invoice_number
-          );
-        }
+      const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
+      setSales((prev) => [res.data, ...prev]);
 
-        resetForm();
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error("Error adding sale:", error);
-          console.error("Error response:", error.response?.data);
-          alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
-        } else if (error instanceof Error) {
-          console.error("Unexpected error:", error.message);
-          alert("Unexpected error occurred.");
-        } else {
-          console.error("Unknown error:", error);
-        }
-      } finally {
-        setIsSubmitting(false);
+      if (action === "send" && selectedCustomer?.email) {
+        await sendEmail(
+          selectedCustomer.email, 
+          selectedCustomer.name, 
+          saleItems, 
+          totalCost,
+          res.data.invoice_number
+        );
       }
-    }
-  };
 
+      resetForm();
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        console.error("Error adding sale:", error);
+        console.error("Error response:", error.response?.data);
+        alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
+      } else if (error instanceof Error) {
+        console.error("Unexpected error:", error.message);
+        alert("Unexpected error occurred.");
+      } else {
+        console.error("Unknown error:", error);
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+};
   // Edit status functions
   const openEditStatus = (sale: Sale) => {
     setEditingSale(sale);
@@ -590,7 +610,6 @@ export default function SalesPage() {
 
       const res = await axios.patch(`${API_URL}/sales/${editingSale.id}/`, payload, axiosConfig);
       
-      // Update the sale in local state
       setSales(prev => prev.map(sale => 
         sale.id === editingSale.id ? { ...sale, payment_status: newPaymentStatus } : sale
       ));
@@ -615,9 +634,11 @@ export default function SalesPage() {
           "Phone", 
           "State",
           "Items",
+          "Serial Numbers",
           "Price",
           "Date Sold",
           "Invoice",
+          "Import Invoice",
           "Payment Plan",
           "Expiry",
           "Status",
@@ -628,14 +649,20 @@ export default function SalesPage() {
         s.phone,
         s.state,
         s.items.map(item => item.equipment).join(', '),
+        s.items.map(item => 
+          item.serial_set ? 
+            `Receiver: ${item.serial_set.join(', ')}${item.datalogger_serial ? `, Datalogger: ${item.datalogger_serial}` : ''}` 
+            : 'No serials'
+        ).join('; '),
         `₦${s.total_cost}`,
         s.date_sold,
         s.invoice_number || "-",
+        s.import_invoice || "-",
         s.payment_plan || "-",
         s.expiry_date || "-",
         s.payment_status || "-",
       ]),
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
     });
     doc.save("my_sales_records.pdf");
   };
@@ -788,7 +815,7 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* UPDATED: Assignment Confirmation Modal for Serial SETS */}
+        {/* Assignment Confirmation Modal with Import Invoice */}
         <Dialog open={!!assignmentResult} onOpenChange={(open) => !open && setAssignmentResult(null)}>
           <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
@@ -807,7 +834,18 @@ export default function SalesPage() {
                     <div className="text-sm text-gray-300 mb-3">
                       {assignmentResult.setType} • {assignmentResult.serialCount} serials
                     </div>
-                    <div className="space-y-2 text-sm">
+                    
+                    {/* Import Invoice - NEW */}
+                    {assignmentResult.importInvoice && (
+                      <div className="mb-3 p-2 bg-blue-900/30 rounded border border-blue-700">
+                        <div className="font-medium text-blue-300">Import Invoice:</div>
+                        <div className="text-white font-mono">{assignmentResult.importInvoice}</div>
+                      </div>
+                    )}
+                    
+                    {/* Receiver Serial Numbers */}
+                    <div className="space-y-2 text-sm mb-3">
+                      <div className="font-medium text-blue-300">Receiver Serials:</div>
                       {assignmentResult.serialSet.map((serial, index) => (
                         <div key={index} className="flex justify-between">
                           <span className="text-gray-300">Serial {index + 1}:</span>
@@ -815,6 +853,17 @@ export default function SalesPage() {
                         </div>
                       ))}
                     </div>
+                    
+                    {/* Datalogger Serial Number */}
+                    {assignmentResult.dataloggerSerial && (
+                      <div className="space-y-2 text-sm border-t border-green-600 pt-3">
+                        <div className="font-medium text-blue-300">Datalogger Serial:</div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-300">Datalogger:</span>
+                          <span className="text-white font-mono">{assignmentResult.dataloggerSerial}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -833,7 +882,7 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Updated Sale Dialog with Grouped Tools */}
+        {/* Updated Sale Dialog */}
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent className="max-w-4xl bg-slate-900 border-slate-700 text-white max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -888,7 +937,6 @@ export default function SalesPage() {
                     </SelectContent>
                   </Select>
                   
-                  {/* Show selected equipment type for Receiver */}
                   {currentItem.selectedCategory === "Receiver" && currentItem.selectedEquipmentType && (
                     <div className="mt-2 p-2 bg-blue-900/30 rounded border border-blue-700">
                       <p className="text-sm text-blue-300">
@@ -964,7 +1012,7 @@ export default function SalesPage() {
                 </div>
               </div>
 
-              {/* UPDATED: Sale Items Summary showing serial SETS */}
+              {/* Sale Items Summary with Import Invoice */}
               {saleItems.length > 0 && (
                 <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
                   <div className="flex justify-between items-center mb-3">
@@ -973,6 +1021,12 @@ export default function SalesPage() {
                       <div className="text-lg font-bold text-green-400">
                         Total: ₦{totalCost.toLocaleString()}
                       </div>
+                      {/* Show import invoice from first item */}
+                      {saleItems[0]?.import_invoice && (
+                        <div className="text-sm text-blue-300 mt-1">
+                          Import Invoice: {saleItems[0].import_invoice}
+                        </div>
+                      )}
                     </div>
                   </div>
                   
@@ -984,8 +1038,15 @@ export default function SalesPage() {
                           <div className="text-sm text-gray-300">
                             {item.category}
                             {item.serial_set && (
-                              <div className="mt-1 text-blue-400">
-                                Serials: {item.serial_set.join(', ')}
+                              <div className="mt-1">
+                                <div className="text-blue-400">
+                                  Receiver Serials: {item.serial_set.join(', ')}
+                                </div>
+                                {item.datalogger_serial && (
+                                  <div className="text-green-400">
+                                    Datalogger Serial: {item.datalogger_serial}
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -1179,7 +1240,7 @@ export default function SalesPage() {
           </DialogContent>
         </Dialog>
 
-        {/* Sales Table */}
+        {/* Sales Table with Import Invoice Column */}
         <Card className="bg-slate-900 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white">Sales Overview</CardTitle>
@@ -1197,9 +1258,11 @@ export default function SalesPage() {
                         "Phone",
                         "State", 
                         "Items",
+                        "Serial Numbers",
                         "Total Cost",
                         "Date Sold",
                         "Invoice",
+                        "Import Invoice",
                         "Payment Plan",
                         "Expiry",
                         "Status",
@@ -1212,86 +1275,107 @@ export default function SalesPage() {
                     </tr>
                   </thead>
                   <tbody>
-  {sales.length === 0 ? (
-    <tr>
-      <td colSpan={11} className="text-center p-4 text-gray-400">
-        No records yet. Add a sale to begin.
-      </td>
-    </tr>
-  ) : (
-    sales.map((sale) => (
-      <tr 
-        key={sale.id} 
-        className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors text-gray-300"
-      >
-        <td className="p-3 text-white">{sale.name}</td>
-        <td className="p-3">{sale.phone}</td>
-        <td className="p-3">{sale.state}</td>
-        <td className="p-3">
-          <div className="max-w-xs">
-            {sale.items?.map((item, index) => (
-              <div key={index} className="text-xs mb-1 text-gray-300">
-                • {item.equipment}
-              </div>
-            )) || "No items"}
-          </div>
-        </td>
-        <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
-        {/* FIXED: Date without time */}
-        <td className="p-3">
-          {sale.date_sold ? sale.date_sold.split('T')[0] : "-"}
-        </td>
-        <td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
-        <td className="p-3">{sale.payment_plan || "-"}</td>
-        <td className="p-3">{sale.expiry_date || "-"}</td>
-        <td className="p-3">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium ${
-              sale.payment_status === "completed"
-                ? "bg-green-900/50 text-green-300 border border-green-700"
-                : sale.payment_status === "installment"
-                ? "bg-blue-900/50 text-blue-300 border border-blue-700"
-                : sale.payment_status === "failed"
-                ? "bg-red-900/50 text-red-300 border border-red-700"
-                : "bg-gray-900/50 text-gray-300 border border-gray-700"
-            }`}
-          >
-            {sale.payment_status || "pending"}
-          </span>
-        </td>
-        <td className="p-3">
-          <div className="flex gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => openEditStatus(sale)}
-              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
-              title="Edit payment status"
-            >
-              <Edit className="w-4 h-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                if (sale.items.length > 0) {
-                  const tool = tools.find(t => t.id === sale.items[0].tool_id);
-                  if (tool) {
-                    viewSerialNumbers(tool);
-                  }
-                }
-              }}
-              className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
-              title="View serial numbers"
-            >
-              <Eye className="w-4 h-4" />
-            </Button>
-          </div>
-        </td>
-      </tr>
-    ))
-  )}
-</tbody>
+                    {sales.length === 0 ? (
+                      <tr>
+                        <td colSpan={13} className="text-center p-4 text-gray-400">
+                          No records yet. Add a sale to begin.
+                        </td>
+                      </tr>
+                    ) : (
+                      sales.map((sale) => (
+                        <tr 
+                          key={sale.id} 
+                          className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors text-gray-300"
+                        >
+                          <td className="p-3 text-white">{sale.name}</td>
+                          <td className="p-3">{sale.phone}</td>
+                          <td className="p-3">{sale.state}</td>
+                          <td className="p-3">
+                            <div className="max-w-xs">
+                              {sale.items?.map((item, index) => (
+                                <div key={index} className="text-xs mb-1 text-gray-300">
+                                  • {item.equipment}
+                                </div>
+                              )) || "No items"}
+                            </div>
+                          </td>
+                          {/* Serial Numbers Column */}
+                          <td className="p-3">
+                            <div className="max-w-xs">
+                              {sale.items?.map((item, index) => (
+                                <div key={index} className="text-xs mb-2">
+                                  <div className="text-blue-300 font-medium">{item.equipment}:</div>
+                                  {item.serial_set && (
+                                    <div className="text-gray-300 ml-2">
+                                      Receiver: {item.serial_set.join(', ')}
+                                    </div>
+                                  )}
+                                  {item.datalogger_serial && (
+                                    <div className="text-green-300 ml-2">
+                                      Datalogger: {item.datalogger_serial}
+                                    </div>
+                                  )}
+                                </div>
+                              )) || "No serials"}
+                            </div>
+                          </td>
+                          <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
+                          <td className="p-3">
+                            {sale.date_sold ? sale.date_sold.split('T')[0] : "-"}
+                          </td>
+                          <td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
+                          {/* Import Invoice Column */}
+                          <td className="p-3 text-yellow-300">{sale.import_invoice || "-"}</td>
+                          <td className="p-3">{sale.payment_plan || "-"}</td>
+                          <td className="p-3">{sale.expiry_date || "-"}</td>
+                          <td className="p-3">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                sale.payment_status === "completed"
+                                  ? "bg-green-900/50 text-green-300 border border-green-700"
+                                  : sale.payment_status === "installment"
+                                  ? "bg-blue-900/50 text-blue-300 border border-blue-700"
+                                  : sale.payment_status === "failed"
+                                  ? "bg-red-900/50 text-red-300 border border-red-700"
+                                  : "bg-gray-900/50 text-gray-300 border border-gray-700"
+                              }`}
+                            >
+                              {sale.payment_status || "pending"}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex gap-1">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => openEditStatus(sale)}
+                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+                                title="Edit payment status"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  if (sale.items.length > 0) {
+                                    const tool = tools.find(t => t.id === sale.items[0].tool_id);
+                                    if (tool) {
+                                      viewSerialNumbers(tool);
+                                    }
+                                  }
+                                }}
+                                className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
+                                title="View serial numbers"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
                 </table>
               </div>
             )}

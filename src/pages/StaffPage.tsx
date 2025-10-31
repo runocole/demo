@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom"; // Add this import
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -25,8 +26,8 @@ interface Staff {
   is_activated: boolean; 
 }
 
-
 const StaffPage = () => {
+  const navigate = useNavigate(); // Add this hook
   const [showAddModal, setShowAddModal] = useState(false);
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -38,52 +39,57 @@ const StaffPage = () => {
     void fetchStaff();
   }, []);
 
-  
+  const fetchStaff = async () => {
+    try {
+      const data = await getStaff();
+      setStaff(data);
+    } catch (error) {
+      console.error("Failed to fetch User:", error);
+      setStaff([]);
+    }
+  };
 
- const fetchStaff = async () => {
-  try {
-    const data = await getStaff();
-    setStaff(data);
-  } catch (error) {
-    console.error("Failed to fetch User:", error);
-    setStaff([]);
-  }
-};
-
- const handleAddStaff = async () => {
-  if (!email) {
-    alert("Email is required");
-    return;
-  }
-
-  try {
-    setLoading(true);
-    const newStaff = await registerStaff(name, email, phone);
-
-    if (!newStaff?.id) {
-      throw new Error("User ID missing from response");
+  const handleAddStaff = async () => {
+    if (!email) {
+      alert("Email is required");
+      return;
     }
 
-    setShowAddModal(false);
+    try {
+      setLoading(true);
+      const newStaff = await registerStaff(name, email, phone);
 
-    // Reset all form fields
-    setEmail("");
-    setName("");
-    setPhone("");
+      if (!newStaff?.id) {
+        throw new Error("User ID missing from response");
+      }
 
-    await fetchStaff();
-  } catch (err: unknown) {
-    if (err instanceof Error) {
-      alert(`Failed to add User: ${err.message}`);
-      console.error("User addition failed:", err.message);
-    } else {
-      alert("An unknown error occurred while adding the User.");
-      console.error("Unknown error:", err);
+      setShowAddModal(false);
+
+      // Reset all form fields
+      setEmail("");
+      setName("");
+      setPhone("");
+
+      await fetchStaff();
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        alert(`Failed to add User: ${err.message}`);
+        console.error("User addition failed:", err.message);
+      } else {
+        alert("An unknown error occurred while adding the User.");
+        console.error("Unknown error:", err);
+      }
+    } finally {
+      setLoading(false);
     }
-  } finally {
-    setLoading(false);
-  }
-};
+  };
+
+  // Add this function to handle viewing staff sales
+  const handleViewStaffSales = (staffId: string, staffName: string) => {
+    navigate(`/sales/staff/${staffId}`, { 
+      state: { staffName } // Optional: pass staff name for display
+    });
+  };
 
   return (
     <DashboardLayout>
@@ -120,11 +126,11 @@ const StaffPage = () => {
             <Label>Phone No.</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} />
 
-           <DialogFooter className="flex flex-col gap-2">
-  <Button onClick={handleAddStaff} disabled={loading}>
-    {loading ? "Adding..." : "Add User"}
-  </Button>
-</DialogFooter>
+            <DialogFooter className="flex flex-col gap-2">
+              <Button onClick={handleAddStaff} disabled={loading}>
+                {loading ? "Adding..." : "Add User"}
+              </Button>
+            </DialogFooter>
 
           </DialogContent>
         </Dialog>
@@ -154,24 +160,28 @@ const StaffPage = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {Staff.map((Staff) => (
-                  <TableRow key={Staff.id}>
-                    <TableCell className="font-medium">{Staff.id}</TableCell>
-                    <TableCell className="font-semibold">{Staff.name}</TableCell>
+                {Staff.map((staff) => (
+                  <TableRow key={staff.id}>
+                    <TableCell className="font-medium">{staff.id}</TableCell>
+                    <TableCell className="font-semibold">{staff.name}</TableCell>
                     <TableCell>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2 text-sm">
                           <Mail className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">{Staff.email}</span>
+                          <span className="text-xs">{staff.email}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Phone className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-xs">{Staff.phone}</span>
+                          <span className="text-xs">{staff.phone}</span>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell className="flex gap-2">
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleViewStaffSales(staff.id, staff.name)}
+                      >
                         View Profile
                       </Button>
                     </TableCell>

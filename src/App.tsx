@@ -18,6 +18,7 @@ import ToolsSummary from "./pages/ToolsSummary";
 import AdminSalesPage from "./pages/AdminSalesPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import CustomerOwing from "./pages/CustomerOwing";
+import StaffSalesPage from "./pages/StaffSalesPage";
 
 const queryClient = new QueryClient();
 
@@ -177,7 +178,8 @@ const App = () => (
               />
             }
           />
-
+            <Route path="/staff" element={<StaffPage />} />
+        <Route path="/sales/staff/:staffId" element={<StaffSalesPage />} />
           {/* --- Default redirect --- */}
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>

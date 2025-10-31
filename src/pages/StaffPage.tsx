@@ -45,7 +45,7 @@ const StaffPage = () => {
     const data = await getStaff();
     setStaff(data);
   } catch (error) {
-    console.error("Failed to fetch Staff:", error);
+    console.error("Failed to fetch User:", error);
     setStaff([]);
   }
 };
@@ -61,7 +61,7 @@ const StaffPage = () => {
     const newStaff = await registerStaff(name, email, phone);
 
     if (!newStaff?.id) {
-      throw new Error("Staff ID missing from response");
+      throw new Error("User ID missing from response");
     }
 
     setShowAddModal(false);
@@ -74,10 +74,10 @@ const StaffPage = () => {
     await fetchStaff();
   } catch (err: unknown) {
     if (err instanceof Error) {
-      alert(`Failed to add Staff: ${err.message}`);
-      console.error("Staff addition failed:", err.message);
+      alert(`Failed to add User: ${err.message}`);
+      console.error("User addition failed:", err.message);
     } else {
-      alert("An unknown error occurred while adding the Staff.");
+      alert("An unknown error occurred while adding the User.");
       console.error("Unknown error:", err);
     }
   } finally {
@@ -91,28 +91,28 @@ const StaffPage = () => {
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight"> Staff</h2>
+            <h2 className="text-3xl font-bold tracking-tight"> User</h2>
             <p className="text-muted-foreground">
-              Manage Staff information
+              Manage User information
             </p>
           </div>
           <Button className="gap-2" onClick={() => setShowAddModal(true)}>
-            <Plus className="h-4 w-4" /> Add Staff
+            <Plus className="h-4 w-4" /> Add User
           </Button>
         </div>
 
-        {/* Add Staff Modal */}
+        {/* Add User Modal */}
         <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
           <DialogContent className="max-h-[80vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Add New Staff</DialogTitle>
+              <DialogTitle>Add New User</DialogTitle>
             </DialogHeader>
 
             <Label>Email</Label>
             <Input
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Staff@example.com"
+              placeholder="User@example.com"
               required
             />
             <Label>Name</Label>
@@ -122,7 +122,7 @@ const StaffPage = () => {
 
            <DialogFooter className="flex flex-col gap-2">
   <Button onClick={handleAddStaff} disabled={loading}>
-    {loading ? "Adding..." : "Add Staff"}
+    {loading ? "Adding..." : "Add User"}
   </Button>
 </DialogFooter>
 
@@ -133,7 +133,7 @@ const StaffPage = () => {
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search Staff by name, email, or phone..."
+            placeholder="Search User by name, email, or phone..."
             className="pl-10"
           />
         </div>
@@ -141,13 +141,13 @@ const StaffPage = () => {
         {/* Staff Table */}
         <Card className="border-border bg-blue-950">
           <CardHeader>
-            <CardTitle>All Staff</CardTitle>
+            <CardTitle>All Users</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Staff ID</TableHead>
+                  <TableHead>User ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Actions</TableHead>

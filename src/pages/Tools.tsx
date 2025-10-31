@@ -800,7 +800,19 @@ const handleSaveTool = async () => {
     doc.save(`tools-inventory-grouped-${new Date().toISOString().slice(0, 10)}.pdf`);
   };
 
-  if (loading) return <p className="p-6 text-gray-400">Loading tools...</p>;
+  // FIXED: Replaced the simple loading text with a proper spinner component for loading Page
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center space-y-4">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+            <p className="text-gray-400">Loading inventory...</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   /* ---------------- Render ---------------- */
   return (
@@ -934,7 +946,7 @@ const handleSaveTool = async () => {
         </div>
 
         {/* Stock Summary */}
-        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <Card className="border-border bg-blue-950">
             <CardContent className="p-4">
               <p className="text-sm text-gray-400">Total Equipment Types</p>
@@ -1487,7 +1499,7 @@ const handleSaveTool = async () => {
                             </SelectItem>
                           ))
                         ) : (
-                          <SelectItem value="" disabled>No suppliers found</SelectItem>
+                          <SelectItem value="No Suppliers" disabled>No suppliers found</SelectItem>
                         )}
                       </SelectContent>
                     </Select>

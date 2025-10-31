@@ -1212,84 +1212,86 @@ export default function SalesPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sales.length === 0 ? (
-                      <tr>
-                        <td colSpan={11} className="text-center p-4 text-gray-400">
-                          No records yet. Add a sale to begin.
-                        </td>
-                      </tr>
-                    ) : (
-                      sales.map((sale) => (
-                        <tr 
-                          key={sale.id} 
-                          className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors text-gray-300"
-                        >
-                          <td className="p-3 text-white">{sale.name}</td>
-                          <td className="p-3">{sale.phone}</td>
-                          <td className="p-3">{sale.state}</td>
-                          <td className="p-3">
-                            <div className="max-w-xs">
-                              {sale.items?.map((item, index) => (
-                                <div key={index} className="text-xs mb-1 text-gray-300">
-                                  • {item.equipment}
-                                </div>
-                              )) || "No items"}
-                            </div>
-                          </td>
-                          <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
-                          <td className="p-3">{sale.date_sold}</td>
-                          <td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
-                          <td className="p-3">{sale.payment_plan || "-"}</td>
-                          <td className="p-3">{sale.expiry_date || "-"}</td>
-                          <td className="p-3">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                sale.payment_status === "completed"
-                                  ? "bg-green-900/50 text-green-300 border border-green-700"
-                                  : sale.payment_status === "installment"
-                                  ? "bg-blue-900/50 text-blue-300 border border-blue-700"
-                                  : sale.payment_status === "failed"
-                                  ? "bg-red-900/50 text-red-300 border border-red-700"
-                                  : "bg-gray-900/50 text-gray-300 border border-gray-700"
-                              }`}
-                            >
-                              {sale.payment_status || "pending"}
-                            </span>
-                          </td>
-                          <td className="p-3">
-                            <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => openEditStatus(sale)}
-                                className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
-                                title="Edit payment status"
-                              >
-                                <Edit className="w-4 h-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  // Find the first tool in the sale to view serials
-                                  if (sale.items.length > 0) {
-                                    const tool = tools.find(t => t.id === sale.items[0].tool_id);
-                                    if (tool) {
-                                      viewSerialNumbers(tool);
-                                    }
-                                  }
-                                }}
-                                className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
-                                title="View serial numbers"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
+  {sales.length === 0 ? (
+    <tr>
+      <td colSpan={11} className="text-center p-4 text-gray-400">
+        No records yet. Add a sale to begin.
+      </td>
+    </tr>
+  ) : (
+    sales.map((sale) => (
+      <tr 
+        key={sale.id} 
+        className="border-b border-slate-700 hover:bg-slate-800/50 transition-colors text-gray-300"
+      >
+        <td className="p-3 text-white">{sale.name}</td>
+        <td className="p-3">{sale.phone}</td>
+        <td className="p-3">{sale.state}</td>
+        <td className="p-3">
+          <div className="max-w-xs">
+            {sale.items?.map((item, index) => (
+              <div key={index} className="text-xs mb-1 text-gray-300">
+                • {item.equipment}
+              </div>
+            )) || "No items"}
+          </div>
+        </td>
+        <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
+        {/* FIXED: Date without time */}
+        <td className="p-3">
+          {sale.date_sold ? sale.date_sold.split('T')[0] : "-"}
+        </td>
+        <td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
+        <td className="p-3">{sale.payment_plan || "-"}</td>
+        <td className="p-3">{sale.expiry_date || "-"}</td>
+        <td className="p-3">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium ${
+              sale.payment_status === "completed"
+                ? "bg-green-900/50 text-green-300 border border-green-700"
+                : sale.payment_status === "installment"
+                ? "bg-blue-900/50 text-blue-300 border border-blue-700"
+                : sale.payment_status === "failed"
+                ? "bg-red-900/50 text-red-300 border border-red-700"
+                : "bg-gray-900/50 text-gray-300 border border-gray-700"
+            }`}
+          >
+            {sale.payment_status || "pending"}
+          </span>
+        </td>
+        <td className="p-3">
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => openEditStatus(sale)}
+              className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30"
+              title="Edit payment status"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => {
+                if (sale.items.length > 0) {
+                  const tool = tools.find(t => t.id === sale.items[0].tool_id);
+                  if (tool) {
+                    viewSerialNumbers(tool);
+                  }
+                }
+              }}
+              className="text-green-400 hover:text-green-300 hover:bg-green-900/30"
+              title="View serial numbers"
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          </div>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
                 </table>
               </div>
             )}

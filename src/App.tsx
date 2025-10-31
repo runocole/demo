@@ -17,6 +17,7 @@ import CustomersPage from "./pages/CustomersPage";
 import ToolsSummary from "./pages/ToolsSummary";
 import AdminSalesPage from "./pages/AdminSalesPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
+import CustomerOwing from "./pages/CustomerOwing";
 
 const queryClient = new QueryClient();
 
@@ -134,6 +135,16 @@ const App = () => (
               />
             }
           />
+          <Route
+            path="/customer/owing"
+            element={
+              <PrivateRoute
+                element={<CustomerOwing />}
+                allowedRoles={["staff", "admin"]}
+              />
+            }
+          />
+
 
           {/* --- Admin Routes --- */}
           <Route

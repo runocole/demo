@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
-import { Package, DollarSign, Users, AlertCircle } from "lucide-react";
+import { Package, DollarSign, Users, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import {
   Table,
@@ -21,9 +22,11 @@ import {
 } from "recharts";
 
 const DashboardPage = () => {
+  const navigate = useNavigate();
   const [userName, setUserName] = useState("");
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showRevenue, setShowRevenue] = useState(false);
 
   const COLORS = ["#4F46E5", "#10B981", "#F59E0B", "#EF4444", "#6366F1", "#A855F7"];
 
@@ -61,6 +64,43 @@ const DashboardPage = () => {
       maximumFractionDigits: 2,
     })}`;
 
+  // Function to group low stock items by name and category
+  const getGroupedLowStockItems = () => {
+    if (!dashboardData?.lowStockItems) return [];
+
+    const groupedItems: { [key: string]: any } = {};
+
+    dashboardData.lowStockItems.forEach((tool: any) => {
+      const key = `${tool.name}-${tool.category}`;
+      
+      if (groupedItems[key]) {
+        groupedItems[key].stock += tool.stock;
+      } else {
+        groupedItems[key] = {
+          id: tool.id,
+          name: tool.name,
+          category: tool.category,
+          stock: tool.stock
+        };
+      }
+    });
+
+    return Object.values(groupedItems);
+  };
+
+  // Function to sort recent sales by date (most recent first)
+  const getSortedRecentSales = () => {
+    if (!dashboardData?.recentSales) return [];
+
+    return [...dashboardData.recentSales].sort((a, b) => {
+      // Use the date_sold field from your Sale model
+      const dateA = new Date(a.date_sold || 0);
+      const dateB = new Date(b.date_sold || 0);
+      
+      return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
+    });
+  };
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -70,6 +110,9 @@ const DashboardPage = () => {
       </DashboardLayout>
     );
   }
+
+  const groupedLowStockItems = getGroupedLowStockItems();
+  const sortedRecentSales = getSortedRecentSales();
 
   return (
     <DashboardLayout>
@@ -89,10 +132,27 @@ const DashboardPage = () => {
 
         {/* Stats Section */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatsCard title="Total Stock" value={dashboardData?.totalTools || 0} icon={Package} />
-          <StatsCard title="Revenue (MTD)" value={formatCurrency(dashboardData?.mtdRevenue || 0)} icon={DollarSign} />
+          <StatsCard 
+            title="Total Stock" 
+            value={dashboardData?.totalTools || 0} 
+            icon={Package} 
+            onClick={() => navigate("/tools-summary")} 
+            clickable 
+          />
+          <StatsCard 
+            title="Revenue (MTD)" 
+            value={showRevenue ? formatCurrency(dashboardData?.mtdRevenue || 0) : "******"} 
+            icon={DollarSign}
+            actionIcon={showRevenue ? EyeOff : Eye}
+            onActionClick={() => setShowRevenue(!showRevenue)}
+          />
           <StatsCard title="Total Users" value={dashboardData?.totalStaff || 0} icon={AlertCircle} />
-          <StatsCard title="Active Customers" value={dashboardData?.activeCustomers || 0} icon={Users} />
+          <StatsCard 
+            title="Active Customers"
+            value={dashboardData?.activeCustomers || 0} icon={Users}
+            onClick={() => navigate("/customer/owing")}
+            clickable
+           />
         </div>
 
         {/* Recent Sales + Low Stock Items */}
@@ -110,16 +170,20 @@ const DashboardPage = () => {
                     <TableHead>Customer</TableHead>
                     <TableHead>Equipment</TableHead>
                     <TableHead>Amount</TableHead>
+                    <TableHead>Date Sold</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dashboardData?.recentSales?.length > 0 ? (
-                    dashboardData.recentSales.map((sale: any) => (
+                  {sortedRecentSales.length > 0 ? (
+                    sortedRecentSales.map((sale: any) => (
                       <TableRow key={sale.invoice_number}>
                         <TableCell>{sale.invoice_number}</TableCell>
                         <TableCell>{sale.customer_name}</TableCell>
                         <TableCell>{sale.tool_name}</TableCell>
                         <TableCell>{formatCurrency(sale.cost_sold)}</TableCell>
+                        <TableCell>
+                          {sale.date_sold ? new Date(sale.date_sold).toLocaleDateString() : 'N/A'}
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
@@ -143,17 +207,15 @@ const DashboardPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Serial Number</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Category</TableHead>
                     <TableHead>Stock</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dashboardData?.lowStockItems?.length > 0 ? (
-                    dashboardData.lowStockItems.map((tool: any) => (
-                      <TableRow key={tool.id}>
-                        <TableCell>{tool.code}</TableCell>
+                  {groupedLowStockItems.length > 0 ? (
+                    groupedLowStockItems.map((tool: any) => (
+                      <TableRow key={`${tool.name}-${tool.category}`}>
                         <TableCell>{tool.name}</TableCell>
                         <TableCell>{tool.category}</TableCell>
                         <TableCell>{tool.stock}</TableCell>
@@ -172,23 +234,24 @@ const DashboardPage = () => {
           </Card>
         </div>
 
-        {/* Inventory Breakdown + Top Selling Tools */}
+        {/* Inventory Breakdown + Receivers Expiring Soon */}
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Inventory Breakdown */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Receiver Inventory Breakdown (Smaller) */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
-              <CardTitle>Receiver Inventory Breakdown</CardTitle>
+              <CardTitle className="text-lg">Receiver Inventory Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col md:flex-row items-center justify-between">
                 {/* Pie Chart */}
-                <ResponsiveContainer width="100%" height={250} className="md:w-2/3">
+                <ResponsiveContainer width="100%" height={200} className="md:w-2/3">
                   <PieChart>
                     <Pie
                       data={dashboardData?.inventoryBreakdown || []}
                       dataKey="count"
                       nameKey="receiver_type"
-                      outerRadius={90}
+                      outerRadius={70}
                       label={true} 
                     >
                       {(dashboardData?.inventoryBreakdown || []).map((_: any, i: number) => (
@@ -209,7 +272,7 @@ const DashboardPage = () => {
                 </ResponsiveContainer>
 
                 {/* Legend */}
-                <div className="mt-4 md:mt-0 md:ml-6 space-y-2 text-sm">
+                <div className="mt-4 md:mt-0 md:ml-4 space-y-2 text-sm">
                   {(dashboardData?.inventoryBreakdown || []).map((item: any, i: number) => (
                     <div key={i} className="flex items-center gap-2">
                       <div
@@ -217,7 +280,7 @@ const DashboardPage = () => {
                         style={{ backgroundColor: COLORS[i % COLORS.length] }}
                       ></div>
                       <span className="text-gray-300">
-                        {item.receiver_type}: <span className="font-semibold">{item.count}</span> {/* CHANGED: from category to receiver_type */}
+                        {item.receiver_type}: <span className="font-semibold">{item.count}</span>
                       </span>
                     </div>
                   ))}
@@ -226,7 +289,47 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          {/* Top Selling Tools */}
+          {/* Receivers Expiring Soon */}
+          <Card className="border-border bg-blue-950">
+            <CardHeader>
+              <CardTitle className="text-lg">Receivers Expiring Soon</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-600">
+                      <th className="text-left p-3 font-semibold">Name</th>
+                      <th className="text-left p-3 font-semibold">S/N</th>
+                      <th className="text-left p-3 font-semibold">Exp. Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dashboardData?.expiringReceivers && dashboardData.expiringReceivers.length > 0 ? (
+                      dashboardData.expiringReceivers.map((receiver: any, index: number) => (
+                        <tr key={index} className="border-b border-gray-700 hover:bg-blue-900">
+                          <td className="p-3">{receiver.name}</td>
+                          <td className="p-3">{receiver.serialNumber}</td>
+                          <td className="p-3">
+                            {receiver.expirationDate ? new Date(receiver.expirationDate).toLocaleDateString() : 'N/A'}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={3} className="text-center text-gray-500 p-4">
+                          No receivers expiring soon
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Selling Tools */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Top Selling Equipments</CardTitle>

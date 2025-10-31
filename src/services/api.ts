@@ -100,6 +100,32 @@ export const activateCustomer = async (customerId: number) => {
   return response.data;
 };
 
+
+export const fetchCustomerOwingData = async (): Promise<any> => {
+  try {
+    const response = await axios.get(`${API_URL}/customer-owing/`, {  // ✅ Uses API_URL and correct path
+      headers: authHeader(),
+    });
+    
+    console.log("Customer Owing API Response:", response.data);
+    return response.data;
+  } catch (error: any) {
+    console.error('Error fetching customer owing data:', error);
+    
+  
+    if (error.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', error.response.data);
+      console.error('URL called:', error.config?.url);
+    } else if (error.request) {
+      console.error('No response received. Check:');
+      console.error('- Is Django server running?');
+      console.error('- Is the URL correct?');
+    }
+    
+    throw error;
+  }
+};
 // ----------------------------
 // SALES
 // ----------------------------
@@ -236,6 +262,7 @@ export const fetchDashboardData = async () => {
     lowStockItems: data.lowStockItems ?? data.low_stock_items ?? [],
     topSellingTools: data.topSellingTools ?? data.top_selling_tools ?? [],
     recentSales: data.recentSales ?? data.recent_sales ?? [],
+    expiringReceivers: data.expiringReceivers ?? data.expiring_receivers ?? [],
   };
 };
 // ----------------------------

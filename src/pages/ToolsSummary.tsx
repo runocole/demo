@@ -1113,7 +1113,7 @@ const ToolsSummary: React.FC = () => {
             </div>
 
             {/* Stock Summary - UPDATED WITH SERIAL INFO */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
               <Card className="border-border bg-blue-950">
                 <CardContent className="p-4">
                   <p className="text-sm text-gray-400">Total Equipment Types</p>

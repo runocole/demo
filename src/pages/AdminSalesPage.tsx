@@ -47,12 +47,18 @@ const AdminSalesPage: React.FC = () => {
 
 // --- Search ---
   useEffect(() => {
-    const filtered = sales.filter(
-      (s) =>
-        s.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.tool_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.staff_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filtered = sales.filter((s) => {
+      const customerName = (s.customer_name || "").toLowerCase();
+      const toolName = (s.tool_name || "").toLowerCase();
+      const staffName = (s.staff_name || "").toLowerCase();
+      const search = searchTerm.toLowerCase();
+
+      return (
+        customerName.includes(search) ||
+        toolName.includes(search) ||
+        staffName.includes(search)
+      );
+    });
     setFilteredSales(filtered);
   }, [searchTerm, sales]);
 
@@ -110,7 +116,7 @@ const AdminSalesPage: React.FC = () => {
           <div className="flex items-center gap-2 mt-3 md:mt-0">
             <Input
               type="text"
-              placeholder="Search by customer, tool, or staff..."
+              placeholder="Search by customer, tool, or User..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-64"
@@ -132,7 +138,7 @@ const AdminSalesPage: React.FC = () => {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-gray-100 text-left">
+                  <tr className="bg-blue-950 text-left">
                     <th
                       className="p-2 cursor-pointer"
                       onClick={() => handleSort("customer_name")}
@@ -179,10 +185,10 @@ const AdminSalesPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {filteredSales.map((s) => (
-                    <tr key={s.id} className="border-t hover:bg-gray-50">
+                    <tr key={s.id} className="border-t hover:bg-slate-900">
                       <td className="p-2">{s.customer_name}</td>
                       <td className="p-2">{s.tool_name}</td>
-                      <td className="p-2">₦{s.cost_sold.toLocaleString()}</td>
+                      <td className="p-2">₦{(s.cost_sold || 0).toLocaleString()}</td>
                       <td className="p-2">{s.payment_plan}</td>
                       <td className="p-2 capitalize">{s.payment_status}</td>
                       <td className="p-2">

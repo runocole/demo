@@ -26,7 +26,7 @@ interface Tool {
   supplier?: string;
   supplier_name?: string;
   category?: string;
-  invoice_no?: string;
+  invoice_number?: string;
   date_added?: string;
   updated_at?: string;
   description?: string;
@@ -251,7 +251,7 @@ const ToolsSummary: React.FC = () => {
             supplier: t.supplier || "",
             supplier_name: t.supplier_name || "",
             category: t.category || "Uncategorized",
-            invoice_no: t.invoice_number || t.invoice_no || "",
+            invoice_number: t.invoice_number || "",
             date_added: t.date_added,
             updated_at: t.updated_at,
             box_type: t.box_type || t.description || "",
@@ -345,63 +345,80 @@ const ToolsSummary: React.FC = () => {
   }, [tools]);
 
   // --------------------
-  // GROUPED DATA
-  // --------------------
-  const grouped = useMemo(() => {
-    const q = search.trim().toLowerCase();
+// GROUPED DATA
+// --------------------
+const grouped = useMemo(() => {
+  const q = search.trim().toLowerCase();
 
-    const filtered = tools.filter((t) => {
-      const categoryMatch =
-        categoryFilter === "all" ||
-        !categoryFilter ||
-        (t.category || "Uncategorized").toLowerCase() ===
-          categoryFilter.toLowerCase();
-      const qMatch =
-        !q ||
-        t.name.toLowerCase().includes(q) ||
-        (t.supplier || "").toLowerCase().includes(q) ||
-        t.code.toLowerCase().includes(q);
-      const lowStockMatch = !lowStockOnly || t.stock < 5;
-      return categoryMatch && qMatch && lowStockMatch;
-    });
+  const filtered = tools.filter((t) => {
+    const categoryMatch =
+      categoryFilter === "all" ||
+      !categoryFilter ||
+      (t.category || "Uncategorized").toLowerCase() ===
+        categoryFilter.toLowerCase();
+    const qMatch =
+      !q ||
+      t.name.toLowerCase().includes(q) ||
+      (t.supplier || "").toLowerCase().includes(q) ||
+      t.code.toLowerCase().includes(q);
+    const lowStockMatch = !lowStockOnly || t.stock < 5;
+    const hasStock = t.stock > 0; 
+    
+    return categoryMatch && qMatch && lowStockMatch && hasStock; 
+  });
 
-    const map = new Map<
-      string,
-      { name: string; totalStock: number; suppliers: string[]; serials: Tool[]; totalAvailableSerials: number; totalSoldSerials: number }[]
-    >();
+  const map = new Map<
+    string,
+    { 
+      name: string; 
+      totalStock: number; 
+      suppliers: string[]; 
+      serials: Tool[]; 
+      totalAvailableSerials: number; 
+      totalSoldSerials: number;
+      latestActiveTool: Tool; // Track latest active tool
+    }[]
+  >();
 
-    for (const t of filtered) {
-      const category = t.category || "Uncategorized";
-      if (!map.has(category)) map.set(category, []);
+  for (const t of filtered) {
+    const category = t.category || "Uncategorized";
+    if (!map.has(category)) map.set(category, []);
 
-      const toolGroup = map.get(category)!;
-      const existing = toolGroup.find((x) => x.name === t.name);
+    const toolGroup = map.get(category)!;
+    const existing = toolGroup.find((x) => x.name === t.name);
 
-      if (existing) {
-        existing.totalStock += t.stock;
-        if (t.supplier_name && !existing.suppliers.includes(t.supplier_name))
-          existing.suppliers.push(t.supplier_name);
-        existing.serials.push(t);
-        existing.totalAvailableSerials += t.available_serials?.length || 0;
-        existing.totalSoldSerials += t.sold_serials?.length || 0;
-      } else {
-        toolGroup.push({
-          name: t.name,
-          totalStock: t.stock,
-          suppliers: t.supplier_name ? [t.supplier_name] : [],
-          serials: [t],
-          totalAvailableSerials: t.available_serials?.length || 0,
-          totalSoldSerials: t.sold_serials?.length || 0,
-        });
+    if (existing) {
+      existing.totalStock += t.stock;
+      if (t.supplier_name && !existing.suppliers.includes(t.supplier_name))
+        existing.suppliers.push(t.supplier_name);
+      existing.serials.push(t);
+      existing.totalAvailableSerials += t.available_serials?.length || 0;
+      existing.totalSoldSerials += t.sold_serials?.length || 0;
+      
+      // Update latest active tool if this one is newer (with null check)
+      const currentDate = existing.latestActiveTool.date_added || "";
+      const newDate = t.date_added || "";
+      if (newDate && (!currentDate || newDate > currentDate)) {
+        existing.latestActiveTool = t;
       }
+    } else {
+      toolGroup.push({
+        name: t.name,
+        totalStock: t.stock,
+        suppliers: t.supplier_name ? [t.supplier_name] : [],
+        serials: [t],
+        totalAvailableSerials: t.available_serials?.length || 0,
+        totalSoldSerials: t.sold_serials?.length || 0,
+        latestActiveTool: t, // Set initial latest active tool
+      });
     }
+  }
 
-    return Array.from(map.entries()).map(([category, tools]) => ({
-      category,
-      tools,
-    }));
-  }, [tools, search, categoryFilter, lowStockOnly]);
-
+  return Array.from(map.entries()).map(([category, tools]) => ({
+    category,
+    tools,
+  }));
+}, [tools, search, categoryFilter, lowStockOnly]);
   // --------------------
   // TOTAL STOCK AND SERIALS
   // --------------------
@@ -529,7 +546,7 @@ const ToolsSummary: React.FC = () => {
         item.box_type || "—",
         serials.join('\n') || "—",
         item.supplier_name || "—",
-        item.invoice_no || "—",
+        item.invoice_number || "—",
         formatDate(item.date_added),
         formatDate(item.expiry_date), // Fixed expiry date display
         item.available_serials?.length || 0, // NEW: Available serials count
@@ -705,11 +722,10 @@ const ToolsSummary: React.FC = () => {
                 ""
               )}
             </td>
-
-            <td
-              className="px-4 py-3 align-top text-blue-400 cursor-pointer hover:underline"
-              onClick={() => setSelectedTool(t.serials[0])}
-            >
+<td
+  className="px-4 py-3 align-top text-blue-400 cursor-pointer hover:underline"
+  onClick={() => setSelectedTool(t.latestActiveTool)} // Use latest active tool
+>
               <div className="flex items-center gap-2">
                 {t.name}
                 <button
@@ -746,245 +762,270 @@ const ToolsSummary: React.FC = () => {
 
     return rows;
   };
+// --------------------
+// RENDER TOOL DETAILS - FIXED EXPIRY DATE DISPLAY AND ADDED SERIAL INFO
+// --------------------
+const renderToolDetails = () => {
+  if (!selectedTool) return null;
 
-  // --------------------
-  // RENDER TOOL DETAILS - FIXED EXPIRY DATE DISPLAY AND ADDED SERIAL INFO
-  // --------------------
-  const renderToolDetails = () => {
-    if (!selectedTool) return null;
-
-    const toolGroup = tools.filter((t) => t.name === selectedTool.name);
-    const filteredSerials = toolGroup.filter((t) =>
-      t.code.toLowerCase().includes(serialSearch.toLowerCase()) ||
-      (t.serials && isSerialObject(t.serials) && 
-        Object.values(t.serials).some((serial: any) => 
-          serial && serial.toString().toLowerCase().includes(serialSearch.toLowerCase())
-        )
+  console.log('Selected Tool:', selectedTool);
+  console.log('All tools:', tools);
+  
+  // Get all active tools with the same name, regardless of the selectedTool's stock
+  const toolGroup = tools.filter((t) => t.name === selectedTool.name && t.stock > 0);
+  
+  console.log('Filtered toolGroup (stock > 0):', toolGroup);
+  
+  const filteredSerials = toolGroup.filter((t) =>
+    t.code.toLowerCase().includes(serialSearch.toLowerCase()) ||
+    (t.serials && isSerialObject(t.serials) && 
+      Object.values(t.serials).some((serial: any) => 
+        serial && serial.toString().toLowerCase().includes(serialSearch.toLowerCase())
       )
-    );
+    )
+  );
 
-    // Group by invoice number
-    const groupedByInvoice = filteredSerials.reduce((acc, item) => {
-      const key = item.invoice_no || "no-invoice";
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(item);
-      return acc;
-    }, {} as Record<string, Tool[]>);
+  console.log('Final filteredSerials:', filteredSerials);
 
+  // If no active tools found, show a message
+  if (filteredSerials.length === 0) {
     return (
       <div className="mt-6 border rounded-lg p-4 bg-blue-950">
         <div className="flex justify-between items-center mb-3">
           <h2 className="text-xl font-semibold">{selectedTool.name} — Details</h2>
-          <div className="flex gap-2">
-            <Button
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={exportToolDetailsPDF}
-            >
-              Export PDF
-            </Button>
-            <Button
-              className="bg-slate-700 hover:bg-slate-600"
-              onClick={() => setSelectedTool(null)}
-            >
-              Back
-            </Button>
-          </div>
+          <Button
+            className="bg-slate-700 hover:bg-slate-600"
+            onClick={() => setSelectedTool(null)}
+          >
+            Back
+          </Button>
         </div>
+        <div className="text-center py-8 text-gray-400">
+          <p>No active inventory found for {selectedTool.name}.</p>
+          <p className="text-sm mt-2">All items have been sold or are out of stock.</p>
+        </div>
+      </div>
+    );
+  }
 
+  // Group by invoice number
+  const groupedByInvoice = filteredSerials.reduce((acc, item) => {
+    const key = item.invoice_number || "no-invoice";
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(item);
+    return acc;
+  }, {} as Record<string, Tool[]>);
+
+  return (
+    <div className="mt-6 border rounded-lg p-4 bg-blue-950">
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-xl font-semibold">{selectedTool.name} — Details</h2>
+        <div className="flex gap-2">
+          <Button
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={exportToolDetailsPDF}
+          >
+            Export PDF
+          </Button>
+          <Button
+            className="bg-slate-700 hover:bg-slate-600"
+            onClick={() => setSelectedTool(null)}
+          >
+            Back
+          </Button>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-4 mb-3">
         <input
           type="text"
           placeholder="Filter by serial number or code"
           value={serialSearch}
           onChange={(e) => setSerialSearch(e.target.value)}
-          className="px-3 py-2 mb-3 bg-slate-800 text-white rounded-md w-80"
+          className="px-3 py-2 bg-slate-800 text-white rounded-md w-80"
         />
-
-        <div className="mb-3 text-sm text-gray-300">
-          Showing {filteredSerials.length} items
-          {filteredSerials.some(t => t.expiry_date) && (
-            <span className="ml-4">
-              • {filteredSerials.filter(t => t.expiry_date).length} items with expiry dates
-            </span>
-          )}
-        </div>
-
-        <div className="overflow-auto border rounded-md">
-          <table className="min-w-full text-white">
-            <thead className="bg-slate-800">
-              <tr>
-                <th className="px-4 py-2 text-left w-40">Box Type</th>
-                <th className="px-4 py-2 text-left w-64">Serial Numbers</th>
-                <th className="px-4 py-2 text-left w-40">Supplier</th>
-                <th className="px-4 py-2 text-left w-40">Invoice No</th>
-                <th className="px-4 py-2 text-left w-40">Date Added</th>
-                <th className="px-4 py-2 text-left w-40">Expiry Date</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {Object.entries(groupedByInvoice).map(([invoiceNo, group]) =>
-                group.map((item, index) => {
-                  const hasExpiryDate = !!item.expiry_date;
-                  const isExpired = hasExpiryDate && isDateExpired(item.expiry_date);
-                  const isExpiringSoon = hasExpiryDate && isDateExpiringSoon(item.expiry_date);
-                  
-                  return (
-                    <tr key={`${item.id}-${index}`} className="border-b border-slate-700">
-                      {/* Box Type */}
-                      <td className="px-4 py-2 align-top">
-                        {item.box_type || "—"}
-                      </td>
-
-                      {/* Serial Numbers */}
-                      <td className="px-4 py-2 align-top">
-                        <div className="space-y-1 text-sm">
-                          
-                          {/* Show serials based on box type */}
-                          {item.serials && isSerialObject(item.serials) && (
-                            <>
-                              {/* Base and Rover: 4 serials */}
-                              {(item.box_type || "").toLowerCase().includes("base and rover") && (
-                                <>
-                                  {getSerialValue(item.serials, 'receiver1') && (
-                                    <div>
-                                      <span className="text-gray-400">Receiver 1:</span> {getSerialValue(item.serials, 'receiver1')}
-                                    </div>
-                                  )}
-                                  {getSerialValue(item.serials, 'receiver2') && (
-                                    <div>
-                                      <span className="text-gray-400">Receiver 2:</span> {getSerialValue(item.serials, 'receiver2')}
-                                    </div>
-                                  )}
-                                  {getSerialValue(item.serials, 'data_logger') && (
-                                    <div>
-                                      <span className="text-gray-400">Data Logger:</span> {getSerialValue(item.serials, 'data_logger')}
-                                    </div>
-                                  )}
-                                  {getSerialValue(item.serials, 'external_radio') && (
-                                    <div>
-                                      <span className="text-gray-400">External Radio:</span> {getSerialValue(item.serials, 'external_radio')}
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              
-                              {/* Base or Rover: 2 serials */}
-                              {((item.box_type || "").toLowerCase().includes("base") || 
-                                (item.box_type || "").toLowerCase().includes("rover")) && 
-                                !(item.box_type || "").toLowerCase().includes("base and rover") && (
-                                <>
-                                  {getSerialValue(item.serials, 'receiver') && (
-                                    <div>
-                                      <span className="text-gray-400">Receiver:</span> {getSerialValue(item.serials, 'receiver')}
-                                    </div>
-                                  )}
-                                  {getSerialValue(item.serials, 'data_logger') && (
-                                    <div>
-                                      <span className="text-gray-400">Data Logger:</span> {getSerialValue(item.serials, 'data_logger')}
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                              
-                              {/* Default display for other types */}
-                              {!(item.box_type || "").toLowerCase().includes("base") && 
-                               !(item.box_type || "").toLowerCase().includes("rover") && (
-                                <>
-                                  {getSerialValue(item.serials, 'receiver') && (
-                                    <div>
-                                      <span className="text-gray-400">Receiver:</span> {getSerialValue(item.serials, 'receiver')}
-                                    </div>
-                                  )}
-                                  {getSerialValue(item.serials, 'data_logger') && (
-                                    <div>
-                                      <span className="text-gray-400">Data Logger:</span> {getSerialValue(item.serials, 'data_logger')}
-                                    </div>
-                                  )}
-                                  {getSerialValue(item.serials, 'external_radio') && (
-                                    <div>
-                                      <span className="text-gray-400">External Radio:</span> {getSerialValue(item.serials, 'external_radio')}
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </>
-                          )}
-                          
-                          {/* Show if no serial data at all */}
-                          {!item.code && (!item.serials || (isSerialObject(item.serials) && Object.keys(item.serials).length === 0)) && (
-                            <span className="text-gray-500">No serial data</span>
-                          )}
-                        </div>
-                      </td>
-
-                      {/* Supplier */}
-                      <td className="px-4 py-2 align-top">
-                        {item.supplier_name || "—"}
-                      </td>
-
-                      {/* Invoice - Clickable */}
-                      <td className="px-4 py-2 align-top">
-                        {item.invoice_no ? (
-                          <span
-                            className="text-blue-400 cursor-pointer hover:underline"
-                            onClick={() => setSelectedInvoice({
-                              invoiceNo: item.invoice_no!,
-                              boxType: item.box_type || ""
-                            })}
-                          >
-                            {item.invoice_no}
-                          </span>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-
-                      {/* Date Added */}
-                      <td className="px-4 py-2 align-top">
-                        {formatDate(item.date_added)}
-                      </td>
-
-                      {/* Expiry Date - FIXED DISPLAY */}
-                      <td className="px-4 py-2 align-top">
-                        {hasExpiryDate ? (
-                          <span className={
-                            isExpired 
-                              ? "text-red-400 font-medium" 
-                              : isExpiringSoon
-                                ? "text-amber-400 font-medium"
-                                : "text-green-400"
-                          }>
-                            {formatDate(item.expiry_date)}
-                            {isExpired && (
-                              <span className="text-xs text-red-400 block">Expired</span>
-                            )}
-                            {isExpiringSoon && (
-                              <span className="text-xs text-amber-400 block">Expiring Soon</span>
-                            )}
-                          </span>
-                        ) : (
-                          <span className="text-gray-500">—</span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-              
-              {filteredSerials.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="px-4 py-4 text-center text-gray-400">
-                    No items found matching your search.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+        
+        <label className="flex items-center gap-2 text-sm text-gray-300">
+          <span>Showing: {filteredSerials.length} active items</span>
+        </label>
       </div>
-    );
-  };
 
+      <div className="mb-3 text-sm text-gray-300">
+        Showing {filteredSerials.length} active items
+        {filteredSerials.some(t => t.expiry_date) && (
+          <span className="ml-4">
+            • {filteredSerials.filter(t => t.expiry_date).length} items with expiry dates
+          </span>
+        )}
+      </div>
+
+      <div className="overflow-auto border rounded-md">
+        <table className="min-w-full text-white">
+          <thead className="bg-slate-800">
+            <tr>
+              <th className="px-4 py-2 text-left w-40">Box Type</th>
+              <th className="px-4 py-2 text-left w-64">Serial Numbers</th>
+              <th className="px-4 py-2 text-left w-40">Supplier</th>
+              <th className="px-4 py-2 text-left w-40">Invoice No</th>
+              <th className="px-4 py-2 text-left w-40">Date Added</th>
+              <th className="px-4 py-2 text-left w-40">Expiry Date</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {Object.entries(groupedByInvoice).map(([invoiceNo, group]) =>
+              group.map((item, index) => {
+                const hasExpiryDate = !!item.expiry_date;
+                const isExpired = hasExpiryDate && isDateExpired(item.expiry_date);
+                const isExpiringSoon = hasExpiryDate && isDateExpiringSoon(item.expiry_date);
+                
+                return (
+                  <tr key={`${item.id}-${index}`} className="border-b border-slate-700">
+                    {/* Box Type */}
+                    <td className="px-4 py-2 align-top">
+                      {item.box_type || "—"}
+                    </td>
+
+                    {/* Serial Numbers */}
+                    <td className="px-4 py-2 align-top">
+                      <div className="space-y-1 text-sm">
+                        {/* Show serials based on box type */}
+                        {item.serials && isSerialObject(item.serials) && (
+                          <>
+                            {/* Base and Rover: 4 serials */}
+                            {(item.box_type || "").toLowerCase().includes("base and rover") && (
+                              <>
+                                {getSerialValue(item.serials, 'receiver1') && (
+                                  <div>
+                                    <span className="text-gray-400">Receiver 1:</span> {getSerialValue(item.serials, 'receiver1')}
+                                  </div>
+                                )}
+                                {getSerialValue(item.serials, 'receiver2') && (
+                                  <div>
+                                    <span className="text-gray-400">Receiver 2:</span> {getSerialValue(item.serials, 'receiver2')}
+                                  </div>
+                                )}
+                                {getSerialValue(item.serials, 'data_logger') && (
+                                  <div>
+                                    <span className="text-gray-400">Data Logger:</span> {getSerialValue(item.serials, 'data_logger')}
+                                  </div>
+                                )}
+                                {getSerialValue(item.serials, 'external_radio') && (
+                                  <div>
+                                    <span className="text-gray-400">External Radio:</span> {getSerialValue(item.serials, 'external_radio')}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            
+                            {/* Base or Rover: 2 serials */}
+                            {((item.box_type || "").toLowerCase().includes("base") || 
+                              (item.box_type || "").toLowerCase().includes("rover")) && 
+                              !(item.box_type || "").toLowerCase().includes("base and rover") && (
+                              <>
+                                {getSerialValue(item.serials, 'receiver') && (
+                                  <div>
+                                    <span className="text-gray-400">Receiver:</span> {getSerialValue(item.serials, 'receiver')}
+                                  </div>
+                                )}
+                                {getSerialValue(item.serials, 'data_logger') && (
+                                  <div>
+                                    <span className="text-gray-400">Data Logger:</span> {getSerialValue(item.serials, 'data_logger')}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            
+                            {/* Default display for other types */}
+                            {!(item.box_type || "").toLowerCase().includes("base") && 
+                             !(item.box_type || "").toLowerCase().includes("rover") && (
+                              <>
+                                {getSerialValue(item.serials, 'receiver') && (
+                                  <div>
+                                    <span className="text-gray-400">Receiver:</span> {getSerialValue(item.serials, 'receiver')}
+                                  </div>
+                                )}
+                                {getSerialValue(item.serials, 'data_logger') && (
+                                  <div>
+                                    <span className="text-gray-400">Data Logger:</span> {getSerialValue(item.serials, 'data_logger')}
+                                  </div>
+                                )}
+                                {getSerialValue(item.serials, 'external_radio') && (
+                                  <div>
+                                    <span className="text-gray-400">External Radio:</span> {getSerialValue(item.serials, 'external_radio')}
+                                  </div>
+                                )}
+                              </>
+                            )}
+                          </>
+                        )}
+                        
+                        {/* Show if no serial data at all */}
+                        {!item.code && (!item.serials || (isSerialObject(item.serials) && Object.keys(item.serials).length === 0)) && (
+                          <span className="text-gray-500">No serial data</span>
+                        )}
+                      </div>
+                    </td>
+
+                    {/* Supplier */}
+                    <td className="px-4 py-2 align-top">
+                      {item.supplier_name || "—"}
+                    </td>
+
+                    {/* Invoice - Clickable */}
+                    <td className="px-4 py-2 align-top">
+                      {item.invoice_number ? (
+                        <span
+                          className="text-blue-400 cursor-pointer hover:underline"
+                          onClick={() => setSelectedInvoice({
+                            invoiceNo: item.invoice_number!,
+                            boxType: item.box_type || ""
+                          })}
+                        >
+                          {item.invoice_number}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+
+                    {/* Date Added */}
+                    <td className="px-4 py-2 align-top">
+                      {formatDate(item.date_added)}
+                    </td>
+
+                    {/* Expiry Date */}
+                    <td className="px-4 py-2 align-top">
+                      {hasExpiryDate ? (
+                        <span className={
+                          isExpired 
+                            ? "text-red-400 font-medium" 
+                            : isExpiringSoon
+                              ? "text-amber-400 font-medium"
+                              : "text-green-400"
+                        }>
+                          {formatDate(item.expiry_date)}
+                          {isExpired && (
+                            <span className="text-xs text-red-400 block">Expired</span>
+                          )}
+                          {isExpiringSoon && (
+                            <span className="text-xs text-amber-400 block">Expiring Soon</span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-gray-500">—</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
   // --------------------
   // VIEW SERIAL NUMBERS DIALOG
   // --------------------

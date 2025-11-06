@@ -72,7 +72,7 @@ interface EquipmentType {
   name: string;
   default_cost?: string | number;
   category?: string;
-  invoice_number?: string; // NEW: Added invoice number
+  invoice_number?: string; 
 }
 
 interface Supplier {
@@ -88,7 +88,6 @@ interface Invoice {
   total_value: number;
 }
 
-// FIXED: Updated SoldSerialInfo interface to allow null values
 interface SoldSerialInfo {
   serial: string;
   sale_id?: number | null;
@@ -129,8 +128,8 @@ const Tools: React.FC = () => {
   const [open, setOpen] = useState(false);
   const [modalStep, setModalStep] = useState<
     "select-invoice" | "select-category" | "select-equipment-type" | "form"
-  >("select-invoice"); // NEW: Start with invoice selection
-  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null); // NEW: Selected invoice
+  >("select-invoice"); 
+  const [selectedInvoice, setSelectedInvoice] = useState<string | null>(null); 
   const [selectedCategoryCard, setSelectedCategoryCard] = useState<string | null>(null);
   const [selectedEquipmentType, setSelectedEquipmentType] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -139,7 +138,7 @@ const Tools: React.FC = () => {
   // Search & filter
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
-  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState(""); // NEW: Invoice search
+  const [invoiceSearchTerm, setInvoiceSearchTerm] = useState(""); 
 
   // Equipment types
   const [equipmentTypes, setEquipmentTypes] = useState<EquipmentType[]>([]);
@@ -180,7 +179,7 @@ const Tools: React.FC = () => {
     invoice_number: "",
     expiry_date: "",
     serials: [],
-    available_serials: [], // NEW: Available serials
+    available_serials: [], 
     equipment_type_id: "",
     equipment_type: "",
   });

@@ -30,6 +30,15 @@ import autoTable from "jspdf-autotable";
 import axios from "axios";
 
 // Interfaces
+interface SerialNumbers {
+  receiver?: string;
+  receiver1?: string;
+  receiver2?: string;
+  data_logger?: string;
+  external_radio?: string;
+  [key: string]: any;
+}
+
 interface SaleItem {
   tool_id: string;
   equipment: string;
@@ -38,7 +47,7 @@ interface SaleItem {
   serial_set?: string[];
   datalogger_serial?: string;
   assigned_tool_id?: string;
-  import_invoice?: string; // NEW: Import invoice from tool
+  invoice_number?: string;
 }
 
 interface Sale {
@@ -51,7 +60,6 @@ interface Sale {
   total_cost: string;
   date_sold: string;
   invoice_number?: string;
-  import_invoice?: string;
   payment_plan?: string;
   expiry_date?: string;
   payment_status?: string;
@@ -76,10 +84,10 @@ interface Tool {
   description?: string;
   supplier?: string;
   supplier_name?: string;
-  invoice_number?: string; // Import invoice from tool entry
+  invoice_number?: string;
   expiry_date?: string;
   date_added?: string;
-  serials?: string[];
+  serials?: SerialNumbers;
   available_serials?: string[];
   sold_serials?: any[];
   equipment_type?: string | null;
@@ -96,7 +104,7 @@ interface GroupedTool {
   description?: string;
   supplier_name?: string;
   group_id: string;
-  import_invoice?: string; // NEW: Import invoice from tools
+  invoice_number?: string;
 }
 
 interface EquipmentType {
@@ -142,6 +150,19 @@ const PAYMENT_STATUSES = [
   "cancelled"
 ];
 
+// Helper functions for serial numbers
+const isSerialNumbersObject = (serials: any): serials is SerialNumbers => {
+  return serials && typeof serials === 'object' && !Array.isArray(serials);
+};
+
+const getSerialValue = (serials: any, key: string): string => {
+  if (!serials) return '';
+  if (isSerialNumbersObject(serials)) {
+    return serials[key] || '';
+  }
+  return '';
+};
+
 export default function SalesPage() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -154,8 +175,30 @@ export default function SalesPage() {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false); 
+  const [importInvoices, setImportInvoices] = useState<{[key: string]: string}>({});
 
+// Fetch import invoices when sales data loads
+useEffect(() => {
+  const fetchImportInvoices = async () => {
+    const invoiceMap: {[key: string]: string} = {};
+    
+    for (const sale of sales) {
+      for (const item of sale.items) {
+        if (item.tool_id) {
+          const importInvoice = await getImportInvoiceNumber(item.tool_id);
+          invoiceMap[`${sale.id}-${item.tool_id}`] = importInvoice;
+        }
+      }
+    }
+    
+    setImportInvoices(invoiceMap);
+  };
+  
+  if (sales.length > 0) {
+    fetchImportInvoices();
+  }
+}, [sales]);
   // Multi-item state
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [currentItem, setCurrentItem] = useState<{
@@ -205,11 +248,20 @@ export default function SalesPage() {
     setType: string;
     assignedToolId: string;
     dataloggerSerial?: string;
-    importInvoice?: string; // NEW: Import invoice from assignment
+    invoiceNumber?: string;
   } | null>(null);
+const getImportInvoiceNumber = async (toolId: string) => {
+  try {
+    const response = await axios.get(`${API_URL}/tools/${toolId}/`, axiosConfig);
+    return response.data.invoice_number || "N/A";
+  } catch (error) {
+    console.error("Error fetching tool invoice:", error);
+    return "N/A";
+  }
+};
 
   const token = localStorage.getItem("access");
-
+  
   const axiosConfig = {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -275,6 +327,27 @@ export default function SalesPage() {
 
     fetchGroupedTools();
   }, [currentItem.selectedCategory, currentItem.selectedEquipmentType]);
+   // Fetch import invoices when sales data loads
+useEffect(() => {
+  const fetchImportInvoices = async () => {
+    if (sales.length === 0) return;
+    
+    const invoiceMap: {[key: string]: string} = {};
+    
+    for (const sale of sales) {
+      for (const item of sale.items) {
+        if (item.tool_id) {
+          const importInvoice = await getImportInvoiceNumber(item.tool_id);
+          invoiceMap[`${sale.id}-${item.tool_id}`] = importInvoice;
+        }
+      }
+    }
+    
+    setImportInvoices(invoiceMap);
+  };
+  
+  fetchImportInvoices();
+}, [sales]); // This will run whenever sales data changes
 
   // Calculate total cost
   const totalCost = saleItems.reduce((sum, item) => sum + parseFloat(item.cost || "0"), 0);
@@ -349,7 +422,7 @@ export default function SalesPage() {
     }
   };
 
-  // Assign random tool from group - automatically gets import invoice and serials
+  // Assign random tool from group - automatically gets invoice number and serials
   const assignRandomTool = async (): Promise<{
     assigned_tool_id: string;
     tool_name: string;
@@ -358,7 +431,7 @@ export default function SalesPage() {
     set_type: string;
     cost: string;
     datalogger_serial?: string;
-    import_invoice?: string; // NEW: Import invoice from backend
+    invoice_number?: string;
   }> => {
     if (!currentItem.selectedTool) {
       throw new Error("No tool selected");
@@ -388,7 +461,7 @@ export default function SalesPage() {
     }
   };
 
-  // Add item to sale with automatic import invoice and serial assignment
+  // Add item to sale with automatic invoice number and serial assignment
   const addItemToSale = async () => {
     if (!currentItem.selectedTool || !currentItem.cost) {
       alert("Please select equipment and enter a Selling Price.");
@@ -396,7 +469,7 @@ export default function SalesPage() {
     }
 
     try {
-      // Assign random tool from the group - this returns import invoice and serials
+      // Assign random tool from the group - this returns invoice number and serials
       const assignment = await assignRandomTool();
       
       const newItem: SaleItem = {
@@ -407,7 +480,7 @@ export default function SalesPage() {
         serial_set: assignment.serial_set,
         datalogger_serial: assignment.datalogger_serial,
         assigned_tool_id: assignment.assigned_tool_id,
-        import_invoice: assignment.import_invoice // NEW: Auto-filled from tool
+        invoice_number: assignment.invoice_number
       };
 
       setSaleItems(prev => [...prev, newItem]);
@@ -421,7 +494,7 @@ export default function SalesPage() {
         setType: assignment.set_type,
         assignedToolId: assignment.assigned_tool_id,
         dataloggerSerial: assignment.datalogger_serial,
-        importInvoice: assignment.import_invoice // NEW: Show import invoice
+        invoiceNumber: assignment.invoice_number
       });
 
       // Reset current item form
@@ -516,76 +589,78 @@ export default function SalesPage() {
       console.error("Error sending email:", error);
     }
   };
-const handleAction = async (action: "cancel" | "draft" | "send") => {
-  if (action === "cancel") return resetForm();
 
-  if (!selectedCustomer) {
-    alert("Please select a customer first.");
-    return;
-  }
+  const handleAction = async (action: "cancel" | "draft" | "send") => {
+    if (action === "cancel") return resetForm();
 
-  if (saleItems.length === 0) {
-    alert("Please add at least one item to the sale.");
-    return;
-  }
-
-  if (action === "draft" || action === "send") {
-    setIsSubmitting(true);
-    try {
-      // Get import invoice from the first item (all items should have the same import invoice)
-      const importInvoice = saleItems[0]?.import_invoice || "";
-
-      // FIX: Create a pure date string without any datetime components
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, '0');
-      const day = String(today.getDate()).padStart(2, '0');
-      const dateSold = `${year}-${month}-${day}`;
-
-      const payload = {
-        name: selectedCustomer.name,
-        phone: selectedCustomer.phone,
-        state: selectedCustomer.state,
-        items: saleItems,
-        total_cost: totalCost.toString(),
-        payment_plan: saleDetails.payment_plan || "",
-        expiry_date: saleDetails.expiry_date || null,
-        import_invoice: importInvoice, // NEW: Auto-filled from tools
-        date_sold: dateSold, // FIXED: Pure date string "YYYY-MM-DD"
-      };
-
-      console.log("Sending payload:", payload);
-
-      const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
-      setSales((prev) => [res.data, ...prev]);
-
-      if (action === "send" && selectedCustomer?.email) {
-        await sendEmail(
-          selectedCustomer.email, 
-          selectedCustomer.name, 
-          saleItems, 
-          totalCost,
-          res.data.invoice_number
-        );
-      }
-
-      resetForm();
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        console.error("Error adding sale:", error);
-        console.error("Error response:", error.response?.data);
-        alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
-      } else if (error instanceof Error) {
-        console.error("Unexpected error:", error.message);
-        alert("Unexpected error occurred.");
-      } else {
-        console.error("Unknown error:", error);
-      }
-    } finally {
-      setIsSubmitting(false);
+    if (!selectedCustomer) {
+      alert("Please select a customer first.");
+      return;
     }
-  }
-};
+
+    if (saleItems.length === 0) {
+      alert("Please add at least one item to the sale.");
+      return;
+    }
+
+    if (action === "draft" || action === "send") {
+      setIsSubmitting(true);
+      try {
+        // Get invoice number from the first item (all items should have the same invoice number)
+        const invoiceNumber = saleItems[0]?.invoice_number || "";
+
+        // FIX: Create a pure date string without any datetime components
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        const dateSold = `${year}-${month}-${day}`;
+
+        const payload = {
+          name: selectedCustomer.name,
+          phone: selectedCustomer.phone,
+          state: selectedCustomer.state,
+          items: saleItems,
+          total_cost: totalCost.toString(),
+          payment_plan: saleDetails.payment_plan || "",
+          expiry_date: saleDetails.expiry_date || null,
+          invoice_number: invoiceNumber, // This will be the same as import invoice
+          date_sold: dateSold,
+        };
+
+        console.log("Sending payload:", payload);
+
+        const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
+        setSales((prev) => [res.data, ...prev]);
+
+        if (action === "send" && selectedCustomer?.email) {
+          await sendEmail(
+            selectedCustomer.email, 
+            selectedCustomer.name, 
+            saleItems, 
+            totalCost,
+            res.data.invoice_number
+          );
+        }
+
+        resetForm();
+      } catch (error) {
+        if (axios.isAxiosError(error)) {
+          console.error("Error adding sale:", error);
+          console.error("Error response:", error.response?.data);
+          alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
+        } else if (error instanceof Error) {
+          console.error("Unexpected error:", error.message);
+          alert("Unexpected error occurred.");
+        } else {
+          console.error("Unknown error:", error);
+        }
+      } finally {
+        setIsSubmitting(false);
+      }
+    }
+  };
+
   // Edit status functions
   const openEditStatus = (sale: Sale) => {
     setEditingSale(sale);
@@ -657,7 +732,7 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
         `₦${s.total_cost}`,
         s.date_sold,
         s.invoice_number || "-",
-        s.import_invoice || "-",
+        s.invoice_number || "-", // Same as invoice number
         s.payment_plan || "-",
         s.expiry_date || "-",
         s.payment_status || "-",
@@ -815,7 +890,7 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
           </DialogContent>
         </Dialog>
 
-        {/* Assignment Confirmation Modal with Import Invoice */}
+        {/* Assignment Confirmation Modal with Invoice Number */}
         <Dialog open={!!assignmentResult} onOpenChange={(open) => !open && setAssignmentResult(null)}>
           <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
@@ -835,11 +910,11 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
                       {assignmentResult.setType} • {assignmentResult.serialCount} serials
                     </div>
                     
-                    {/* Import Invoice - NEW */}
-                    {assignmentResult.importInvoice && (
+                    {/* Invoice Number */}
+                    {assignmentResult.invoiceNumber && (
                       <div className="mb-3 p-2 bg-blue-900/30 rounded border border-blue-700">
                         <div className="font-medium text-blue-300">Import Invoice:</div>
-                        <div className="text-white font-mono">{assignmentResult.importInvoice}</div>
+                        <div className="text-white font-mono">{assignmentResult.invoiceNumber}</div>
                       </div>
                     )}
                     
@@ -983,9 +1058,17 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
                     </SelectContent>
                   </Select>
                   {currentItem.selectedTool && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      {currentItem.selectedTool.total_stock} complete sets available
-                    </p>
+                    <div className="mt-1 space-y-1">
+                      <p className="text-xs text-gray-400">
+                        {currentItem.selectedTool.total_stock} complete sets available
+                      </p>
+                      {/* Show import invoice when tool is selected */}
+                      {currentItem.selectedTool.invoice_number && (
+                        <p className="text-xs text-blue-400">
+                          Import Invoice: {currentItem.selectedTool.invoice_number}
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
 
@@ -1012,7 +1095,7 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
                 </div>
               </div>
 
-              {/* Sale Items Summary with Import Invoice */}
+              {/* Sale Items Summary with Invoice Number */}
               {saleItems.length > 0 && (
                 <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
                   <div className="flex justify-between items-center mb-3">
@@ -1021,10 +1104,10 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
                       <div className="text-lg font-bold text-green-400">
                         Total: ₦{totalCost.toLocaleString()}
                       </div>
-                      {/* Show import invoice from first item */}
-                      {saleItems[0]?.import_invoice && (
-                        <div className="text-sm text-blue-300 mt-1">
-                          Import Invoice: {saleItems[0].import_invoice}
+                      {/* Show invoice number from first item - More prominent */}
+                      {saleItems[0]?.invoice_number && (
+                        <div className="text-sm text-blue-300 mt-1 bg-blue-900/30 px-2 py-1 rounded border border-blue-700">
+                          <span className="font-medium">Import Invoice:</span> {saleItems[0].invoice_number}
                         </div>
                       )}
                     </div>
@@ -1240,7 +1323,7 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
           </DialogContent>
         </Dialog>
 
-        {/* Sales Table with Import Invoice Column */}
+        {/* Sales Table with Import Invoice Column - FIXED SERIAL NUMBERS SECTION */}
         <Card className="bg-slate-900 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white">Sales Overview</CardTitle>
@@ -1299,33 +1382,140 @@ const handleAction = async (action: "cancel" | "draft" | "send") => {
                               )) || "No items"}
                             </div>
                           </td>
-                          {/* Serial Numbers Column */}
+                          {/* Serial Numbers Column - FIXED VERSION */}
                           <td className="p-3">
                             <div className="max-w-xs">
-                              {sale.items?.map((item, index) => (
-                                <div key={index} className="text-xs mb-2">
-                                  <div className="text-blue-300 font-medium">{item.equipment}:</div>
-                                  {item.serial_set && (
-                                    <div className="text-gray-300 ml-2">
-                                      Receiver: {item.serial_set.join(', ')}
-                                    </div>
-                                  )}
-                                  {item.datalogger_serial && (
-                                    <div className="text-green-300 ml-2">
-                                      Datalogger: {item.datalogger_serial}
-                                    </div>
-                                  )}
-                                </div>
-                              )) || "No serials"}
+                              {sale.items?.map((item, index) => {
+                                // Get the actual tool to access its serials data
+                                const soldTool = tools.find(t => t.id === item.tool_id);
+                                
+                                return (
+                                  <div key={index} className="text-xs mb-2">
+                                    <div className="text-blue-300 font-medium">{item.equipment}:</div>
+                                    
+                                    {/* Check if we have the actual tool with serials data */}
+                                    {soldTool && soldTool.serials && isSerialNumbersObject(soldTool.serials) ? (
+                                      <div className="ml-2 space-y-1">
+                                        {/* Base and Rover Box Type - 4 serials */}
+                                        {(soldTool.description || "").toLowerCase().includes("base and rover") && (
+                                          <>
+                                            {getSerialValue(soldTool.serials, 'receiver1') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-blue-400">Receiver 1:</span> {getSerialValue(soldTool.serials, 'receiver1')}
+                                              </div>
+                                            )}
+                                            {getSerialValue(soldTool.serials, 'receiver2') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-blue-400">Receiver 2:</span> {getSerialValue(soldTool.serials, 'receiver2')}
+                                              </div>
+                                            )}
+                                            {getSerialValue(soldTool.serials, 'data_logger') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-green-400">Data Logger:</span> {getSerialValue(soldTool.serials, 'data_logger')}
+                                              </div>
+                                            )}
+                                            {getSerialValue(soldTool.serials, 'external_radio') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-purple-400">External Radio:</span> {getSerialValue(soldTool.serials, 'external_radio')}
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                        
+                                        {/* Base or Rover Box Type - 2 serials */}
+                                        {((soldTool.description || "").toLowerCase().includes("base") || 
+                                          (soldTool.description || "").toLowerCase().includes("rover")) && 
+                                          !(soldTool.description || "").toLowerCase().includes("base and rover") && (
+                                          <>
+                                            {getSerialValue(soldTool.serials, 'receiver') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-blue-400">Receiver:</span> {getSerialValue(soldTool.serials, 'receiver')}
+                                              </div>
+                                            )}
+                                            {getSerialValue(soldTool.serials, 'data_logger') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-green-400">Data Logger:</span> {getSerialValue(soldTool.serials, 'data_logger')}
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                        
+                                        {/* Default display for other types */}
+                                        {!(soldTool.description || "").toLowerCase().includes("base") && 
+                                         !(soldTool.description || "").toLowerCase().includes("rover") && (
+                                          <>
+                                            {getSerialValue(soldTool.serials, 'receiver') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-blue-400">Receiver:</span> {getSerialValue(soldTool.serials, 'receiver')}
+                                              </div>
+                                            )}
+                                            {getSerialValue(soldTool.serials, 'data_logger') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-green-400">Data Logger:</span> {getSerialValue(soldTool.serials, 'data_logger')}
+                                              </div>
+                                            )}
+                                            {getSerialValue(soldTool.serials, 'external_radio') && (
+                                              <div className="text-gray-300">
+                                                <span className="text-purple-400">External Radio:</span> {getSerialValue(soldTool.serials, 'external_radio')}
+                                              </div>
+                                            )}
+                                          </>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      /* Fallback to serial_set if no tool data available */
+                                      <div className="ml-2">
+                                        {item.serial_set && item.serial_set.length > 0 ? (
+                                          <div className="space-y-1">
+                                            {item.serial_set.map((serial, serialIndex) => (
+                                              <div key={serialIndex} className="text-gray-300">
+                                                <span className="text-blue-400">
+                                                  {item.serial_set!.length === 1 ? "Serial" : `Serial ${serialIndex + 1}`}:
+                                                </span> {serial}
+                                              </div>
+                                            ))}
+                                            {item.datalogger_serial && (
+                                              <div className="text-gray-300">
+                                                <span className="text-green-400">Data Logger:</span> {item.datalogger_serial}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <span className="text-gray-500">No serials available</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              }) || "No serials"}
                             </div>
                           </td>
                           <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
                           <td className="p-3">
                             {sale.date_sold ? sale.date_sold.split('T')[0] : "-"}
                           </td>
-                          <td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
-                          {/* Import Invoice Column */}
-                          <td className="p-3 text-yellow-300">{sale.import_invoice || "-"}</td>
+                          {/* Invoice Column - Sales Invoice */}
+<td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
+
+{/* Import Invoice Column - From Inventory */}
+<td className="p-3 text-yellow-300">
+  {sale.items && sale.items.length > 0 ? (
+    <div className="max-w-xs">
+      {sale.items.map((item, index) => {
+        const importInvoiceKey = `${sale.id}-${item.tool_id}`;
+        const importInvoice = importInvoices[importInvoiceKey] || "Loading...";
+        
+        return (
+          <div key={index} className="text-xs mb-1">
+            {item.equipment}: <span className="font-mono">{importInvoice}</span>
+          </div>
+        );
+      })}
+    </div>
+  ) : (
+    "-"
+  )}
+</td>
                           <td className="p-3">{sale.payment_plan || "-"}</td>
                           <td className="p-3">{sale.expiry_date || "-"}</td>
                           <td className="p-3">

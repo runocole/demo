@@ -85,7 +85,7 @@ interface Invoice {
   created_at: string;
   equipment_count: number;
   total_value: number;
-  exchange_rate?: string; // NEW: Added exchange rate
+  exchange_rate?: string; 
 }
 
 type DialogType = 'invoice' | 'equipment' | 'supplier' | null;

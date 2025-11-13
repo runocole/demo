@@ -112,13 +112,6 @@ interface GroupedTool {
   invoice_number?: string;
 }
 
-interface EquipmentType {
-  id: number | string;
-  name: string;
-  default_cost?: string | number;
-  category?: string;
-}
-
 interface SoldSerialInfo {
   serial: string;
   sale_id: number;
@@ -198,11 +191,11 @@ export default function SalesPage() {
 
   const [filteredGroupedTools, setFilteredGroupedTools] = useState<GroupedTool[]>([]);
   const [saleDetails, setSaleDetails] = useState({
-  payment_plan: "",
-  initial_deposit: "", // NEW: Initial deposit amount
-  payment_months: "",  // NEW: Number of months
-  expiry_date: ""
-});
+    payment_plan: "",
+    initial_deposit: "", // NEW: Initial deposit amount
+    payment_months: "",  // NEW: Number of months
+    expiry_date: ""
+  });
 
   // Equipment type modal state
   const [showEquipmentTypeModal, setShowEquipmentTypeModal] = useState(false);
@@ -574,16 +567,6 @@ export default function SalesPage() {
     setSaleItems(prev => prev.filter((_, i) => i !== index));
   };
 
-  const clearCurrentSelection = () => {
-    setCurrentItem({
-      selectedCategory: "",
-      selectedEquipmentType: "",
-      selectedTool: null,
-      cost: ""
-    });
-    setFilteredGroupedTools([]);
-  };
-
   const resetForm = () => {
     setSaleItems([]);
     setCurrentItem({
@@ -597,7 +580,6 @@ export default function SalesPage() {
       initial_deposit: "",
       payment_months: "",
       expiry_date: "",
-      
     });
     setSelectedCustomer(null);
     setOpen(false);
@@ -641,77 +623,78 @@ export default function SalesPage() {
     if (action === "cancel") return resetForm();
 
     if (!selectedCustomer) {
-      alert("Please select a customer first.");
-      return;
+        alert("Please select a customer first.");
+        return;
     }
 
     if (saleItems.length === 0) {
-      alert("Please add at least one item to the sale.");
-      return;
+        alert("Please add at least one item to the sale.");
+        return;
     }
 
     if (action === "draft" || action === "send") {
-      setIsSubmitting(true);
-      try {
-        // Get both invoice numbers from the first item
-        const invoiceNumber = saleItems[0]?.invoice_number || "";
-        const importInvoice = saleItems[0]?.import_invoice || "";
+        setIsSubmitting(true);
+        try {
+            // Get both invoice numbers from the first item
+            const invoiceNumber = saleItems[0]?.invoice_number || "";
+            const importInvoice = saleItems[0]?.import_invoice || "";
 
-        // FIX: Create a pure date string without any datetime components
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        const dateSold = `${year}-${month}-${day}`;
+            // Create a pure date string without any datetime components
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const dateSold = `${year}-${month}-${day}`;
 
-        const payload = {
-          name: selectedCustomer.name,
-          phone: selectedCustomer.phone,
-          state: selectedCustomer.state,
-          items: saleItems,
-          total_cost: totalCost.toString(),
-          payment_plan: saleDetails.payment_plan || "",
-          initial_deposit: saleDetails.initial_deposit || "", // NEW
-          payment_months: saleDetails.payment_months || "",   // NEW
-          expiry_date: saleDetails.expiry_date || null,
-          invoice_number: invoiceNumber, // Sales invoice
-          import_invoice: importInvoice, // Import invoice
-          date_sold: dateSold,
-        };
+            // Clean up data before submission - clear installment fields if payment plan is "No"
+            const payload = {
+                name: selectedCustomer.name,
+                phone: selectedCustomer.phone,
+                state: selectedCustomer.state,
+                items: saleItems,
+                total_cost: totalCost.toString(),
+                payment_plan: saleDetails.payment_plan || "",
+                // Clear installment fields if not using installment plan
+                initial_deposit: saleDetails.payment_plan === "No" ? null : (saleDetails.initial_deposit || null),
+                payment_months: saleDetails.payment_plan === "No" ? null : (saleDetails.payment_months || null),
+                expiry_date: saleDetails.expiry_date || null,
+                invoice_number: invoiceNumber,
+                import_invoice: importInvoice,
+                date_sold: dateSold,
+            };
 
-        console.log("Sending payload:", payload);
+            console.log("Sending payload:", payload);
 
-        const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
-        setSales((prev) => [res.data, ...prev]);
+            const res = await axios.post(`${API_URL}/sales/`, payload, axiosConfig);
+            setSales((prev) => [res.data, ...prev]);
 
-        if (action === "send" && selectedCustomer?.email) {
-          await sendEmail(
-            selectedCustomer.email, 
-            selectedCustomer.name, 
-            saleItems, 
-            totalCost,
-            res.data.invoice_number
-          );
+            if (action === "send" && selectedCustomer?.email) {
+                await sendEmail(
+                    selectedCustomer.email, 
+                    selectedCustomer.name, 
+                    saleItems, 
+                    totalCost,
+                    res.data.invoice_number
+                );
+            }
+
+            resetForm();
+        } catch (error) {
+            if (axios.isAxiosError(error)) {
+                console.error("Error adding sale:", error);
+                console.error("Error response:", error.response?.data);
+                alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
+            } else if (error instanceof Error) {
+                console.error("Unexpected error:", error.message);
+                alert("Unexpected error occurred.");
+            } else {
+                console.error("Unknown error:", error);
+            }
+        } finally {
+            setIsSubmitting(false);
         }
-
-        resetForm();
-      } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error("Error adding sale:", error);
-          console.error("Error response:", error.response?.data);
-          alert(error.response?.data?.message || "Failed to save sale. Please check all fields.");
-        } else if (error instanceof Error) {
-          console.error("Unexpected error:", error.message);
-          alert("Unexpected error occurred.");
-        } else {
-          console.error("Unknown error:", error);
-        }
-      } finally {
-        setIsSubmitting(false);
-      }
     }
-  };
-
+};
   // Edit status functions
   const openEditStatus = (sale: Sale) => {
     setEditingSale(sale);
@@ -734,7 +717,7 @@ export default function SalesPage() {
         payment_status: newPaymentStatus
       };
 
-      const res = await axios.patch(`${API_URL}/sales/${editingSale.id}/`, payload, axiosConfig);
+      await axios.patch(`${API_URL}/sales/${editingSale.id}/`, payload, axiosConfig);
       
       setSales(prev => prev.map(sale => 
         sale.id === editingSale.id ? { ...sale, payment_status: newPaymentStatus } : sale
@@ -1499,7 +1482,7 @@ export default function SalesPage() {
                   <tbody>
                     {sales.length === 0 ? (
                       <tr>
-                        <td colSpan={13} className="text-center p-4 text-gray-400">
+                        <td colSpan={15} className="text-center p-4 text-gray-400">
                           No records yet. Add a sale to begin.
                         </td>
                       </tr>

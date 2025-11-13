@@ -24,6 +24,8 @@ import Contact from "./pages/Contact";
 import About from "./pages/About";
 import Training from "./pages/Training";
 import CorsNetwork from "./pages/CorsNetwork";
+import CourseDetail from "./pages/CourseDetail";
+
 const queryClient = new QueryClient();
 
 // ✅ Secure route wrapper
@@ -49,7 +51,7 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
     // Redirect user to their home dashboard
     if (role === "admin") return <Navigate to="/dashboard" replace />;
     if (role === "staff") return <Navigate to="/staff/dashboard" replace />;
-    if (role === "customer") return <Navigate to= "/customer/dashboard" replace />;
+    if (role === "customer") return <Navigate to="/customer/dashboard" replace />;
     return <Navigate to="/login" replace />;
   }
 
@@ -63,7 +65,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <Routes>
-          {/* --- Public --- */}
+          {/* --- Public Routes --- */}
+          <Route path="/" element={<CustomerDashboard />} />
           <Route path="/login" element={<Login />} />
 
           {/* --- Staff Routes --- */}
@@ -95,20 +98,11 @@ const App = () => (
             }
           />
           <Route
-  path="/tools-summary"
-  element={
-    <PrivateRoute
-      element={<ToolsSummary />}
-      allowedRoles={["staff", "admin"]}
-    />
-  }
-/>
-<Route
-            path="/buynow"
+            path="/tools-summary"
             element={
               <PrivateRoute
-                element={<BuyNow />}
-                allowedRoles={["customer"]}
+                element={<ToolsSummary />}
+                allowedRoles={["staff", "admin"]}
               />
             }
           />
@@ -118,33 +112,6 @@ const App = () => (
               <PrivateRoute
                 element={<StaffPage />}
                 allowedRoles={["staff", "admin"]}
-              />
-            }
-          />
-            <Route
-            path="/contact"
-            element={
-              <PrivateRoute
-                element={<Contact />}
-                allowedRoles={["customer"]}
-              />
-            }
-          />
-          <Route
-            path="/corsnetwork"
-            element={
-              <PrivateRoute
-                element={<CorsNetwork />}
-                allowedRoles={["customer"]}
-              />
-            }
-          />
-          <Route
-            path="/training"
-            element={
-              <PrivateRoute
-                element={<Training />}
-                allowedRoles={["customer"]}
               />
             }
           />
@@ -185,7 +152,6 @@ const App = () => (
             }
           />
 
-
           {/* --- Admin Routes --- */}
           <Route
             path="/dashboard"
@@ -196,18 +162,6 @@ const App = () => (
               />
             }
           />
-
-          {/* ---Customer Dashboard ---*/}
-          <Route
-            path="/customer/dashboard"
-            element={
-              <PrivateRoute
-                element={<CustomerDashboard/>}
-                allowedRoles={["customer"]}
-              />
-            }
-          />
-          {/* New Admin Sales Page Route */}
           <Route
             path="/admin/sales"
             element={ 
@@ -217,19 +171,31 @@ const App = () => (
               />
             }
           />
+
+          {/* --- Customer Routes --- */}
           <Route
-            path="/about"
+            path="/customer/dashboard"
             element={
               <PrivateRoute
-                element={<About />}
+                element={<CustomerDashboard />}
                 allowedRoles={["customer"]}
               />
             }
           />
-            <Route path="/staff" element={<StaffPage />} />
-        <Route path="/sales/staff/:staffId" element={<StaffSalesPage />} />
-          {/* --- Default redirect --- */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          {/*Public website routes*/}
+          <Route path="/about" element={<About />} />
+          <Route path="/training" element={<Training />} />
+          <Route path="/corsnetwork" element={<CorsNetwork />} />
+          <Route path="/buynow" element={<BuyNow />} />
+          <Route path="/contact" element={<Contact />} />
+          {/* --- Public Course Route --- */}
+          <Route path="/course/:courseId" element={<CourseDetail />} />
+          
+          {/* --- Staff Sales Route --- */}
+          <Route path="/sales/staff/:staffId" element={<StaffSalesPage />} />
+
+          {/* --- Fallback redirect --- */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>

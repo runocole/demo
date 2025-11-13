@@ -150,7 +150,7 @@ const handleSubmit = async (e?: React.FormEvent) => {
   }
 };
 return (
-  <div className="min-h-screen bg-white">
+  <div className="min-h-screen bg-blue-100">
   {/* HEADER - Now sits on top of background photo */}
   <Header />
 
@@ -193,7 +193,7 @@ return (
                 mapSection?.scrollIntoView({ behavior: "smooth" });
                 setMapLoaded(true);
               }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold bg-white/10 border-2 border-white/30 text-white hover:bg-white/20 transition-all backdrop-blur-md shadow-lg"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold bg-blue-100/10 border-2 border-blue-100/30 text-white hover:bg-blue-100ite/20 transition-all backdrop-blur-md shadow-lg"
             >
               <MapPin className="w-4 h-4" />
               View location
@@ -397,7 +397,7 @@ return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-     className="bg-white border-2 border-primary/20 rounded-2xl p-10 shadow-2xl max-w-9xl mx-auto"
+     className="bg-blue-100 border-2 border-primary/20 rounded-2xl p-10 shadow-2xl max-w-9xl mx-auto"
     >
       <div className="flex flex-col lg:flex-row items-start justify-between gap-6 mb-10">
         <div className="flex-1">
@@ -587,7 +587,7 @@ return (
             </div>
             
             {mapLoaded ? (
-              <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-primary/20 bg-white">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-primary/20 bg-blue-100">
                 <div className="h-[500px] w-full">
                  <iframe
                title="Office location"
@@ -599,7 +599,7 @@ return (
                 </div>
               </div>
             ) : (
-              <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-primary/20 bg-white">
+              <div className="rounded-2xl overflow-hidden shadow-2xl border-2 border-primary/20 bg-blue-100">
   <div className="h-[500px] w-full">
     <iframe
       title="Office location"

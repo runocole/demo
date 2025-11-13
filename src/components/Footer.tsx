@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { Facebook, Instagram, Linkedin, Youtube, Twitter, Music2Icon } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Youtube, Twitter, Music2Icon, LogIn } from "lucide-react";
 import oticLogo from "../assets/otic-logo.png";
+import { useNavigate } from "react-router-dom";
 
 const Footer: React.FC = () => {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,6 +212,21 @@ const Footer: React.FC = () => {
                 </a>
               </li>
             </ul>
+
+            {/* Staff Login Section */}
+            <div className="mt-8">
+              <h4 className="text-sm font-bold mb-3 uppercase tracking-wide">Employee Access</h4>
+              <p className="text-xs text-white/80 mb-3">
+                Staff and admin members access portal
+              </p>
+              <button 
+                onClick={() => navigate('/login')}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-white text-[#081748] text-sm font-bold rounded hover:bg-white/90 transition-all hover:scale-105 border-2 border-white/30"
+              >
+                <LogIn className="w-4 h-4" />
+                Staff Login
+              </button>
+            </div>
 
             {/* Social Media */}
             <div className="mt-8">

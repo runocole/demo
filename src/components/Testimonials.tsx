@@ -74,7 +74,7 @@ export const Testimonials = () => {
   };
 
   return (
-    <section className="py-20 bg-blue-50 relative overflow-hidden">
+    <section className="py-20 bg-blue-100 relative overflow-hidden">
       {/* Background Pattern with Blue Tint */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-400"></div>

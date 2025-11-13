@@ -1,4 +1,4 @@
-import { Users, CheckCircle2, Monitor, Home, Award } from "lucide-react";
+import { Users, CheckCircle2, Monitor, Home, Award, Star } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -11,7 +11,83 @@ import safetyImage from "../assets/safety-training.jpg";
 import missionImage from "../assets/mission-planning.jpg";
 import parametersImage from "../assets/parameters.jpg";
 import fieldImage from "../assets/field-practice.jpg";
-import {Testimonials} from "../components/Testimonials";
+import { Testimonials } from "../components/Testimonials";
+
+const courses = [
+  {
+    id: "drone-mapping",
+    title: "Drone Mapping Training",
+    description: "Introduce local regulation requirements and safety operation procedures including: flight checklist, daily maintenance.",
+    image: safetyImage,
+    rating: 4.9,
+    reviews: 127,
+    price: "$299"
+  },
+  {
+    id: "bathymetric",
+    title: "Bathymetric Training",
+    description: "Field and flight path planning methods, and different operational modes.",
+    image: missionImage,
+    rating: 4.8,
+    reviews: 89,
+    price: "$399"
+  },
+  {
+    id: "parameter-setting",
+    title: "Parameter Setting Recommendations",
+    description: "Flight parameters setting recommendations to ensure efficient and effective operations.",
+    image: parametersImage,
+    rating: 4.7,
+    reviews: 94,
+    price: "$249"
+  },
+  {
+    id: "field-operation",
+    title: "Field Operation Practice",
+    description: "Hands-on training at the field including: automatic operations, configurations of spraying/spreading systems.",
+    image: fieldImage,
+    rating: 4.9,
+    reviews: 156,
+    price: "$349"
+  },
+  {
+    id: "gis-fundamentals",
+    title: "GIS Fundamentals",
+    description: "Basic to intermediate GIS concepts and applications for spatial data analysis.",
+    image: safetyImage,
+    rating: 4.6,
+    reviews: 203,
+    price: "$199"
+  },
+  {
+    id: "remote-sensing",
+    title: "Remote Sensing Applications",
+    description: "Satellite imagery analysis and remote sensing techniques for environmental monitoring.",
+    image: missionImage,
+    rating: 4.8,
+    reviews: 118,
+    price: "$379"
+  },
+  {
+    id: "advanced-mapping",
+    title: "Advanced Mapping Techniques",
+    description: "Advanced cartography and spatial analysis methods for professional mapping.",
+    image: parametersImage,
+    rating: 4.7,
+    reviews: 76,
+    price: "$329"
+  },
+  {
+    id: "data-analysis",
+    title: "Spatial Data Analysis",
+    description: "Statistical analysis and interpretation of spatial data for meaningful insights.",
+    image: fieldImage,
+    rating: 4.8,
+    reviews: 92,
+    price: "$299"
+  }
+];
+
 const Training = () => {
   const navigate = useNavigate();
 
@@ -54,11 +130,11 @@ const Training = () => {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 bg-secondary">
-        <div className="container mx-auto px-4">
+      <section className="py-16 bg-secondary bg-blue-100">
+        <div className="container mx-auto px-4 bg-blue-100">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
             <div className="space-y-2">
-              <div className="text-5xl font-bold text-primary">6+</div>
+              <div className="text-5xl font-bold text-primary">8+</div>
               <div className="text-xl text-muted-foreground">Courses</div>
             </div>
             <div className="space-y-2">
@@ -66,7 +142,7 @@ const Training = () => {
               <div className="text-xl text-muted-foreground">Trainees</div>
             </div>
             <div className="space-y-2">
-              <div className="text-5xl font-bold text-primary">8+</div>
+              <div className="text-5xl font-bold text-primary">500+</div>
               <div className="text-xl text-muted-foreground">Certificate Issued</div>
             </div>
           </div>
@@ -74,7 +150,7 @@ const Training = () => {
       </section>
 
       {/* Training Formats Section */}
-      <section id="formats" className="py-20 bg-background">
+      <section id="formats" className="py-20 bg-blue-100">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-bold text-foreground mb-4">
@@ -109,7 +185,7 @@ const Training = () => {
                   </li>
                   <li className="flex items-start gap-2">
                     <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" /> 
-                    <span className="text-card-foreground">Flexible and convenient learning platfor</span>
+                    <span className="text-card-foreground">Flexible and convenient learning platform</span>
                   </li>
                 </ul>
                 <Button 
@@ -207,157 +283,75 @@ const Training = () => {
       </section>
 
       {/* Our Courses Section */}
-      <section id="content" className="py-20 bg-secondary">
+      <section id="content" className="py-20 bg-blue-100">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-foreground mb-4">Our Courses</h2>
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            {/* Drone Mapping Training */}
-            <div className="bg-background rounded-lg shadow-lg overflow-hidden">
-              <img 
-                src={safetyImage} 
-                alt="Safety and Regulation Training" 
-                className="w-full h-68 object-cover"
-              />
-              <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">Drone Mapping Training</h3>
-                <p className="text-muted-foreground line-clamp-3">
-                  Introduce local regulation requirements and safety operation procedures including: flight checklist, daily maintenance.
-                </p>
-                <Link 
-                  to="/safety-training"
-                  className="text-blue-600 hover:text-blue-800 font-semibold inline-block"
-                >
-                  Read More →
-                </Link>
+            {courses.map((course) => (
+              <div key={course.id} className="bg-background rounded-lg shadow-lg overflow-hidden">
+                <img 
+                  src={course.image} 
+                  alt={course.title} 
+                  className="w-full h-68 object-cover"
+                />
+                <div className="p-6 space-y-4">
+                  <h3 className="text-2xl font-bold text-foreground">{course.title}</h3>
+                  <p className="text-muted-foreground line-clamp-3">
+                    {course.description}
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                      <span className="text-sm font-medium">{course.rating}</span>
+                      <span className="text-sm text-muted-foreground">({course.reviews})</span>
+                    </div>
+                    <span className="text-lg font-bold text-primary">{course.price}</span>
+                  </div>
+                  <Link 
+                    to={`/course/${course.id}`}
+                    className="text-blue-600 hover:text-blue-800 font-semibold inline-block"
+                  >
+                    Read More →
+                  </Link>
+                </div>
               </div>
-            </div>
-
-            {/* Bathymetic Training */}
-            <div className="bg-background rounded-lg shadow-lg overflow-hidden">
-              <img 
-                src={missionImage} 
-                alt="Mission Planning and Operation Training" 
-                className="w-full h-68 object-cover"
-              />
-              <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">Bathymetric Training</h3>
-                <p className="text-muted-foreground line-clamp-3">
-                  Field and flight path planning methods, and different operational modes.
-                </p>
-                <Link 
-                  to="/safety-training"
-                  className="text-blue-600 hover:text-blue-800 font-semibold inline-block"
-                >
-                  Read More →
-                </Link>
-              </div>
-            </div>
-
-            {/* Parameter Setting Recommendations */}
-            <div className="bg-background rounded-lg shadow-lg overflow-hidden">
-              <img 
-                src={parametersImage} 
-                alt="Parameter Setting Recommendations" 
-                className="w-full h-68 object-cover"
-              />
-              <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">Parameter Setting Recommendations</h3>
-                <p className="text-muted-foreground line-clamp-3">
-                  Flight parameters setting recommendations to ensure efficient and effective operations.
-                </p>
-                <button className="text-blue-600 hover:text-blue-800 font-semibold">
-                  Read More →
-                </button>
-              </div>
-            </div>
-
-            {/* Field Operation Practice */}
-            <div className="bg-background rounded-lg shadow-lg overflow-hidden">
-              <img 
-                src={fieldImage} 
-                alt="Field Operation Practice" 
-                className="w-full h-68 object-cover"
-              />
-              <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">Field Operation Practice</h3>
-                <p className="text-muted-foreground line-clamp-3">
-                  Hands-on training at the field including: automatic operations, configurations of spraying/spreading systems.
-                </p>
-                <button className="text-blue-600 hover:text-blue-800 font-semibold">
-                  Read More →
-                </button>
-              </div>
-            </div>
-
-            {/* Parameter Setting Recommendations */}
-            <div className="bg-background rounded-lg shadow-lg overflow-hidden">
-              <img 
-                src={parametersImage} 
-                alt="Parameter Setting Recommendations" 
-                className="w-full h-68 object-cover"
-              />
-              <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">Parameter Setting Recommendations</h3>
-                <p className="text-muted-foreground line-clamp-3">
-                  Flight parameters setting recommendations to ensure efficient and effective operations.
-                </p>
-                <button className="text-blue-600 hover:text-blue-800 font-semibold">
-                  Read More →
-                </button>
-              </div>
-            </div>
-
-            {/* Field Operation Practice */}
-            <div className="bg-background rounded-lg shadow-lg overflow-hidden">
-              <img 
-                src={fieldImage} 
-                alt="Field Operation Practice" 
-                className="w-full h-68 object-cover"
-              />
-              <div className="p-6 space-y-4">
-                <h3 className="text-2xl font-bold text-foreground">Field Operation Practice</h3>
-                <p className="text-muted-foreground line-clamp-3">
-                  Hands-on training at the field including: automatic operations, configurations of spraying/spreading systems.
-                </p>
-                <button className="text-blue-600 hover:text-blue-800 font-semibold">
-                  Read More →
-                </button>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
-      {/*Feedback Section */}
-         <Testimonials />
-     {/* Contact Section */}
-<section id="contact" className="py-20 bg-white text-black">
-  <div className="container mx-auto px-4">
-    <div className="max-w-3xl mx-auto text-center space-y-8">
-      <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mx-auto shadow-lg">
-        <Award className="w-10 h-10 text-black" />
-      </div>
-      <h2 className="text-4xl font-bold">Certificate Inquiry</h2>
-      <p className="text-xl text-black">
-        Consult us for your certified training needs. Get in touch to learn more about our certification programs and training opportunities.
-      </p>
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Button 
-          size="lg" 
-          className="bg-white text-black hover:bg-blue-900 hover:text-blue-700 font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
-          onClick={() => navigate("/contact")}
-        >
-          Contact Us
-        </Button>
-      </div>
-      <p className="text-black text-sm mt-4">
-        Need immediate assistance? Call us at +234 706 370 8703
-      </p>
-    </div>
-  </div>
-</section>
+
+      {/* Feedback Section */}
+      <Testimonials />
+
+      {/* Contact Section */}
+      <section id="contact" className="py-20 bg-blue-100 text-black">
+        <div className="container mx-auto px-4">
+          <div className="max-w-3xl mx-auto text-center space-y-8">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mx-auto shadow-lg">
+              <Award className="w-10 h-10 text-black" />
+            </div>
+            <h2 className="text-4xl font-bold">Certificate Inquiry</h2>
+            <p className="text-xl text-black">
+              Consult us for your certified training needs. Get in touch to learn more about our certification programs and training opportunities.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button 
+                size="lg" 
+                className="bg-blue-100 text-black hover:bg-blue-900 hover:text-blue-700 font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                onClick={() => navigate("/contact")}
+              >
+                Contact Us
+              </Button>
+            </div>
+            <p className="text-black text-sm mt-4">
+              Need immediate assistance? Call us at +234 706 370 8703
+            </p>
+          </div>
+        </div>
+      </section>
 
       <Footer />
     </div>

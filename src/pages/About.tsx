@@ -55,7 +55,7 @@ const About: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-blue-100">
       {/* HEADER */}
       <Header />
 
@@ -99,8 +99,8 @@ const About: React.FC = () => {
       <footer className="bg-[#081748] text-white"></footer>
 
       {/* BREADCRUMB NAVIGATION */}
-      <section className="bg-gray-50 border-b border-gray-200">
-        <div className="container mx-auto px-6 py-4">
+      <section className="bg-blue-100 border-b border-gray-200">
+        <div className="container mx-auto px-6 py-4 bg-blue-100">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -110,7 +110,7 @@ const About: React.FC = () => {
               onClick={() => navigate("/customer/dashboard")}
               className="flex items-center gap-1 hover:text-gray-900 transition-colors"
             >
-              <Home className="w-4 h-4" />
+              <Home className="w-4 h-4 bg-blue-100" />
               Home
             </button>
             <ChevronRight className="w-4 h-4" />
@@ -119,7 +119,7 @@ const About: React.FC = () => {
         </div>
       </section>
 {/* MAIN HEADING SECTION */}
-<section className="py-16 bg-white">
+<section className="py-16 bg-blue-100">
   <div className="container mx-auto px-6">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -142,7 +142,7 @@ const About: React.FC = () => {
 </section>
 
 {/* MISSION STATEMENT */}
-<section className="py-16 bg-white">
+<section className="py-16 bg-blue-100">
   <div className="container mx-auto px-6">
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -186,7 +186,7 @@ const About: React.FC = () => {
       </section>
 
      {/* WHY CHOOSE US SECTION */}
-<section className="py-20 bg-gray-50">
+<section className="py-20 bg-blue-100">
   <div className="container mx-auto px-6">
     <motion.div
       initial={{ opacity: 0, y: 20 }}

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom"; // Add this import
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -39,6 +40,7 @@ const CustomersPage = () => {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [newCustomer, setNewCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(false);
+  const [urlSearchQuery, setUrlSearchQuery] = useState(""); // Add this state
 
   // Add Customer Fields
   const [formData, setFormData] = useState({
@@ -47,6 +49,9 @@ const CustomersPage = () => {
     phone: "",
     state: "",
   });
+
+  // Get URL parameters
+  const location = useLocation();
 
   // ------------------------------
   // Fetch Customers
@@ -64,6 +69,30 @@ const CustomersPage = () => {
   useEffect(() => {
     fetchCustomers();
   }, []);
+
+  // ------------------------------
+  // Handle URL Search Parameters
+  // ------------------------------
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const search = searchParams.get('search');
+    
+    if (search) {
+      setUrlSearchQuery(search);
+      setSearchTerm(search); // Also set the local search term
+      
+      // Optional: Scroll to highlighted customer after a short delay
+      setTimeout(() => {
+        const highlightedRow = document.querySelector('.highlighted-customer');
+        if (highlightedRow) {
+          highlightedRow.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+          });
+        }
+      }, 500);
+    }
+  }, [location.search]);
 
   // ------------------------------
   // Add Customer
@@ -172,6 +201,30 @@ const CustomersPage = () => {
   });
 
   // ------------------------------
+  // Check if customer matches URL search
+  // ------------------------------
+  const isCustomerHighlighted = (customer: Customer) => {
+    if (!urlSearchQuery) return false;
+    
+    const query = urlSearchQuery.toLowerCase();
+    return (
+      customer.name?.toLowerCase().includes(query) ||
+      customer.email?.toLowerCase().includes(query) ||
+      customer.phone?.toLowerCase().includes(query)
+    );
+  };
+
+  // ------------------------------
+  // Clear URL search
+  // ------------------------------
+  const clearUrlSearch = () => {
+    setUrlSearchQuery("");
+    setSearchTerm("");
+    // Clear URL parameters without page reload
+    window.history.replaceState({}, '', window.location.pathname);
+  };
+
+  // ------------------------------
   // RENDER
   // ------------------------------
   return (
@@ -240,20 +293,20 @@ const CustomersPage = () => {
 
         {/* Success Modal */}
         <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
-          <DialogContent className="bg-white text-gray-900">
+          <DialogContent className="bg-blue-950 text-white">
             <DialogHeader>
               <DialogTitle className="text-green-600">Success!</DialogTitle>
             </DialogHeader>
             <div className="py-4">
-              <p className="text-lg text-gray-900">
+              <p className="text-lg text-white">
                 Successfully added a customer, kindly proceed to add sale
               </p>
               {newCustomer && (
-                <div className="mt-4 p-3 bg-gray-100 rounded-md text-gray-900">
-                  <p className="text-gray-900"><strong>Name:</strong> {newCustomer.name}</p>
-                  <p className="text-gray-900"><strong>Email:</strong> {newCustomer.email}</p>
-                  <p className="text-gray-900"><strong>Phone:</strong> {newCustomer.phone}</p>
-                  <p className="text-gray-900"><strong>State:</strong> {newCustomer.state}</p>
+                <div className="mt-4 p-3 bg-blue-950 rounded-md text-gray-900">
+                  <p className="text-white"><strong>Name:</strong> {newCustomer.name}</p>
+                  <p className="text-white"><strong>Email:</strong> {newCustomer.email}</p>
+                  <p className="text-white"><strong>Phone:</strong> {newCustomer.phone}</p>
+                  <p className="text-white"><strong>State:</strong> {newCustomer.state}</p>
                 </div>
               )}
             </div>
@@ -264,6 +317,31 @@ const CustomersPage = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Search Header - Show URL search results */}
+        {urlSearchQuery && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Search className="h-4 w-4 text-blue-600" />
+                <span className="text-blue-800 font-medium">
+                  Showing results for: "{urlSearchQuery}"
+                </span>
+                <span className="text-blue-600 text-sm">
+                  ({filteredCustomers.filter(isCustomerHighlighted).length} matches found)
+                </span>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={clearUrlSearch}
+                className="text-blue-600 border-blue-300 hover:bg-blue-100"
+              >
+                Clear Search
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Search Input */}
         <div className="relative">
@@ -296,11 +374,24 @@ const CustomersPage = () => {
               <TableBody>
                 {filteredCustomers.length > 0 ? (
                   filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
+                    <TableRow 
+                      key={customer.id}
+                      className={`
+                        ${isCustomerHighlighted(customer) ? 'highlighted-customer bg-blue-950 border-l-4 border-l-yellow-500' : ''}
+                        hover:bg-slate-900
+                      `}
+                    >
                       <TableCell className="font-medium text-sm">
                         {String(customer.id).slice(0, 8).toUpperCase()}
                       </TableCell>
-                      <TableCell className="font-semibold">{customer.name}</TableCell>
+                      <TableCell className="font-semibold">
+                        {customer.name}
+                        {isCustomerHighlighted(customer) && (
+                          <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Match
+                          </span>
+                        )}
+                      </TableCell>
 
                       <TableCell>
                         <div className="space-y-1 text-sm">
@@ -324,14 +415,12 @@ const CustomersPage = () => {
                           <span className="text-yellow-600 font-medium">Inactive</span>
                         )}
                       </TableCell>
-
-                      
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
-                      No customers found.
+                      {urlSearchQuery ? `No customers found for "${urlSearchQuery}"` : "No customers found."}
                     </TableCell>
                   </TableRow>
                 )}

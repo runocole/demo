@@ -47,7 +47,8 @@ interface SaleItem {
   serial_set?: string[];
   datalogger_serial?: string;
   assigned_tool_id?: string;
-  invoice_number?: string;
+  invoice_number?: string; // Sales invoice
+  import_invoice?: string; // Import invoice from tools
 }
 
 interface Sale {
@@ -59,8 +60,11 @@ interface Sale {
   items: SaleItem[];
   total_cost: string;
   date_sold: string;
-  invoice_number?: string;
+  invoice_number?: string; // Sales invoice
+  import_invoice?: string; // Import invoice from tools
   payment_plan?: string;
+  initial_deposit?: string; // NEW: Initial deposit amount
+  payment_months?: string;  // NEW: Number of months to spread payment
   expiry_date?: string;
   payment_status?: string;
 }
@@ -92,6 +96,7 @@ interface Tool {
   sold_serials?: any[];
   equipment_type?: string | null;
   equipment_type_id?: string | null;
+  box_type?: string;
 }
 
 // Grouped tool interface
@@ -176,29 +181,7 @@ export default function SalesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<Customer[]>([]);
   const [showSearchResults, setShowSearchResults] = useState(false); 
-  const [importInvoices, setImportInvoices] = useState<{[key: string]: string}>({});
 
-// Fetch import invoices when sales data loads
-useEffect(() => {
-  const fetchImportInvoices = async () => {
-    const invoiceMap: {[key: string]: string} = {};
-    
-    for (const sale of sales) {
-      for (const item of sale.items) {
-        if (item.tool_id) {
-          const importInvoice = await getImportInvoiceNumber(item.tool_id);
-          invoiceMap[`${sale.id}-${item.tool_id}`] = importInvoice;
-        }
-      }
-    }
-    
-    setImportInvoices(invoiceMap);
-  };
-  
-  if (sales.length > 0) {
-    fetchImportInvoices();
-  }
-}, [sales]);
   // Multi-item state
   const [saleItems, setSaleItems] = useState<SaleItem[]>([]);
   const [currentItem, setCurrentItem] = useState<{
@@ -215,9 +198,11 @@ useEffect(() => {
 
   const [filteredGroupedTools, setFilteredGroupedTools] = useState<GroupedTool[]>([]);
   const [saleDetails, setSaleDetails] = useState({
-    payment_plan: "",
-    expiry_date: ""
-  });
+  payment_plan: "",
+  initial_deposit: "", // NEW: Initial deposit amount
+  payment_months: "",  // NEW: Number of months
+  expiry_date: ""
+});
 
   // Equipment type modal state
   const [showEquipmentTypeModal, setShowEquipmentTypeModal] = useState(false);
@@ -248,17 +233,9 @@ useEffect(() => {
     setType: string;
     assignedToolId: string;
     dataloggerSerial?: string;
-    invoiceNumber?: string;
+    invoiceNumber?: string; // Sales invoice
+    importInvoice?: string; // Import invoice
   } | null>(null);
-const getImportInvoiceNumber = async (toolId: string) => {
-  try {
-    const response = await axios.get(`${API_URL}/tools/${toolId}/`, axiosConfig);
-    return response.data.invoice_number || "N/A";
-  } catch (error) {
-    console.error("Error fetching tool invoice:", error);
-    return "N/A";
-  }
-};
 
   const token = localStorage.getItem("access");
   
@@ -266,6 +243,49 @@ const getImportInvoiceNumber = async (toolId: string) => {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  };
+
+  // NEW: Enhanced function to get complete tool data with all serials
+  const getCompleteToolData = async (toolId: string): Promise<Tool | null> => {
+    try {
+      const response = await axios.get(`${API_URL}/tools/${toolId}/`, axiosConfig);
+      console.log("Complete tool data:", response.data);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching complete tool data:", error);
+      return null;
+    }
+  };
+
+  // NEW: Function to extract all serial numbers from a tool
+  const extractAllSerialsFromTool = (tool: Tool): { serialSet: string[], dataloggerSerial?: string } => {
+    const serialSet: string[] = [];
+    let dataloggerSerial: string | undefined;
+
+    if (tool.serials && isSerialNumbersObject(tool.serials)) {
+      console.log("Extracting serials from tool:", tool.serials);
+      
+      // Check for Base & Rover Combo (2 receivers)
+      if (tool.box_type?.toLowerCase().includes("base and rover") || 
+          tool.description?.toLowerCase().includes("base and rover")) {
+        console.log("Base & Rover Combo detected");
+        if (tool.serials.receiver1) serialSet.push(tool.serials.receiver1);
+        if (tool.serials.receiver2) serialSet.push(tool.serials.receiver2);
+      } 
+      // Check for single receiver setups
+      else if (tool.serials.receiver) {
+        console.log("Single receiver detected");
+        serialSet.push(tool.serials.receiver);
+      }
+      
+      // Always add datalogger if available
+      if (tool.serials.data_logger) {
+        dataloggerSerial = tool.serials.data_logger;
+      }
+    }
+
+    console.log("Extracted serials:", { serialSet, dataloggerSerial });
+    return { serialSet, dataloggerSerial };
   };
 
   useEffect(() => {
@@ -327,27 +347,6 @@ const getImportInvoiceNumber = async (toolId: string) => {
 
     fetchGroupedTools();
   }, [currentItem.selectedCategory, currentItem.selectedEquipmentType]);
-   // Fetch import invoices when sales data loads
-useEffect(() => {
-  const fetchImportInvoices = async () => {
-    if (sales.length === 0) return;
-    
-    const invoiceMap: {[key: string]: string} = {};
-    
-    for (const sale of sales) {
-      for (const item of sale.items) {
-        if (item.tool_id) {
-          const importInvoice = await getImportInvoiceNumber(item.tool_id);
-          invoiceMap[`${sale.id}-${item.tool_id}`] = importInvoice;
-        }
-      }
-    }
-    
-    setImportInvoices(invoiceMap);
-  };
-  
-  fetchImportInvoices();
-}, [sales]); // This will run whenever sales data changes
 
   // Calculate total cost
   const totalCost = saleItems.reduce((sum, item) => sum + parseFloat(item.cost || "0"), 0);
@@ -422,7 +421,7 @@ useEffect(() => {
     }
   };
 
-  // Assign random tool from group - automatically gets invoice number and serials
+  // COMPLETELY REVISED: Enhanced assign random tool function
   const assignRandomTool = async (): Promise<{
     assigned_tool_id: string;
     tool_name: string;
@@ -431,23 +430,64 @@ useEffect(() => {
     set_type: string;
     cost: string;
     datalogger_serial?: string;
-    invoice_number?: string;
+    invoice_number?: string; // Sales invoice
+    import_invoice?: string; // Import invoice
   }> => {
     if (!currentItem.selectedTool) {
       throw new Error("No tool selected");
     }
 
     try {
+      console.log("Starting tool assignment for:", {
+        tool_name: currentItem.selectedTool.name,
+        category: currentItem.selectedCategory,
+        equipment_type: currentItem.selectedEquipmentType
+      });
+
+      // Step 1: Get the assigned tool from the API
       const response = await axios.post(
         `${API_URL}/tools/assign-random/`,
         {
           tool_name: currentItem.selectedTool.name,
-          category: currentItem.selectedCategory
+          category: currentItem.selectedCategory,
+          equipment_type: currentItem.selectedEquipmentType
         },
         axiosConfig
       );
       
-      return response.data;
+      const initialResult = response.data;
+      console.log("Initial assignment result:", initialResult);
+
+      // Step 2: Always fetch the complete tool data to get ALL serials and import invoice
+      const completeToolData = await getCompleteToolData(initialResult.assigned_tool_id);
+      
+      if (!completeToolData) {
+        throw new Error("Failed to fetch complete tool data");
+      }
+
+      console.log("Complete tool data:", completeToolData);
+
+      // Step 3: Extract ALL serial numbers from the complete tool data
+      const { serialSet, dataloggerSerial } = extractAllSerialsFromTool(completeToolData);
+
+      console.log("Extracted serials:", { serialSet, dataloggerSerial });
+
+      // Step 4: Build the final result with both invoices
+      const finalResult = {
+        assigned_tool_id: initialResult.assigned_tool_id,
+        tool_name: initialResult.tool_name,
+        serial_set: serialSet.length > 0 ? serialSet : (initialResult.serial_set || []),
+        serial_count: serialSet.length > 0 ? serialSet.length : (initialResult.serial_count || 0),
+        set_type: currentItem.selectedEquipmentType || initialResult.set_type,
+        cost: initialResult.cost,
+        datalogger_serial: dataloggerSerial || initialResult.datalogger_serial,
+        invoice_number: initialResult.invoice_number, // Sales invoice
+        import_invoice: completeToolData.invoice_number // Import invoice from tool
+      };
+
+      console.log("Final assignment result:", finalResult);
+      return finalResult;
+
     } catch (error: any) {
       console.error("Error assigning random tool:", error);
       
@@ -469,9 +509,11 @@ useEffect(() => {
     }
 
     try {
-      // Assign random tool from the group - this returns invoice number and serials
+      // Assign random tool from the group - this returns both invoice numbers and serials
       const assignment = await assignRandomTool();
       
+      console.log("Final assignment for sale item:", assignment);
+
       const newItem: SaleItem = {
         tool_id: assignment.assigned_tool_id,
         equipment: assignment.tool_name,
@@ -480,7 +522,8 @@ useEffect(() => {
         serial_set: assignment.serial_set,
         datalogger_serial: assignment.datalogger_serial,
         assigned_tool_id: assignment.assigned_tool_id,
-        invoice_number: assignment.invoice_number
+        invoice_number: assignment.invoice_number, // Sales invoice
+        import_invoice: assignment.import_invoice // Import invoice from tool
       };
 
       setSaleItems(prev => [...prev, newItem]);
@@ -494,7 +537,8 @@ useEffect(() => {
         setType: assignment.set_type,
         assignedToolId: assignment.assigned_tool_id,
         dataloggerSerial: assignment.datalogger_serial,
-        invoiceNumber: assignment.invoice_number
+        invoiceNumber: assignment.invoice_number, // Sales invoice
+        importInvoice: assignment.import_invoice // Import invoice
       });
 
       // Reset current item form
@@ -550,7 +594,10 @@ useEffect(() => {
     });
     setSaleDetails({
       payment_plan: "",
-      expiry_date: ""
+      initial_deposit: "",
+      payment_months: "",
+      expiry_date: "",
+      
     });
     setSelectedCustomer(null);
     setOpen(false);
@@ -606,8 +653,9 @@ useEffect(() => {
     if (action === "draft" || action === "send") {
       setIsSubmitting(true);
       try {
-        // Get invoice number from the first item (all items should have the same invoice number)
+        // Get both invoice numbers from the first item
         const invoiceNumber = saleItems[0]?.invoice_number || "";
+        const importInvoice = saleItems[0]?.import_invoice || "";
 
         // FIX: Create a pure date string without any datetime components
         const today = new Date();
@@ -623,8 +671,11 @@ useEffect(() => {
           items: saleItems,
           total_cost: totalCost.toString(),
           payment_plan: saleDetails.payment_plan || "",
+          initial_deposit: saleDetails.initial_deposit || "", // NEW
+          payment_months: saleDetails.payment_months || "",   // NEW
           expiry_date: saleDetails.expiry_date || null,
-          invoice_number: invoiceNumber, // This will be the same as import invoice
+          invoice_number: invoiceNumber, // Sales invoice
+          import_invoice: importInvoice, // Import invoice
           date_sold: dateSold,
         };
 
@@ -712,9 +763,11 @@ useEffect(() => {
           "Serial Numbers",
           "Price",
           "Date Sold",
-          "Invoice",
+          "Sales Invoice",
           "Import Invoice",
           "Payment Plan",
+          "Initial Deposit",
+          "Payment Months",
           "Expiry",
           "Status",
         ],
@@ -732,8 +785,10 @@ useEffect(() => {
         `₦${s.total_cost}`,
         s.date_sold,
         s.invoice_number || "-",
-        s.invoice_number || "-", // Same as invoice number
+        s.import_invoice || "-",
         s.payment_plan || "-",
+        s.initial_deposit ? `₦${s.initial_deposit}` : "-", 
+        s.payment_months || "-",        
         s.expiry_date || "-",
         s.payment_status || "-",
       ]),
@@ -890,7 +945,7 @@ useEffect(() => {
           </DialogContent>
         </Dialog>
 
-        {/* Assignment Confirmation Modal with Invoice Number */}
+        {/* Assignment Confirmation Modal with Both Invoice Numbers */}
         <Dialog open={!!assignmentResult} onOpenChange={(open) => !open && setAssignmentResult(null)}>
           <DialogContent className="max-w-md bg-slate-900 border-slate-700 text-white">
             <DialogHeader>
@@ -910,11 +965,19 @@ useEffect(() => {
                       {assignmentResult.setType} • {assignmentResult.serialCount} serials
                     </div>
                     
-                    {/* Invoice Number */}
+                    {/* Sales Invoice Number */}
                     {assignmentResult.invoiceNumber && (
+                      <div className="mb-3 p-2 bg-green-900/30 rounded border border-green-700">
+                        <div className="font-medium text-green-300">Sales Invoice:</div>
+                        <div className="text-white font-mono">{assignmentResult.invoiceNumber}</div>
+                      </div>
+                    )}
+                    
+                    {/* Import Invoice Number */}
+                    {assignmentResult.importInvoice && (
                       <div className="mb-3 p-2 bg-blue-900/30 rounded border border-blue-700">
                         <div className="font-medium text-blue-300">Import Invoice:</div>
-                        <div className="text-white font-mono">{assignmentResult.invoiceNumber}</div>
+                        <div className="text-white font-mono">{assignmentResult.importInvoice}</div>
                       </div>
                     )}
                     
@@ -923,7 +986,11 @@ useEffect(() => {
                       <div className="font-medium text-blue-300">Receiver Serials:</div>
                       {assignmentResult.serialSet.map((serial, index) => (
                         <div key={index} className="flex justify-between">
-                          <span className="text-gray-300">Serial {index + 1}:</span>
+                          <span className="text-gray-300">
+                            {assignmentResult.setType === "Base & Rover Combo" 
+                              ? `Receiver ${index + 1}:` 
+                              : 'Receiver:'}
+                          </span>
                           <span className="text-white font-mono">{serial}</span>
                         </div>
                       ))}
@@ -1095,7 +1162,7 @@ useEffect(() => {
                 </div>
               </div>
 
-              {/* Sale Items Summary with Invoice Number */}
+              {/* Sale Items Summary with Both Invoice Numbers */}
               {saleItems.length > 0 && (
                 <div className="bg-slate-800 rounded-lg p-4 border border-slate-700">
                   <div className="flex justify-between items-center mb-3">
@@ -1104,10 +1171,15 @@ useEffect(() => {
                       <div className="text-lg font-bold text-green-400">
                         Total: ₦{totalCost.toLocaleString()}
                       </div>
-                      {/* Show invoice number from first item - More prominent */}
+                      {/* Show both invoice numbers from first item */}
                       {saleItems[0]?.invoice_number && (
+                        <div className="text-sm text-green-300 mt-1 bg-green-900/30 px-2 py-1 rounded border border-green-700">
+                          <span className="font-medium">Sales Invoice:</span> {saleItems[0].invoice_number}
+                        </div>
+                      )}
+                      {saleItems[0]?.import_invoice && (
                         <div className="text-sm text-blue-300 mt-1 bg-blue-900/30 px-2 py-1 rounded border border-blue-700">
-                          <span className="font-medium">Import Invoice:</span> {saleItems[0].invoice_number}
+                          <span className="font-medium">Import Invoice:</span> {saleItems[0].import_invoice}
                         </div>
                       )}
                     </div>
@@ -1154,25 +1226,87 @@ useEffect(() => {
               )}
 
               {/* Sale Details */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-white">Payment Plan</Label>
-                  <Input
-                    value={saleDetails.payment_plan}
-                    onChange={(e) => setSaleDetails(prev => ({ ...prev, payment_plan: e.target.value }))}
-                    className="bg-slate-700 text-white border-slate-600 placeholder-gray-400"
-                    placeholder="e.g., Full Payment, 3-month Installment"
-                  />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-white">Payment Plan</Label>
+                    <Select
+                      value={saleDetails.payment_plan}
+                      onValueChange={(value) => setSaleDetails(prev => ({ 
+                        ...prev, 
+                        payment_plan: value,
+                        // Reset deposit and months when switching to "No"
+                        initial_deposit: value === "No" ? "" : prev.initial_deposit,
+                        payment_months: value === "No" ? "" : prev.payment_months
+                      }))}
+                    >
+                      <SelectTrigger className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
+                        <SelectValue placeholder="Select Payment Plan" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 text-white border-slate-600">
+                        <SelectItem value="No" className="hover:bg-slate-700">
+                          No (Full Payment)
+                        </SelectItem>
+                        <SelectItem value="Yes" className="hover:bg-slate-700">
+                          Yes (Installment Plan)
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-white">Expiry Date</Label>
+                    <Input
+                      type="date"
+                      value={saleDetails.expiry_date}
+                      onChange={(e) => setSaleDetails(prev => ({ ...prev, expiry_date: e.target.value }))}
+                      className="bg-slate-700 text-white border-slate-600"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <Label className="text-white">Expiry Date</Label>
-                  <Input
-                    type="date"
-                    value={saleDetails.expiry_date}
-                    onChange={(e) => setSaleDetails(prev => ({ ...prev, expiry_date: e.target.value }))}
-                    className="bg-slate-700 text-white border-slate-600"
-                  />
-                </div>
+
+                {/* Conditional fields for installment plan */}
+                {saleDetails.payment_plan === "Yes" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-blue-900/20 rounded-lg border border-blue-700">
+                    <div>
+                      <Label className="text-white">Initial Deposit (₦)</Label>
+                      <Input
+                        type="number"
+                        value={saleDetails.initial_deposit}
+                        onChange={(e) => setSaleDetails(prev => ({ ...prev, initial_deposit: e.target.value }))}
+                        className="bg-slate-700 text-white border-slate-600 placeholder-gray-400"
+                        placeholder="Enter deposit amount"
+                      />
+                      {saleDetails.initial_deposit && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Remaining: ₦{(totalCost - parseFloat(saleDetails.initial_deposit || "0")).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <Label className="text-white">Payment Months</Label>
+                      <Select
+                        value={saleDetails.payment_months}
+                        onValueChange={(value) => setSaleDetails(prev => ({ ...prev, payment_months: value }))}
+                      >
+                        <SelectTrigger className="bg-slate-700 text-white border-slate-600 hover:bg-slate-600">
+                          <SelectValue placeholder="Select months" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 text-white border-slate-600">
+                          {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((month) => (
+                            <SelectItem key={month} value={month.toString()} className="hover:bg-slate-700">
+                              {month} {month === 1 ? 'month' : 'months'}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {saleDetails.initial_deposit && saleDetails.payment_months && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Monthly: ₦{((totalCost - parseFloat(saleDetails.initial_deposit)) / parseInt(saleDetails.payment_months || "1")).toLocaleString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1218,7 +1352,10 @@ useEffect(() => {
                     <strong className="text-blue-300">Customer:</strong> {editingSale.name}
                   </p>
                   <p className="text-sm text-gray-300">
-                    <strong className="text-blue-300">Invoice:</strong> {editingSale.invoice_number || "N/A"}
+                    <strong className="text-blue-300">Sales Invoice:</strong> {editingSale.invoice_number || "N/A"}
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    <strong className="text-blue-300">Import Invoice:</strong> {editingSale.import_invoice || "N/A"}
                   </p>
                   <p className="text-sm text-gray-300">
                     <strong className="text-blue-300">Total:</strong> ₦{parseFloat(editingSale.total_cost).toLocaleString()}
@@ -1323,7 +1460,7 @@ useEffect(() => {
           </DialogContent>
         </Dialog>
 
-        {/* Sales Table with Import Invoice Column - FIXED SERIAL NUMBERS SECTION */}
+        {/* Sales Table with Both Invoice Columns */}
         <Card className="bg-slate-900 border-slate-700">
           <CardHeader>
             <CardTitle className="text-white">Sales Overview</CardTitle>
@@ -1344,9 +1481,11 @@ useEffect(() => {
                         "Serial Numbers",
                         "Total Cost",
                         "Date Sold",
-                        "Invoice",
+                        "Sales Invoice",
                         "Import Invoice",
                         "Payment Plan",
+                        "Initial Deposit",
+                        "Payment Months", 
                         "Expiry",
                         "Status",
                         "Actions",
@@ -1382,22 +1521,48 @@ useEffect(() => {
                               )) || "No items"}
                             </div>
                           </td>
-                          {/* Serial Numbers Column - FIXED VERSION */}
+                          {/* Serial Numbers Column */}
                           <td className="p-3">
                             <div className="max-w-xs">
                               {sale.items?.map((item, index) => {
-                                // Get the actual tool to access its serials data
-                                const soldTool = tools.find(t => t.id === item.tool_id);
+                                // Method 1: Check if we have serial_set from the sale item (PREFERRED)
+                                if (item.serial_set && item.serial_set.length > 0) {
+                                  return (
+                                    <div key={index} className="text-xs mb-2">
+                                      <div className="text-blue-300 font-medium">{item.equipment}:</div>
+                                      <div className="ml-2 space-y-1">
+                                        {/* Display receiver serials */}
+                                        {(item.serial_set || []).map((serial, serialIndex) => (
+                                          <div key={serialIndex} className="text-gray-300">
+                                            <span className="text-blue-400">
+                                              {(item.serial_set || []).length > 1 ? `Receiver ${serialIndex + 1}:` : 'Receiver:'}
+                                            </span> {serial}
+                                          </div>
+                                        ))}
+                                        
+                                        {/* Display datalogger serial if available */}
+                                        {item.datalogger_serial && (
+                                          <div className="text-gray-300">
+                                            <span className="text-green-400">Data Logger:</span> {item.datalogger_serial}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                }
                                 
-                                return (
-                                  <div key={index} className="text-xs mb-2">
-                                    <div className="text-blue-300 font-medium">{item.equipment}:</div>
-                                    
-                                    {/* Check if we have the actual tool with serials data */}
-                                    {soldTool && soldTool.serials && isSerialNumbersObject(soldTool.serials) ? (
+                                // Method 2: Check if we have the actual tool with serials data
+                                const soldTool = tools.find(t => t.id === item.tool_id);
+                                if (soldTool && soldTool.serials && isSerialNumbersObject(soldTool.serials)) {
+                                  const toolDescription = soldTool.description || soldTool.box_type || "";
+                                  const isBaseAndRover = toolDescription.toLowerCase().includes("base and rover");
+                                  
+                                  return (
+                                    <div key={index} className="text-xs mb-2">
+                                      <div className="text-blue-300 font-medium">{item.equipment}:</div>
                                       <div className="ml-2 space-y-1">
                                         {/* Base and Rover Box Type - 4 serials */}
-                                        {(soldTool.description || "").toLowerCase().includes("base and rover") && (
+                                        {isBaseAndRover && (
                                           <>
                                             {getSerialValue(soldTool.serials, 'receiver1') && (
                                               <div className="text-gray-300">
@@ -1423,9 +1588,9 @@ useEffect(() => {
                                         )}
                                         
                                         {/* Base or Rover Box Type - 2 serials */}
-                                        {((soldTool.description || "").toLowerCase().includes("base") || 
-                                          (soldTool.description || "").toLowerCase().includes("rover")) && 
-                                          !(soldTool.description || "").toLowerCase().includes("base and rover") && (
+                                        {(toolDescription.toLowerCase().includes("base") || 
+                                          toolDescription.toLowerCase().includes("rover")) && 
+                                          !isBaseAndRover && (
                                           <>
                                             {getSerialValue(soldTool.serials, 'receiver') && (
                                               <div className="text-gray-300">
@@ -1441,8 +1606,8 @@ useEffect(() => {
                                         )}
                                         
                                         {/* Default display for other types */}
-                                        {!(soldTool.description || "").toLowerCase().includes("base") && 
-                                         !(soldTool.description || "").toLowerCase().includes("rover") && (
+                                        {!toolDescription.toLowerCase().includes("base") && 
+                                         !toolDescription.toLowerCase().includes("rover") && (
                                           <>
                                             {getSerialValue(soldTool.serials, 'receiver') && (
                                               <div className="text-gray-300">
@@ -1462,61 +1627,39 @@ useEffect(() => {
                                           </>
                                         )}
                                       </div>
-                                    ) : (
-                                      /* Fallback to serial_set if no tool data available */
-                                      <div className="ml-2">
-                                        {item.serial_set && item.serial_set.length > 0 ? (
-                                          <div className="space-y-1">
-                                            {item.serial_set.map((serial, serialIndex) => (
-                                              <div key={serialIndex} className="text-gray-300">
-                                                <span className="text-blue-400">
-                                                  {item.serial_set!.length === 1 ? "Serial" : `Serial ${serialIndex + 1}`}:
-                                                </span> {serial}
-                                              </div>
-                                            ))}
-                                            {item.datalogger_serial && (
-                                              <div className="text-gray-300">
-                                                <span className="text-green-400">Data Logger:</span> {item.datalogger_serial}
-                                              </div>
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <span className="text-gray-500">No serials available</span>
-                                        )}
-                                      </div>
-                                    )}
+                                    </div>
+                                  );
+                                }
+                                
+                                // No serial data available
+                                return (
+                                  <div key={index} className="text-xs mb-2">
+                                    <div className="text-blue-300 font-medium">{item.equipment}:</div>
+                                    <div className="ml-2 text-gray-500 italic">
+                                      No serials recorded
+                                    </div>
                                   </div>
                                 );
-                              }) || "No serials"}
+                              })}
                             </div>
                           </td>
                           <td className="p-3 font-semibold text-white">₦{parseFloat(sale.total_cost).toLocaleString()}</td>
                           <td className="p-3">
                             {sale.date_sold ? sale.date_sold.split('T')[0] : "-"}
                           </td>
-                          {/* Invoice Column - Sales Invoice */}
-<td className="p-3 text-blue-300">{sale.invoice_number || "-"}</td>
+                          {/* Sales Invoice Column */}
+                          <td className="p-3 text-green-300">{sale.invoice_number || "-"}</td>
 
-{/* Import Invoice Column - From Inventory */}
-<td className="p-3 text-yellow-300">
-  {sale.items && sale.items.length > 0 ? (
-    <div className="max-w-xs">
-      {sale.items.map((item, index) => {
-        const importInvoiceKey = `${sale.id}-${item.tool_id}`;
-        const importInvoice = importInvoices[importInvoiceKey] || "Loading...";
-        
-        return (
-          <div key={index} className="text-xs mb-1">
-            {item.equipment}: <span className="font-mono">{importInvoice}</span>
-          </div>
-        );
-      })}
-    </div>
-  ) : (
-    "-"
-  )}
-</td>
+                          {/* Import Invoice Column - Direct from sale data */}
+                          <td className="p-3 text-yellow-300">
+                            {sale.import_invoice || "-"}
+                          </td>
                           <td className="p-3">{sale.payment_plan || "-"}</td>
+                          <td className="p-3">
+                            {sale.initial_deposit ? `₦${parseFloat(sale.initial_deposit).toLocaleString()}` : "-"}
+                          </td>
+
+                          <td className="p-3">{sale.payment_months || "-"}</td>
                           <td className="p-3">{sale.expiry_date || "-"}</td>
                           <td className="p-3">
                             <span

@@ -19,7 +19,7 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "../components/ui/sidebar";
-import logo from "../assets/image.png";
+import logo from "../assets/otic-logo.png";
 
 // 🧩 Props
 interface AppSidebarProps {
@@ -79,13 +79,13 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
         <div className="flex items-center justify-center py-6 border-b border-blue-800/40">
           {isOpen ? (
             <div className="flex items-center gap-3">
-              <img src={logo} alt="OTIC Logo" className="h-8 w-8 object-contain" />
+              <img src={logo} alt="GEOSSO LOGO" className="h-8 w-8 object-contain" />
               <h2 className="font-bold text-xl text-white tracking-wide">
-                OTIC SURVEYS
+                GEOSSOTECH
               </h2>
             </div>
           ) : (
-            <img src={logo} alt="OTIC Logo" className="h-8 w-8 object-contain" />
+            <img src={logo} alt="GEOSSO LOGO" className="h-8 w-8 object-contain" />
           )}
         </div>
 

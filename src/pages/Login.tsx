@@ -7,7 +7,7 @@ import authHero from "@/assets/auth-hero.jpg";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
-import logo from "../assets/image.png";
+import logo from "../assets/otic-logo.png";
 
 const Login = () => {
   const [loginEmail, setLoginEmail] = useState("");

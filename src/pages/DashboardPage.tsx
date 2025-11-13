@@ -64,7 +64,13 @@ const DashboardPage = () => {
       maximumFractionDigits: 2,
     })}`;
 
-  // Function to group low stock items by name and category
+  // Function to get limited items (5 max) for all sections
+  const getLimitedItems = (items: any[] | undefined, limit: number = 5) => {
+    if (!items) return [];
+    return items.slice(0, limit);
+  };
+
+  // Function to group low stock items by name and category and limit to 5
   const getGroupedLowStockItems = () => {
     if (!dashboardData?.lowStockItems) return [];
 
@@ -85,20 +91,7 @@ const DashboardPage = () => {
       }
     });
 
-    return Object.values(groupedItems);
-  };
-
-  // Function to sort recent sales by date (most recent first)
-  const getSortedRecentSales = () => {
-    if (!dashboardData?.recentSales) return [];
-
-    return [...dashboardData.recentSales].sort((a, b) => {
-      // Use the date_sold field from your Sale model
-      const dateA = new Date(a.date_sold || 0);
-      const dateB = new Date(b.date_sold || 0);
-      
-      return dateB.getTime() - dateA.getTime(); // Descending order (most recent first)
-    });
+    return Object.values(groupedItems).slice(0, 5); // Limit to 5
   };
 
   if (loading) {
@@ -112,8 +105,10 @@ const DashboardPage = () => {
   }
 
   const groupedLowStockItems = getGroupedLowStockItems();
-  const sortedRecentSales = getSortedRecentSales();
-
+  const recentSales = getLimitedItems(dashboardData?.recentSales);
+  const expiringReceivers = getLimitedItems(dashboardData?.expiringReceivers);
+  const topSellingTools = getLimitedItems(dashboardData?.topSellingTools);
+  
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -157,7 +152,7 @@ const DashboardPage = () => {
 
         {/* Recent Sales + Low Stock Items */}
         <div className="grid gap-4 md:grid-cols-2">
-          {/* Recent Sales */}
+          {/* Recent Sales - Limited to 5 */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Recent Sales</CardTitle>
@@ -174,8 +169,8 @@ const DashboardPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedRecentSales.length > 0 ? (
-                    sortedRecentSales.map((sale: any) => (
+                  {recentSales.length > 0 ? (
+                    recentSales.map((sale: any) => (
                       <TableRow key={sale.invoice_number}>
                         <TableCell>{sale.invoice_number}</TableCell>
                         <TableCell>{sale.customer_name}</TableCell>
@@ -195,10 +190,21 @@ const DashboardPage = () => {
                   )}
                 </TableBody>
               </Table>
+              {/* Show "View All" link if there are more than 5 sales */}
+              {dashboardData?.recentSales && dashboardData.recentSales.length > 5 && (
+                <div className="mt-3 text-center">
+                  <button 
+                    onClick={() => navigate("/sales")}
+                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                  >
+                    View All ({dashboardData.recentSales.length})
+                  </button>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Low Stock Items */}
+          {/* Low Stock Items - Limited to 5 */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Low Stock Items</CardTitle>
@@ -223,13 +229,24 @@ const DashboardPage = () => {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-gray-500">
+                      <TableCell colSpan={3} className="text-center text-gray-500">
                         No low stock items
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
+              {/* Show "View All" link if there are more than 5 low stock items */}
+              {dashboardData?.lowStockItems && dashboardData.lowStockItems.length > 5 && (
+                <div className="mt-3 text-center">
+                  <button 
+                    onClick={() => navigate("/tools-summary")}
+                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                  >
+                    View All ({dashboardData.lowStockItems.length})
+                  </button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -289,7 +306,7 @@ const DashboardPage = () => {
             </CardContent>
           </Card>
 
-          {/* Receivers Expiring Soon */}
+          {/* Receivers Expiring Soon - Limited to 5 */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle className="text-lg">Receivers Expiring Soon</CardTitle>
@@ -305,8 +322,8 @@ const DashboardPage = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {dashboardData?.expiringReceivers && dashboardData.expiringReceivers.length > 0 ? (
-                      dashboardData.expiringReceivers.map((receiver: any, index: number) => (
+                    {expiringReceivers.length > 0 ? (
+                      expiringReceivers.map((receiver: any, index: number) => (
                         <tr key={index} className="border-b border-gray-700 hover:bg-blue-900">
                           <td className="p-3">{receiver.name}</td>
                           <td className="p-3">{receiver.serialNumber}</td>
@@ -324,12 +341,23 @@ const DashboardPage = () => {
                     )}
                   </tbody>
                 </table>
+                {/* Show "View All" link if there are more than 5 receivers */}
+                {dashboardData?.expiringReceivers && dashboardData.expiringReceivers.length > 5 && (
+                  <div className="mt-3 text-center">
+                    <button 
+                      onClick={() => navigate("/tools-summary")}
+                      className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                    >
+                      View All ({dashboardData.expiringReceivers.length})
+                    </button>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Top Selling Tools */}
+        {/* Top Selling Tools - Limited to 5 */}
           <Card className="border-border bg-blue-950">
             <CardHeader>
               <CardTitle>Top Selling Equipments</CardTitle>
@@ -343,8 +371,8 @@ const DashboardPage = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dashboardData?.topSellingTools?.length > 0 ? (
-                    dashboardData.topSellingTools.map((tool: any) => (
+                  {topSellingTools.length > 0 ? (
+                    topSellingTools.map((tool: any) => (
                       <TableRow key={tool.tool__name}>
                         <TableCell>{tool.tool__name}</TableCell>
                         <TableCell>{tool.total_sold}</TableCell>
@@ -359,6 +387,17 @@ const DashboardPage = () => {
                   )}
                 </TableBody>
               </Table>
+              {/* Show "View All" link if there are more than 5 top selling tools */}
+              {dashboardData?.topSellingTools && dashboardData.topSellingTools.length > 5 && (
+                <div className="mt-3 text-center">
+                  <button 
+                    onClick={() => navigate("/sales")}
+                    className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+                  >
+                    View All ({dashboardData.topSellingTools.length})
+                  </button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

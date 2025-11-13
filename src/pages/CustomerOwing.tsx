@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { StatsCard } from "../components/StatsCard";
-import { DollarSign, TrendingUp, Clock, AlertCircle, Users, Send } from "lucide-react";
+import { DollarSign, TrendingUp, Clock, AlertCircle, Users, Send, ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import {
   Table,
@@ -41,7 +42,7 @@ interface Customer {
 }
 
 const CustomerOwingPage = () => {
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
   const [customerData, setCustomerData] = useState<CustomerOwingData | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
@@ -103,6 +104,10 @@ const CustomerOwingPage = () => {
     }
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   const filteredCustomers = customerData?.customers?.filter((customer) => {
     if (filter === "all") return true;
     if (filter === "overdue") return customer.status === "overdue";
@@ -113,12 +118,10 @@ const CustomerOwingPage = () => {
   });
 
   const handleSendReminder = (customerId: string) => {
-    // Implement send reminder logic
     console.log("Sending reminder to customer:", customerId);
   };
 
   const handleRecordPayment = (customerId: string) => {
-    // Navigate to record payment page or open modal
     console.log("Recording payment for customer:", customerId);
   };
 
@@ -135,14 +138,24 @@ const CustomerOwingPage = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
-            Customer Installment Tracking
-          </h3>
-          <p className="text-gray-400 mt-2">
-            Monitor customer payments, track installments, and manage receivables.
-          </p>
+        {/* Header with Back Button on Right */}
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className="text-5xl font-bold tracking-tight text-blue-100 font-serif">
+              Customer Installment Tracking
+            </h3>
+            <p className="text-gray-400 mt-2">
+              Monitor customer payments, track installments, and manage receivables.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleBack}
+            className="bg-blue-900 border-blue-700 text-white hover:bg-blue-800 hover:text-white transition"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back
+          </Button>
         </div>
 
         {/* Stats Section */}

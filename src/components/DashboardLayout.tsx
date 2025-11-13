@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "../components/ui/sidebar";
 import { AppSidebar } from "../components/AppSidebar";
-import { Bell, LogOut, AlertTriangle, Calendar } from 'lucide-react';
+import { Bell, LogOut, AlertTriangle, Calendar, Search } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import { useNotifications } from "../hooks/useNotifications";
 import type { Notification, Tool } from "../hooks/useNotifications";
@@ -11,6 +12,66 @@ interface DashboardLayoutProps {
   tools?: Tool[];
   onNotificationClick?: (notification: Notification) => void;
 }
+
+// --------------------
+// SEARCH BAR COMPONENT
+// --------------------
+interface SearchBarProps {
+  onSearch: (query: string, type: string) => void;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ onSearch }) => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchType, setSearchType] = useState("customer");
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      onSearch(searchQuery.trim(), searchType);
+      setSearchQuery(""); // Clear input after search
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2 bg-blue-900/50 rounded-lg px-3 py-1 border border-blue-700/50">
+      <select 
+        value={searchType}
+        onChange={(e) => setSearchType(e.target.value)}
+        className="bg-transparent text-white text-sm border-none outline-none pr-2"
+      >
+        <option value="customer" className="bg-blue-900">Customer</option>
+        <option value="serial" className="bg-blue-900">Serial No</option>
+        <option value="invoice" className="bg-blue-900">Invoice No</option>
+      </select>
+      
+      <div className="w-px h-4 bg-blue-600/50"></div>
+      
+      <input 
+        type="text"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyPress={handleKeyPress}
+        placeholder={`Search by ${searchType === 'customer' ? 'customer name' : searchType === 'serial' ? 'serial number' : 'invoice number'}...`}
+        className="bg-transparent border-none outline-none text-white placeholder-gray-400 text-sm w-48 px-2 py-1"
+      />
+      
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleSearch}
+        className="h-6 w-6 text-gray-300 hover:text-white hover:bg-blue-700/50 rounded"
+        title="Search"
+      >
+        <Search className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+};
 
 // --------------------
 // NOTIFICATION BELL COMPONENT
@@ -115,6 +176,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({
 
 export function DashboardLayout({ children, tools = [], onNotificationClick }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
 
   const {
     notificationState,
@@ -131,6 +193,31 @@ export function DashboardLayout({ children, tools = [], onNotificationClick }: D
     }
     markAsRead(notification.id);
     closeDropdown();
+  };
+
+  // Search handler - Navigate to appropriate page with search parameters
+  const handleSearch = (query: string, type: string) => {
+    console.log(`Searching for ${type}:`, query);
+    
+    switch (type) {
+      case "customer":
+        // Navigate to customers page with search query
+        navigate(`/customers?search=${encodeURIComponent(query)}`);
+        break;
+        
+      case "serial":
+        // Navigate to tools summary page with serial number search
+        navigate(`/tools-summary?serial=${encodeURIComponent(query)}`);
+        break;
+        
+      case "invoice":
+        // Navigate to tools summary page with invoice number search
+        navigate(`/tools-summary?search=${encodeURIComponent(query)}`);
+        break;
+        
+      default:
+        console.log("Unknown search type:", type);
+    }
   };
 
   // Logout handler
@@ -165,8 +252,11 @@ export function DashboardLayout({ children, tools = [], onNotificationClick }: D
               </h1>
             </div>
 
-            {/* Notification and Logout Button */}
-            <div className="flex items-center gap-2">
+            {/* Search Bar, Notification and Logout Button */}
+            <div className="flex items-center gap-4">
+              {/* Search Bar - Added here */}
+              <SearchBar onSearch={handleSearch} />
+
               {/* Notification Button */}
               <NotificationBell
                 notificationState={notificationState}

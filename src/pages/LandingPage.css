@@ -1,0 +1,166 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+
+:root {
+  --primary-blue: #007bff;
+  --light-blue: #e8f1ff;
+  --white: #ffffff;
+  --dark-blue: #003366;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+}
+
+.landing-container {
+  background: linear-gradient(135deg, #e9f3ff 0%, #ffffff 60%);
+  background-image: url("https://www.transparenttextures.com/patterns/marble.png");
+  background-size: cover;
+  background-blend-mode: lighten;
+  color: var(--dark-blue);
+  overflow-x: hidden;
+}
+
+/* Navbar */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 6%;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+.logo span {
+  color: var(--primary-blue);
+}
+
+.nav-links {
+  display: flex;
+  list-style: none;
+  gap: 2rem;
+}
+
+.nav-links li {
+  cursor: pointer;
+  transition: color 0.3s;
+}
+.nav-links li:hover {
+  color: var(--primary-blue);
+}
+
+.cta-btn {
+  background: var(--primary-blue);
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 6px;
+  color: var(--white);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Hero */
+.hero {
+  height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #dbe9ff, #ffffff);
+  text-align: center;
+  padding: 0 10%;
+}
+
+.hero-content h1 {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: var(--dark-blue);
+}
+.hero-content p {
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  color: #445;
+}
+.hero-btn {
+  background: var(--primary-blue);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.hero-btn:hover {
+  background: #0056c2;
+}
+
+/* Features */
+.features {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  padding: 5rem 10%;
+  background: var(--light-blue);
+}
+.feature {
+  background: white;
+  border-radius: 8px;
+  padding: 2rem;
+  width: 30%;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+  transition: transform 0.3s;
+}
+.feature:hover {
+  transform: translateY(-5px);
+}
+.feature h3 {
+  color: var(--primary-blue);
+}
+
+/* About */
+.about {
+  text-align: center;
+  padding: 5rem 10%;
+}
+.about h2 {
+  color: var(--dark-blue);
+  margin-bottom: 1rem;
+}
+.about p {
+  max-width: 700px;
+  margin: 0 auto;
+  color: #445;
+}
+
+/* Contact */
+.contact {
+  background: var(--light-blue);
+  text-align: center;
+  padding: 4rem 10%;
+}
+.contact-btn {
+  background: var(--primary-blue);
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 6px;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Footer */
+.footer {
+  text-align: center;
+  background: #003366;
+  color: white;
+  padding: 1.5rem 0;
+  margin-top: 3rem;
+}

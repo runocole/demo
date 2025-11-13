@@ -19,7 +19,11 @@ import AdminSalesPage from "./pages/AdminSalesPage";
 import CustomerDashboard from "./pages/CustomerDashboard";
 import CustomerOwing from "./pages/CustomerOwing";
 import StaffSalesPage from "./pages/StaffSalesPage";
-
+import BuyNow from "./pages/BuyNow";
+import Contact from "./pages/Contact";
+import About from "./pages/About";
+import Training from "./pages/Training";
+import CorsNetwork from "./pages/CorsNetwork";
 const queryClient = new QueryClient();
 
 // ✅ Secure route wrapper
@@ -99,13 +103,48 @@ const App = () => (
     />
   }
 />
-
+<Route
+            path="/buynow"
+            element={
+              <PrivateRoute
+                element={<BuyNow />}
+                allowedRoles={["customer"]}
+              />
+            }
+          />
           <Route
             path="/staff"
             element={
               <PrivateRoute
                 element={<StaffPage />}
                 allowedRoles={["staff", "admin"]}
+              />
+            }
+          />
+            <Route
+            path="/contact"
+            element={
+              <PrivateRoute
+                element={<Contact />}
+                allowedRoles={["customer"]}
+              />
+            }
+          />
+          <Route
+            path="/corsnetwork"
+            element={
+              <PrivateRoute
+                element={<CorsNetwork />}
+                allowedRoles={["customer"]}
+              />
+            }
+          />
+          <Route
+            path="/training"
+            element={
+              <PrivateRoute
+                element={<Training />}
+                allowedRoles={["customer"]}
               />
             }
           />
@@ -175,6 +214,15 @@ const App = () => (
               <PrivateRoute
                 element={<AdminSalesPage />}
                 allowedRoles={["admin"]}
+              />
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <PrivateRoute
+                element={<About />}
+                allowedRoles={["customer"]}
               />
             }
           />

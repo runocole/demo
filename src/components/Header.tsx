@@ -81,7 +81,7 @@ const Header: React.FC = () => {
             {/* Massive Logo */}
             <div 
               className="flex items-center gap-3 cursor-pointer"
-              onClick={() => navigate("/customer/dashboard")}
+              onClick={() => navigate("/")}
             >
               <img
                 src={oticLogo}

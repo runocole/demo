@@ -10,6 +10,10 @@ import {
   Cog,
   CalendarRange,
   FileText,
+  Heart,
+  GraduationCap,
+  Users,
+  TreePine,
 } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
@@ -184,6 +188,72 @@ const About: React.FC = () => {
           </motion.div>
         </div>
       </section>
+ {/* CSR HIGHLIGHT SECTION */}
+<section className="py-16 bg-gradient-to-r from-blue-100 to-blue-100">
+  <div className="container mx-auto px-6">
+    <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+      {/* Left side - Empty for balance */}
+      <div className="lg:w-2/5"></div>
+      
+      {/* Right side - CSR Highlight Card */}
+      <motion.div
+        initial={{ opacity: 0, x: 50 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.6, duration: 0.8 }}
+        className="lg:w-3/5"
+      >
+        <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
+          <CardContent className="p-8">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                <Heart className="w-6 h-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-black">Community Impact</h3>
+                <p className="text-blue-600">Making a Difference Together</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="flex items-start gap-3">
+                <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Education & Training</h4>
+                  <p className="text-gray-700 text-sm">Scholarships and technical programs for aspiring surveyors</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Community Development</h4>
+                  <p className="text-gray-700 text-sm">Pro-bono surveying services for local projects</p>
+                </div>
+              </div>
+              
+              <div className="flex items-start gap-3">
+                <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Environmental Care</h4>
+                  <p className="text-gray-700 text-sm">Green technologies and reforestation initiatives</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <Button 
+                className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                onClick={() => navigate('/contact')}
+              >
+                Learn About Our CSR Programs
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  </div>
+</section>
 
      {/* WHY CHOOSE US SECTION */}
 <section className="py-20 bg-blue-100">

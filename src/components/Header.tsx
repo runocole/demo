@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, ArrowLeft, ArrowUp, MessageCircle } from "lucide-react";
+import { Mail, ArrowUp, MessageCircle } from "lucide-react";
 import oticLogo from "../assets/otic-logo.png";
 
 const Header: React.FC = () => {
@@ -89,18 +89,6 @@ const Header: React.FC = () => {
                 className="w-32 h-32 object-contain drop-shadow-lg"
               />
             </div>
-            
-            {/* Back Arrow - positioned below the logo */}
-            <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1 p-2 rounded-md hover:bg-white/10 transition-colors group mt-2"
-              aria-label="Go back"
-            >
-              <ArrowLeft className="w-4 h-4 text-white group-hover:text-white/80 transition-colors" />
-              <span className="text-sm font-medium text-white group-hover:text-white/80 transition-colors">
-                Back
-              </span>
-            </button>
           </div>
         </div>
 
@@ -110,7 +98,7 @@ const Header: React.FC = () => {
             {/* About - Simple link without dropdown */}
             <button
               onClick={() => handleNavigation("/about")}
-              className="text-sm font-bold text-black hover:text-white/80 transition-colors drop-shadow-lg px-3 py-2 rounded-md hover:bg-white/10"
+              className="text-lg font-bold text-black hover:text-blue-900/80 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10"
             >
               About
             </button>
@@ -118,7 +106,7 @@ const Header: React.FC = () => {
             {/* Training - Simple link without dropdown */}
             <button
               onClick={() => handleNavigation("/training")}
-              className="text-sm font-bold text-black hover:text-white/80 transition-colors drop-shadow-lg px-3 py-2 rounded-md hover:bg-white/10"
+              className="text-lg font-bold text-black hover:text-blue-900 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10"
             >
               Training
             </button>
@@ -126,9 +114,9 @@ const Header: React.FC = () => {
             {/* Cors Network - Simple link without dropdown */}
             <button
               onClick={() => handleNavigation("/corsnetwork")}
-              className="text-sm font-bold text-black hover:text-white/80 transition-colors drop-shadow-lg px-3 py-2 rounded-md hover:bg-white/10"
+              className="text-lg font-bold text-black hover:text-blue-900/80 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10"
             >
-              Cors Network
+              CORS Network
             </button>
 
             {/* Other navigation items with dropdowns */}
@@ -136,7 +124,7 @@ const Header: React.FC = () => {
               <div key={item.name} className="relative group">
                 <button 
                   onClick={() => handleNavigation(item.href)}
-                  className="text-sm font-bold text-black hover:text-white/80 transition-colors drop-shadow-lg px-3 py-2 rounded-md hover:bg-white/10 flex items-center gap-1"
+                  className="text-lg font-bold text-black hover:text-blue-900/80 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10 flex items-center gap-1"
                 >
                   {item.name}
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +139,7 @@ const Header: React.FC = () => {
                       <button
                         key={subItem.name}
                         onClick={() => handleSubItemClick(subItem.href)}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-800 hover:bg-primary/10 hover:text-primary transition-colors"
+                        className="block w-full text-left px-4 py-2 text-base text-gray-800 hover:bg-primary/10 hover:text-primary transition-colors"
                       >
                         {subItem.name}
                       </button>
@@ -164,7 +152,7 @@ const Header: React.FC = () => {
             {/* Contact link without dropdown */}
             <button
               onClick={() => handleNavigation("/contact")}
-              className="text-sm font-bold text-black hover:text-white/80 transition-colors drop-shadow-lg px-3 py-2 rounded-md hover:bg-white/10"
+              className="text-lg font-bold text-black hover:text-blue-900/80 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10"
             >
               Contact
             </button>
@@ -176,9 +164,9 @@ const Header: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/buynow")}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#081748] text-white rounded-lg shadow-lg hover:bg-white/90 transition text-sm font-bold mt-5"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#081748] text-white rounded-lg shadow-lg hover:bg-blue-100/90 transition text-lg font-bold mt-5"
             >
-              <Mail className="w-4 h-4" />
+              <Mail className="w-5 h-5" />
               Buy Now
             </button>
           </div>

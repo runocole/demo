@@ -1510,15 +1510,19 @@ export default function SalesPage() {
                               {sale.items?.map((item, index) => {
                                 // Method 1: Check if we have serial_set from the sale item (PREFERRED)
                                 if (item.serial_set && item.serial_set.length > 0) {
+                                  const isBaseRoverCombo = item.category === "Receiver" && 
+                                                          (item.equipment.toLowerCase().includes("base and rover") || 
+                                                            item.serial_set.length > 1);
+                                  
                                   return (
                                     <div key={index} className="text-xs mb-2">
                                       <div className="text-blue-300 font-medium">{item.equipment}:</div>
                                       <div className="ml-2 space-y-1">
-                                        {/* Display receiver serials */}
-                                        {(item.serial_set || []).map((serial, serialIndex) => (
+                                        {/* Display ONLY first 2 receiver serials for Base & Rover */}
+                                        {(item.serial_set || []).slice(0, isBaseRoverCombo ? 2 : item.serial_set.length).map((serial, serialIndex) => (
                                           <div key={serialIndex} className="text-gray-300">
                                             <span className="text-blue-400">
-                                              {(item.serial_set || []).length > 1 ? `Receiver ${serialIndex + 1}:` : 'Receiver:'}
+                                              {isBaseRoverCombo ? `Receiver ${serialIndex + 1}:` : 'Receiver:'}
                                             </span> {serial}
                                           </div>
                                         ))}
@@ -1557,7 +1561,7 @@ export default function SalesPage() {
                                                 <span className="text-blue-400">Receiver 2:</span> {getSerialValue(soldTool.serials, 'receiver2')}
                                               </div>
                                             )}
-                                            {getSerialValue(soldTool.serials, 'data_logger') && (
+                                            {/*{getSerialValue(soldTool.serials, 'data_logger') && (
                                               <div className="text-gray-300">
                                                 <span className="text-green-400">Data Logger:</span> {getSerialValue(soldTool.serials, 'data_logger')}
                                               </div>
@@ -1566,7 +1570,7 @@ export default function SalesPage() {
                                               <div className="text-gray-300">
                                                 <span className="text-purple-400">External Radio:</span> {getSerialValue(soldTool.serials, 'external_radio')}
                                               </div>
-                                            )}
+                                            )}*/}
                                           </>
                                         )}
                                         
@@ -1602,11 +1606,11 @@ export default function SalesPage() {
                                                 <span className="text-green-400">Data Logger:</span> {getSerialValue(soldTool.serials, 'data_logger')}
                                               </div>
                                             )}
-                                            {getSerialValue(soldTool.serials, 'external_radio') && (
+                                            {/*{getSerialValue(soldTool.serials, 'external_radio') && (
                                               <div className="text-gray-300">
                                                 <span className="text-purple-400">External Radio:</span> {getSerialValue(soldTool.serials, 'external_radio')}
                                               </div>
-                                            )}
+                                            )}*/}
                                           </>
                                         )}
                                       </div>

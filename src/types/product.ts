@@ -32,3 +32,6 @@ export interface CustomerInfo {
   phone: string;
   email: string;
 }
+
+export const ACCESSORIES = [];
+export const FEATURED_EQUIPMENT = [];

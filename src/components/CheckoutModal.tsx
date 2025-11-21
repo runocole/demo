@@ -13,6 +13,15 @@ interface CheckoutModalProps {
   cart?: CartItem[];
 }
 
+// List of Nigerian states
+const NIGERIAN_STATES = [
+  "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno", 
+  "Cross River", "Delta", "Ebonyi", "Edo", "Ekiti", "Enugu", "Federal Capital Territory", 
+  "Gombe", "Imo", "Jigawa", "Kaduna", "Kano", "Katsina", "Kebbi", "Kogi", "Kwara", 
+  "Lagos", "Nasarawa", "Niger", "Ogun", "Ondo", "Osun", "Oyo", "Plateau", "Rivers", 
+  "Sokoto", "Taraba", "Yobe", "Zamfara"
+];
+
 export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: CheckoutModalProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<CustomerInfo>({
@@ -121,12 +130,19 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
               <Label htmlFor="state" className="text-white">
                 State
               </Label>
-              <Input
+              <select
                 id="state"
                 value={formData.state}
                 onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                className="bg-gray-900 text-white border-gray-700 placeholder-gray-400"
-              />
+                className="w-full px-3 py-2 bg-gray-900 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="">Select a state</option>
+                {NIGERIAN_STATES.map((state) => (
+                  <option key={state} value={state}>
+                    {state}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
 

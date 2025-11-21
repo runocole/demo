@@ -16,7 +16,7 @@ import AdminDashboard from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
 import ToolsSummary from "./pages/ToolsSummary";
 import AdminSalesPage from "./pages/AdminSalesPage";
-import CustomerDashboard from "./pages/CustomerDashboard";
+import LandingPage from "./pages/LandingPage";
 import CustomerOwing from "./pages/CustomerOwing";
 import StaffSalesPage from "./pages/StaffSalesPage";
 import BuyNow from "./pages/BuyNow";
@@ -66,7 +66,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           {/* --- Public Routes --- */}
-          <Route path="/" element={<CustomerDashboard />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
 
           {/* --- Staff Routes --- */}
@@ -168,17 +168,6 @@ const App = () => (
               <PrivateRoute
                 element={<AdminSalesPage />}
                 allowedRoles={["admin"]}
-              />
-            }
-          />
-
-          {/* --- Customer Routes --- */}
-          <Route
-            path="/customer/dashboard"
-            element={
-              <PrivateRoute
-                element={<CustomerDashboard />}
-                allowedRoles={["customer"]}
               />
             }
           />

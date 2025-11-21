@@ -190,63 +190,57 @@ const BuyNow = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-100 text-white">
-      <Header />
-      
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-blue-100 from-primary/10 via-black to-secondary/10 border-b border-gray-800 mt-20">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-4xl">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-2 text-sm text-gray-400 mb-4"
-            >
-              <button
-                onClick={() => navigate("/")}
-                className="flex items-center gap-1 hover:text-primary transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                Home
-              </button>
-              <ChevronRight className="w-4 h-4" />
-              <span className="text-black font-medium">Shop</span>
-            </motion.div>
+  <div className="min-h-screen bg-blue-100 text-white">
+    <Header />   
+    {/* Hero Section */}
+    <section className="relative overflow-hidden bg-blue-100 from-primary/10 via-black to-secondary/10 border-b border-gray-800">
+      <div className="container mx-auto px-4 py-16">
+        <div className="max-w-4xl">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="text-4xl md:text-5xl font-bold mb-4 text-black mt-30"
+          >
+            Shop
+          </motion.h1>
+          
+          {/* Buttons - First after title */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="flex items-center gap-3 text-black mb-6"
+          >
+            <Button onClick={() => window.scrollTo({ top: 400, behavior: "smooth" })}>
+              Browse Products
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/contact")}>
+              Request Demo
+            </Button>
+          </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-4xl md:text-5xl font-bold mb-4 text-black"
+          {/* Breadcrumb - Last */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center gap-2 text-sm text-gray-400"
+          >
+            <button
+              onClick={() => navigate("/")}
+              className="flex items-center gap-1 hover:text-primary transition-colors"
             >
-              Shop
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-gray-400 mb-6"
-            >
-            </motion.p>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="flex items-center gap-3 text-black"
-            >
-              <Button onClick={() => window.scrollTo({ top: 400, behavior: "smooth" })}>
-                Browse Products
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/contact")}>
-                Request Demo
-              </Button>
-            </motion.div>
-          </div>
+              <Home className="w-4 h-4" />
+              Home
+            </button>
+            <ChevronRight className="w-4 h-4" />
+            <span className="text-black font-medium">Shop</span>
+          </motion.div>
         </div>
-      </section>
-
+      </div>
+    </section>
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8">
         {/* Search and Filters Bar */}
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-8 shadow-sm">
           <div className="flex flex-col lg:flex-row gap-4">

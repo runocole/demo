@@ -116,6 +116,7 @@ const BuyNow = () => {
     toast({
       title: "Added to cart",
       description: `${product.name} has been added to your cart.`,
+      className: "bg-white dark:bg-gray-900",
     });
   };
 
@@ -134,6 +135,7 @@ const BuyNow = () => {
     toast({
       title: "Removed from cart",
       description: "Item has been removed from your cart.",
+      className: "bg-white dark:bg-gray-900"
     });
   };
 
@@ -155,6 +157,7 @@ const BuyNow = () => {
         title: "Cart is empty",
         description: "Please add items to your cart before checkout.",
         variant: "destructive",
+        className: "bg-red-500 dark:bg-red-900",
       });
       return;
     }
@@ -178,6 +181,7 @@ const BuyNow = () => {
     toast({
       title: "Order Complete",
       description: "Thank you for your purchase!",
+      className: "bg-white dark:bg-gray-900",
     });
   };
 

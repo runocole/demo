@@ -3,7 +3,7 @@ import { getSales } from "../services/api";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Input } from "../components/ui/input";
-import { Download, Search, User, DollarSign, Calendar, FileText, Package, CreditCard, Clock } from "lucide-react";
+import { Download, Search, DollarSign, Calendar, FileText, Package, CreditCard } from "lucide-react";
 import { DashboardLayout } from "../components/DashboardLayout";
 import jsPDF from "jspdf";
 import "jspdf-autotable";

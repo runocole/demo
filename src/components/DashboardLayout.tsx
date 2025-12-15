@@ -5,6 +5,7 @@ import { AppSidebar } from "../components/AppSidebar";
 import { Bell, LogOut, AlertTriangle, Calendar, Search } from 'lucide-react';
 import { Button } from "../components/ui/button";
 import { useNotifications } from "../hooks/useNotifications";
+import { Plus } from 'lucide-react'; 
 import type { Notification, Tool } from "../hooks/useNotifications";
 
 interface DashboardLayoutProps {
@@ -256,7 +257,17 @@ export function DashboardLayout({ children, tools = [], onNotificationClick }: D
             <div className="flex items-center gap-4">
               {/* Search Bar - Added here */}
               <SearchBar onSearch={handleSearch} />
-
+                {/* NEW: Add Blog Post Button */}
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={() => window.location.href = '/admin/login'}
+      className="rounded-full text-teal-300 hover:text-white hover:bg-teal-600/40 transition border border-teal-500/50"
+      title="Add Blog Post"
+    >
+      <Plus className="h-5 w-5" />
+    </Button>
+ 
               {/* Notification Button */}
               <NotificationBell
                 notificationState={notificationState}

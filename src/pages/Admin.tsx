@@ -696,7 +696,7 @@ export default function Admin() {
       <main className="min-h-screen bg-blue-950 text-white">
         {/* Header */}
         <header className="sticky top-0 z-50 border-b border-blue-800 bg-blue-950/95 backdrop-blur-xl">
-          <div className="container flex h-16 items-center justify-between">
+          <div className="container mx-auto flex h-16 items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-800">
                 <FileText className="h-5 w-5 text-blue-200" />
@@ -741,7 +741,7 @@ export default function Admin() {
           </div>
         </header>
 
-        <div className="container py-8">
+        <div className="container mx-auto py-8">
           {/* Dashboard Stats */}
           <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <MetricCard 

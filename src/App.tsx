@@ -25,7 +25,10 @@ import About from "./pages/About";
 import Training from "./pages/Training";
 import CorsNetwork from "./pages/CorsNetwork";
 import CourseDetail from "./pages/CourseDetail";
-
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
 const queryClient = new QueryClient();
 
 // ✅ Secure route wrapper
@@ -177,6 +180,10 @@ const App = () => (
           <Route path="/corsnetwork" element={<CorsNetwork />} />
           <Route path="/buynow" element={<BuyNow />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/blog" element={<Blog />} />
+            <Route path="/blog/:id" element={<BlogPost />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
           {/* --- Public Course Route --- */}
           <Route path="/course/:courseId" element={<CourseDetail />} />
           

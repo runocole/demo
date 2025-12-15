@@ -113,7 +113,7 @@ export default function Blog() {
       <main className="min-h-screen bg-blue-950 text-white">
         {/* Stats Banner */}
         <div className="border-b border-blue-800 bg-blue-900/50">
-          <div className="container">
+          <div className="container mx-auto">
             <div className="flex flex-wrap items-center justify-between gap-4 py-4">
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-2">
@@ -162,7 +162,7 @@ export default function Blog() {
         <BlogHero featuredPost={featuredPost} />
 
         {/* Filters Section */}
-        <section className="container py-8">
+        <section className="container mx-auto py-8">
           <Card className="border-blue-800 bg-blue-900/50">
             <CardContent className="p-6">
               <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -227,7 +227,7 @@ export default function Blog() {
           </Card>
         </section>
 
-        <section className="container pb-16 lg:pb-24">
+        <section className="container mx-auto pb-16 lg:pb-24">
           {loading && posts.length === 0 ? (
             <BlogSkeleton />
           ) : (

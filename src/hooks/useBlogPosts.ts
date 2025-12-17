@@ -1,3 +1,4 @@
+// hooks/useBlogPosts.ts
 import { useState, useEffect } from 'react';
 import { 
   collection, 
@@ -31,6 +32,10 @@ interface FirestorePost {
   slug?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
+  views?: number;
+  likes?: number;
+  category?: string;
+  isFeatured?: boolean;
 }
 
 export function useBlogPosts() {
@@ -51,10 +56,14 @@ export function useBlogPosts() {
     author: data.author,
     tags: data.tags || [],
     isPublished: data.isPublished ?? true,
-    // Optional fields
+    // Include all optional fields
     slug: data.slug || '',
     createdAt: data.createdAt?.toDate().toISOString() || new Date().toISOString(),
-    updatedAt: data.updatedAt?.toDate().toISOString() || new Date().toISOString()
+    updatedAt: data.updatedAt?.toDate().toISOString() || new Date().toISOString(),
+    views: data.views || 0,
+    likes: data.likes || 0,
+    category: data.category || 'general',
+    isFeatured: data.isFeatured || false
   });
 
   const fetchPosts = async (loadMore = false) => {
@@ -107,12 +116,15 @@ export function useBlogPosts() {
         content: post.content,
         excerpt: post.excerpt,
         featuredImage: post.featuredImage,
-        // Convert string to Timestamp
         publishDate: Timestamp.fromDate(new Date(post.publishDate)),
         author: post.author,
         tags: post.tags || [],
         isPublished: post.isPublished ?? false,
-        slug: post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        slug: post.slug || post.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        views: 0,
+        likes: 0,
+        category: post.category || 'general',
+        isFeatured: post.isFeatured || false,
         createdAt: Timestamp.now(),
         updatedAt: Timestamp.now(),
       };
@@ -123,8 +135,12 @@ export function useBlogPosts() {
       const newBlogPost: BlogPost = {
         id: docRef.id,
         ...post,
-        publishDate: post.publishDate, // Already a string
+        publishDate: post.publishDate,
         slug: firestoreData.slug,
+        views: 0,
+        likes: 0,
+        category: post.category || 'general',
+        isFeatured: post.isFeatured || false,
         createdAt: firestoreData.createdAt.toDate().toISOString(),
         updatedAt: firestoreData.updatedAt.toDate().toISOString(),
       };
@@ -144,7 +160,6 @@ export function useBlogPosts() {
         updatedAt: Timestamp.now(),
       };
       
-      // Only update publishDate if provided
       if (post.publishDate) {
         updateData.publishDate = Timestamp.fromDate(new Date(post.publishDate));
       }
@@ -178,14 +193,11 @@ export function useBlogPosts() {
     }
   };
 
-  // Add export/import functions as requested
   const exportPosts = async () => {
     return posts;
   };
 
   const importPosts = async (importedData: BlogPost[]) => {
-    // Note: This is a simple implementation that just replaces local state
-    // In production, you'd want to upload to Firestore
     setPosts(importedData);
   };
 

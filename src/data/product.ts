@@ -3,15 +3,21 @@ import heroSlide1 from "../assets/hero-slide-1.jpg";
 import heroSlide2 from "../assets/hero-slide-2.jpg";
 import heroSlide3 from "../assets/hero-slide-3.jpg";
 import heroSlide4 from "../assets/hero-slide-4.jpg";
+import t30 from "../assets/t30.jpg";
 import arrival1 from "../assets/arrival1.jpg";
-import arrival2 from "../assets/arrival2.jpg";
-import arrival3 from "../assets/arrival3.jpg";
+import agrast30 from "../assets/agrast30.jpg";
+import steeltape from "../assets/steeltape.jpg";
 import equipment1 from "../assets/equipment1.jpg";
-import equipment2 from "../assets/equipment2.jpg";
 import equipment3 from "../assets/equipment3.jpg";
-import equipment4 from "../assets/equipment4.jpg";
+import externalradio from "../assets/externalradio.jpg";
 import equipment6 from "../assets/equipment6.jpg";
-
+import rangingpole from "../assets/rangingpole.jpg";
+import dji from "../assets/dji.jpg";
+import longwhip from "../assets/longwhip.jpg";
+import tribach from "../assets/tribach.jpg";
+import ts20 from "../assets/ts20.jpg";
+import zenmuse from "../assets/zenmuse.jpg";
+import gpsmap from "../assets/gpsmap.jpg";
 // Import types from your product types file
 import type { Product, ProductCategory } from "../types/product";
 
@@ -30,6 +36,8 @@ export interface CarouselItem {
   description: string;
   price: number;
   category?: string;
+  inStock?: boolean;
+  specifications?: string[];
 }
 
 // Export constants
@@ -67,55 +75,69 @@ export const ACCESSORIES: CarouselItem[] = [
     category: "Support Equipment",
     image: arrival1,
     description: "Professional survey tripod for stable measurements",
-    price: 299
+    price: 299,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 2,
-    name: "Lithium Batteries",
+    name: "Ranging Pole",
     category: "Power Solutions",
-    image: arrival2,
+    image: rangingpole,
     description: "Long-lasting lithium batteries for field equipment",
-    price: 149
+    price: 149,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 3,
-    name: "Carrying Case",
+    name: "Steel Tape",
     category: "Protection Gear",
-    image: arrival3,
+    image: steeltape,
     description: "Durable carrying case for equipment protection",
-    price: 89
+    price: 89,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 4,
-    name: "GPS Antenna",
+    name: "Long Whip Antenna",
     category: "Signal Equipment",
-    image: equipment1,
+    image: longwhip,
     description: "High-precision GPS antenna for better signal reception",
-    price: 199
+    price: 199,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 5,
-    name: "Data Collector",
+    name: "Tribach",
     category: "Field Computing",
-    image: equipment2,
+    image: tribach,
     description: "Rugged data collector for field operations",
-    price: 599
+    price: 599,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 6,
-    name: "Laser Target",
+    name: "ZENMUSE L2",
     category: "Measurement Tools",
-    image: equipment3,
+    image: zenmuse,
     description: "Laser target for accurate distance measurements",
-    price: 79
+    price: 79,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 7,
-    name: "Drone Batteries",
+    name: "External Radio",
     category: "UAV Accessories",
-    image: equipment4,
+    image: externalradio,
     description: "Extended flight time batteries for survey drones",
-    price: 249
+    price: 249,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 8,
@@ -123,7 +145,9 @@ export const ACCESSORIES: CarouselItem[] = [
     category: "Maintenance Tools",
     image: arrival1,
     description: "Professional calibration kit for survey instruments",
-    price: 159
+    price: 159,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 9,
@@ -131,7 +155,9 @@ export const ACCESSORIES: CarouselItem[] = [
     category: "Measurement Tools",
     image: equipment3,
     description: "Laser target for accurate distance measurements",
-    price: 79
+    price: 79,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 10,
@@ -139,7 +165,9 @@ export const ACCESSORIES: CarouselItem[] = [
     category: "Measurement Tools",
     image: equipment3,
     description: "Laser target for accurate distance measurements",
-    price: 79
+    price: 79,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 11,
@@ -147,7 +175,9 @@ export const ACCESSORIES: CarouselItem[] = [
     category: "Measurement Tools",
     image: equipment3,
     description: "Laser target for accurate distance measurements",
-    price: 79
+    price: 79,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 12,
@@ -155,92 +185,116 @@ export const ACCESSORIES: CarouselItem[] = [
     category: "Measurement Tools",
     image: equipment3,
     description: "Laser target for accurate distance measurements",
-    price: 79
+    price: 79,
+    inStock: true, 
+    specifications: [] 
   }
 ];
 
 export const FEATURED_EQUIPMENT: CarouselItem[] = [
   {
     id: 1,
-    name: "GNSS Receiver X5 Pro",
-    category: "GPS Equipment",
-    image: equipment1, 
+    name: "AGRAS T30",
+    category: "DRONES",
+    image: agrast30, 
     description: "High-precision GNSS receiver with multi-frequency technology",
-    price: 4999
+    price: 4999,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 2,
-    name: "Total Station T7 Elite",
+    name: "T30 GNSS Receiver",
     category: "Survey Instruments",
-    image: equipment2, 
+    image: t30, 
     description: "Robotic total station with advanced tracking technology",
-    price: 8999
+    price: 8999,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 3,
-    name: "3D Laser Scanner L3",
+    name: "DJI MAVIC 2 PRO",
     category: "Scanning Equipment",
-    image: equipment3, 
+    image: dji, 
     description: "High-speed 3D laser scanner for detailed mapping",
-    price: 12999
+    price: 12999,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 4,
-    name: "Survey Drone D8 Pro",
+    name: "Leica TS20",
     category: "UAV Equipment",
-    image: equipment4, 
+    image: ts20, 
     description: "Professional survey drone with RTK positioning",
-    price: 15999
+    price: 15999,
+    inStock: true, 
+    specifications: [] 
   },
   {
     id: 5,
-    name: "GPS Rover System",
+    name: "GPSMAP 67i",
     category: "Field Equipment",
-    image: equipment1, 
+    image: gpsmap, 
     description: "Portable GPS rover for field data collection",
-    price: 6999
+    price: 6999,
+    inStock: true, 
+    specifications: [] 
   },{
     id: 6,
     name: "Jupiter Laser",
     category: "GNSS Equipment",
     image: equipment6, 
     description: "High-precision GNSS receiver with multi-frequency technology",
-    price: 4999
+    price: 4999,
+    inStock: true, 
+    specifications: [] 
   },{
     id: 7,
     name: "GPS Rover System",
     category: "Field Equipment",
     image: equipment1, 
     description: "Portable GPS rover for field data collection",
-    price: 6999
+    price: 6999,
+    inStock: true, 
+    specifications: [] 
   },{
     id: 8,
     name: "GPS Rover System",
     category: "Field Equipment",
     image: equipment1, 
     description: "Portable GPS rover for field data collection",
-    price: 6999
+    price: 6999,
+    inStock: true,  
+    specifications: [] 
   },{
     id: 9,
     name: "GPS Rover System",
     category: "Field Equipment",
     image: equipment1, 
     description: "Portable GPS rover for field data collection",
-    price: 6999
+    price: 6999,
+    inStock: true,  
+    specifications: [] 
   },{
     id: 10,
     name: "GPS Rover System",
     category: "Field Equipment",
     image: equipment1, 
     description: "Portable GPS rover for field data collection",
-    price: 6999
+    price: 6999,
+    inStock: true,  
+    specifications: [] 
   },{
     id: 11,
     name: "GPS Rover System",
     category: "Field Equipment",
     image: equipment1, 
     description: "Portable GPS rover for field data collection",
-    price: 6999
+    price: 6999,
+    inStock: true,  
+    specifications: [] 
   }
 ];
 
@@ -270,8 +324,10 @@ export const PRODUCTS: Product[] = [
 export const ABOUT_CONTENT = {
   title: "Precision from the Ground Up and the Sky Down",
   description: [
-    "We are a leading provider of professional geospatial technology, empowering surveyors, engineers, and mapping professionals with the industry's most reliable tools. While renowned for our best-selling GNSS receivers and total stations, we offer a complete ecosystem of cutting-edge solutions, including professional drones.",
-    "Our expertise extends beyond the sale. We provide the technology and the specialized drone services—such as aerial surveying, mapping, and inspection—to ensure you capture accurate data from every perspective. Whether you need the premier receiver for your field crew or a comprehensive aerial survey, we are your single source for precision."
+    "Geossotech is a trusted provider of advanced geospatial technology, supporting professionals across geospatial and surveying, engineering and construction, agriculture and aggrotech, oil and gas / energy, real estate and infrastructure, government agencies, surveying institutions, and hydrographic operations.",
+    "We deliver a complete geospatial ecosystem, supplying high-performance GNSS receivers, total stations, 3D laser scanners, professional drones, side scan sonars, echo sounders, autosteering systems, CORS network services, and a wide range of supporting accessories and GIS software's.",
+    "We go beyond equipment supply. We calibrate and repair equipment, provide professional training, offer equipment rental, and deliver advanced services including aerial surveying, mapping, inspection, agricultural monitoring, hydrographic data acquisition, and 3D scanning, ensuring reliable data capture across land, water, and air.",
+    "From equipping field crews, institutions, and agencies to supporting large-scale infrastructure, energy, agricultural, and marine projects, we stand as a single, dependable source for end-to-end geospatial solutions. We are the ecosystem.",
   ],
   videoUrl: "https://www.youtube.com/embed/2SrceTLF5MU?autoplay=1"
 };

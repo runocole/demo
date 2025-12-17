@@ -1,9 +1,6 @@
-import { Users, CheckCircle2, Monitor, Home, Award, Star, MapPin, Phone, Clock,  Navigation, Crosshair } from "lucide-react";
+import { CheckCircle2, Star, MapPin, Navigation, Crosshair } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useEffect, useRef, useState } from 'react';
-import { Card, CardContent } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -12,85 +9,6 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import heroImage from "../assets/hero-training.jpg";
 import safetyImage from "../assets/safety-training.jpg";
-import missionImage from "../assets/mission-planning.jpg";
-import parametersImage from "../assets/parameters.jpg";
-import fieldImage from "../assets/field-practice.jpg";
-import { Testimonials } from "../components/Testimonials";
-
-const courses = [
-  {
-    id: "drone-mapping",
-    title: "Drone Mapping Training",
-    description: "Introduce local regulation requirements and safety operation procedures including: flight checklist, daily maintenance.",
-    image: safetyImage,
-    rating: 4.9,
-    reviews: 127,
-    price: "$299"
-  },
-  {
-    id: "bathymetric",
-    title: "Bathymetric Training",
-    description: "Field and flight path planning methods, and different operational modes.",
-    image: missionImage,
-    rating: 4.8,
-    reviews: 89,
-    price: "$399"
-  },
-  {
-    id: "parameter-setting",
-    title: "Parameter Setting Recommendations",
-    description: "Flight parameters setting recommendations to ensure efficient and effective operations.",
-    image: parametersImage,
-    rating: 4.7,
-    reviews: 94,
-    price: "$249"
-  },
-  {
-    id: "field-operation",
-    title: "Field Operation Practice",
-    description: "Hands-on training at the field including: automatic operations, configurations of spraying/spreading systems.",
-    image: fieldImage,
-    rating: 4.9,
-    reviews: 156,
-    price: "$349"
-  },
-  {
-    id: "gis-fundamentals",
-    title: "GIS Fundamentals",
-    description: "Basic to intermediate GIS concepts and applications for spatial data analysis.",
-    image: safetyImage,
-    rating: 4.6,
-    reviews: 203,
-    price: "$199"
-  },
-  {
-    id: "remote-sensing",
-    title: "Remote Sensing Applications",
-    description: "Satellite imagery analysis and remote sensing techniques for environmental monitoring.",
-    image: missionImage,
-    rating: 4.8,
-    reviews: 118,
-    price: "$379"
-  },
-  {
-    id: "advanced-mapping",
-    title: "Advanced Mapping Techniques",
-    description: "Advanced cartography and spatial analysis methods for professional mapping.",
-    image: parametersImage,
-    rating: 4.7,
-    reviews: 76,
-    price: "$329"
-  },
-  {
-    id: "data-analysis",
-    title: "Spatial Data Analysis",
-    description: "Statistical analysis and interpretation of spatial data for meaningful insights.",
-    image: fieldImage,
-    rating: 4.8,
-    reviews: 92,
-    price: "$299"
-  }
-];
 
 // Fix for default markers in react-leaflet
 delete (Icon.Default.prototype as any)._getIconUrl
@@ -224,13 +142,6 @@ const Training = () => {
   const [nearestStation, setNearestStation] = useState<CorsStation | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string>('')
-
-  const scrollToCourses = () => {
-    const coursesSection = document.getElementById('content');
-    if (coursesSection) {
-      coursesSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   const findNearestStation = () => {
     setIsLoading(true)

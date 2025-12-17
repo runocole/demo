@@ -270,7 +270,7 @@ return (
         className="font-bold text-primary hover:text-primary/80 transition"
         href="mailto:runocole@gmail.com"
       >
-        sales@oticsurveys.com
+        sales@geossotech.com, geossoltd@gmail.com
       </a>
     </div>
   </div>

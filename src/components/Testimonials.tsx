@@ -83,17 +83,16 @@ export const Testimonials = () => {
       <div className="container mx-auto px-4 relative z-10">
         <div className="grid lg:grid-cols-12 gap-8 items-center">
           {/* Left Content */}
-          <div className="lg:col-span-4 text-blue-900 space-y-6">
-            <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center">
-              <Quote className="w-12 h-12 text-white" />
+          <div className="lg:col-span-4 space-y-6">
+            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
+              <Quote className="w-12 h-12 text-[#081748]" />
             </div>
-            <h2 className="text-4xl md:text-5xl font-bold leading-tight">
+            <h2 className="text-4xl md:text-5xl font-bold leading-tight text-[#081748]">
               What Our<br />Students Say
             </h2>
-            <p className="text-blue-700/80 text-lg">
+            <p className="text-[#081748]/80 text-lg">
               Hear from professionals who have transformed their careers through our comprehensive drone training programs.
             </p>
-            
           </div>
 
           {/* Right - Testimonial Cards */}
@@ -120,25 +119,25 @@ export const Testimonials = () => {
                       </div>
 
                       {/* Title */}
-                      <h3 className="font-bold text-lg text-gray-800 mb-2">
+                      <h3 className="font-bold text-lg text-[#081748] mb-2">
                         {testimonial.title}
                       </h3>
 
                       {/* Testimonial Text */}
-                      <p className="text-gray-600 mb-6 flex-grow leading-relaxed">
+                      <p className="text-[#081748]/80 mb-6 flex-grow leading-relaxed">
                         {testimonial.text}
                       </p>
 
                       {/* Name and Rating */}
                       <div className="flex items-center justify-between pt-4 border-t border-blue-100">
-                        <span className="font-bold text-gray-800 text-lg">
+                        <span className="font-bold text-[#081748] text-lg">
                           {testimonial.name}
                         </span>
                         <div className="flex gap-1">
                           {[...Array(testimonial.rating)].map((_, i) => (
                             <Star
                               key={i}
-                              className="w-5 h-5 fill-yellow-400 text-yellow-400"
+                              className="w-5 h-5 fill-[#081748] text-[#081748]"
                             />
                           ))}
                         </div>
@@ -153,7 +152,7 @@ export const Testimonials = () => {
                 <Button
                   onClick={prevSlide}
                   size="icon"
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 shadow-lg transition-colors"
+                  className="bg-white hover:bg-gray-50 text-[#081748] rounded-full w-12 h-12 shadow-lg transition-colors border border-blue-100"
                   disabled={currentIndex === 0}
                 >
                   <ChevronLeft className="w-6 h-6" />
@@ -161,7 +160,7 @@ export const Testimonials = () => {
                 <Button
                   onClick={nextSlide}
                   size="icon"
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 shadow-lg transition-colors"
+                  className="bg-white hover:bg-gray-50 text-[#081748] rounded-full w-12 h-12 shadow-lg transition-colors border border-blue-100"
                   disabled={currentIndex + 2 >= testimonials.length}
                 >
                   <ChevronRight className="w-6 h-6" />
@@ -177,8 +176,8 @@ export const Testimonials = () => {
                       onClick={() => goToSlide(index)}
                       className={`w-3 h-3 rounded-full transition-all ${
                         currentIndex === index
-                          ? "bg-blue-600 w-8"
-                          : "bg-blue-300"
+                          ? "bg-[#081748] w-8"
+                          : "bg-[#081748]/30"
                       }`}
                       aria-label={`Go to slide ${index + 1}`}
                     />

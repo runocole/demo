@@ -1,10 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Mail, ArrowUp, MessageCircle } from "lucide-react";
+import { Mail, ArrowUp, MessageCircle, ShoppingCart} from "lucide-react";
 import oticLogo from "../assets/otic-logo.png";
+import { useCart } from "../context/CartContext";
 
-const Header: React.FC = () => {
+interface HeaderProps {
+  onCartClick?: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onCartClick }) => {
   const navigate = useNavigate();
+  const { itemCount } = useCart();
   const [isVisible, setIsVisible] = useState(false);
 
   // Scroll to top functionality
@@ -39,7 +45,7 @@ const Header: React.FC = () => {
   // Navigation items with dropdowns
   const navigationItems = [
     {
-      name: "Survey Equipment",
+      name: "Equipments",
       href: "/buynow?category=survey-equipment",
       items: [
         { name: "Total Stations", href: "/buynow?category=Total Station" },
@@ -72,6 +78,14 @@ const Header: React.FC = () => {
     navigate(href);
   };
 
+  const handleCartClick = () => {
+    if (onCartClick) {
+      onCartClick();
+    }
+    // Navigate to cart page
+    navigate("/cart");
+  };
+
   return (
     <>
       <header className="absolute top-0 left-0 right-0 z-50 bg-transparent">
@@ -95,6 +109,15 @@ const Header: React.FC = () => {
         {/* Center navigation with dropdowns */}
         <div className="flex items-center justify-center pt-12"> 
           <nav className="hidden md:flex items-center gap-6">
+            {/* Home - Simple link without dropdown */}
+            <button
+              onClick={() => navigate("/")}
+              className="text-lg font-bold text-black hover:text-blue-900/80 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10 flex items-center gap-1"
+            >
+              <div className="w-5 h-5" />
+              Home
+            </button>
+
             {/* About - Simple link without dropdown */}
             <button
               onClick={() => handleNavigation("/about")}
@@ -148,6 +171,15 @@ const Header: React.FC = () => {
                 </div>
               </div>
             ))}
+
+            {/* Blog - Simple link without dropdown */}
+            <button
+              onClick={() => handleNavigation("/blog")}
+              className="text-lg font-bold text-black hover:text-blue-900/80 transition-colors drop-shadow-lg px-4 py-2 rounded-md hover:bg-white/10 flex items-center gap-1"
+            >
+              <div className="w-5 h-5" />
+              Blog
+            </button>
             
             {/* Contact link without dropdown */}
             <button
@@ -159,15 +191,30 @@ const Header: React.FC = () => {
           </nav>
         </div>
 
-        {/* CTA Button at extreme right viewport edge */}
+        {/* CTA and Cart Buttons side by side at extreme right viewport edge */}
         <div className="fixed right-6 top-4">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 mt-5">
+            {/* Buy Now Button */}
             <button
               onClick={() => navigate("/buynow")}
-              className="inline-flex items-center gap-2 px-6 py-3 bg-[#081748] text-white rounded-lg shadow-lg hover:bg-blue-100/90 transition text-lg font-bold mt-5"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-[#081748] text-white rounded-lg shadow-lg hover:bg-blue-100/90 transition text-lg font-bold"
             >
               <Mail className="w-5 h-5" />
               Buy Now
+            </button>
+
+            {/* My Cart Button */}
+            <button
+              onClick={handleCartClick}
+              className="relative inline-flex items-center gap-2 px-6 py-3 bg-white text-[#081748] border-2 border-[#081748] rounded-lg shadow-lg hover:bg-gray-50 transition text-lg font-bold"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              My Cart
+              {itemCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                  {itemCount}
+                </span>
+              )}
             </button>
           </div>
         </div>

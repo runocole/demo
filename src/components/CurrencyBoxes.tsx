@@ -1,138 +1,59 @@
-// components/CurrencyBoxes.tsx
 import React from 'react';
-import type { CurrencyType } from '../types/currency';
+import { useCurrency } from "../context/CurrencyContext"; 
 
-interface CurrencyBoxesProps {
-  currentCurrency: CurrencyType;
-  exchangeRate: number;
-  onCurrencyChange: (currency: CurrencyType) => void;
-}
+const CurrencyBoxes: React.FC = () => {
+  const { currentCurrency, setCurrency } = useCurrency();
 
-const CurrencyBoxes: React.FC<CurrencyBoxesProps> = ({
-  currentCurrency,
-  exchangeRate,
-  onCurrencyChange
-}) => {
   const containerStyle: React.CSSProperties = {
     position: 'fixed',
     top: '50%',
     right: '0px',
     transform: 'translateY(-50%)',
-    zIndex: 9999,
+    zIndex: 2147483647,
     display: 'flex',
     flexDirection: 'column',
-    gap: '10px',
+    gap: '4px',
     pointerEvents: 'auto'
   };
 
-  const boxStyle: React.CSSProperties = {
-    background: 'white',
-    borderRadius: '12px 0 0 12px',
-    padding: '20px 25px 20px 20px',
-    boxShadow: '-5px 5px 20px rgba(0, 0, 0, 0.15)',
+  const currencyButtonStyle: React.CSSProperties = {
+    padding: '8px 15px',
     border: '1px solid #e1e5e9',
-    borderRight: 'none',
-    minWidth: '180px',
-    textAlign: 'left',
-    backdropFilter: 'blur(10px)',
-    transition: 'all 0.3s ease',
-    marginRight: '0px'
-  };
-
-  const rateBoxStyle: React.CSSProperties = {
-    ...boxStyle,
-    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-    color: 'white'
-  };
-
-  const selectorBoxStyle: React.CSSProperties = {
-    ...boxStyle,
-    background: 'rgba(255, 255, 255, 0.98)',
-    color: '#333'
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    padding: '8px 12px',
-    border: '2px solid #ddd',
     background: 'white',
-    borderRadius: '6px',
     cursor: 'pointer',
-    fontSize: '0.85em',
+    fontSize: '0.9em',
     fontWeight: '500',
     transition: 'all 0.2s ease',
-    minWidth: '70px',
-    margin: '2px'
+    borderRadius: '8px 0 0 8px',
+    color: '#333',
+    minWidth: '60px',
+    boxShadow: '-2px 2px 8px rgba(0, 0, 0, 0.1)',
+    textAlign: 'center'
   };
 
-  const activeButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    background: '#667eea',
+  const activeCurrencyStyle: React.CSSProperties = {
+    ...currencyButtonStyle,
+    background: '#3b82f6',
     color: 'white',
-    borderColor: '#667eea'
+    fontWeight: '600',
+    borderColor: '#3b82f6'
   };
 
   return (
     <div style={containerStyle}>
-      {/* Exchange Rate Box */}
-      <div style={rateBoxStyle}>
-        <div style={{ 
-          fontSize: '0.85em', 
-          fontWeight: 600, 
-          marginBottom: '10px', 
-          opacity: 0.9,
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px'
-        }}>
-          💱 Live Rate
-        </div>
-        <div style={{ 
-          fontSize: '1.1em', 
-          fontWeight: 'bold', 
-          margin: '8px 0',
-          lineHeight: '1.3'
-        }}>
-          1 USD = {exchangeRate.toLocaleString()} NGN
-        </div>
-        <div style={{ 
-          fontSize: '0.75em', 
-          opacity: 0.8, 
-          marginTop: '6px' 
-        }}>
-          {new Date().toLocaleTimeString()}
-        </div>
-      </div>
-
-      {/* Currency Selector Box */}
-      <div style={selectorBoxStyle}>
-        <div style={{ 
-          fontSize: '0.85em', 
-          fontWeight: 600, 
-          marginBottom: '10px', 
-          opacity: 0.9,
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px'
-        }}>
-          Currency
-        </div>
-        <div style={{ 
-          display: 'flex', 
-          gap: '6px', 
-          flexDirection: 'column'
-        }}>
-          <button
-            style={currentCurrency === 'USD' ? activeButtonStyle : buttonStyle}
-            onClick={() => onCurrencyChange('USD')}
-          >
-            USD ($)
-          </button>
-          <button
-            style={currentCurrency === 'NGN' ? activeButtonStyle : buttonStyle}
-            onClick={() => onCurrencyChange('NGN')}
-          >
-            NGN (₦)
-          </button>
-        </div>
-      </div>
+      <button
+        style={currentCurrency === 'USD' ? activeCurrencyStyle : currencyButtonStyle}
+        onClick={() => setCurrency('USD')}
+      >
+        USD
+      </button>
+      
+      <button
+        style={currentCurrency === 'NGN' ? activeCurrencyStyle : currencyButtonStyle}
+        onClick={() => setCurrency('NGN')}
+      >
+        NGN
+      </button>
     </div>
   );
 };

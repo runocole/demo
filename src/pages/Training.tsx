@@ -15,9 +15,9 @@ import { Testimonials } from "../components/Testimonials";
 
 const courses = [
   {
-    id: "drone-mapping",
-    title: "Drone Mapping Training",
-    description: "Introduce local regulation requirements and safety operation procedures including: flight checklist, daily maintenance.",
+    id: "gnss",
+    title: "GNSS Surveying Course",
+    description: "A comprehensive Professional GNSS surveying course  covering Static GNSS and more",
     image: safetyImage,
     rating: 4.9,
     reviews: 127,
@@ -33,8 +33,8 @@ const courses = [
     price: "$399"
   },
   {
-    id: "parameter-setting",
-    title: "Parameter Setting Recommendations",
+    id: "dronemapping",
+    title: "Drone Mapping",
     description: "Flight parameters setting recommendations to ensure efficient and effective operations.",
     image: parametersImage,
     rating: 4.7,
@@ -161,10 +161,10 @@ const Training = () => {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Online Training */}
             <Card className="relative overflow-hidden hover:shadow-lg transition-shadow bg-blue-50 border-blue-200">
-              <Badge className="absolute top-4 right-4 bg-blue-100 text-blue-700 border-blue-300">Flexible</Badge> 
+              <Badge className="absolute top-4 right-4 bg-blue-100 text-[#081748] border-blue-300">Flexible</Badge> 
               <CardContent className="p-8">
                 <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-6"> 
-                  <Monitor className="w-8 h-8 text-blue-600" />
+                  <Monitor className="w-8 h-8 text-[#081748]" />
                 </div>
                 <h3 className="text-2xl font-bold text-card-foreground mb-4">Online Training</h3>
                 <p className="text-muted-foreground mb-6">
@@ -172,25 +172,25 @@ const Training = () => {
                 </p>
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" /> 
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0" /> 
                     <span className="text-card-foreground">Self paced online courses with video lessons, digital resources and assignments</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" /> 
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0" /> 
                     <span className="text-card-foreground">Live training sessions with real time instructor support.</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" /> 
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0" /> 
                     <span className="text-card-foreground">Post training support</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" /> 
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0" /> 
                     <span className="text-card-foreground">Flexible and convenient learning platform</span>
                   </li>
                 </ul>
                 <Button 
                   variant="outline" 
-                  className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+                  className="w-full border-blue-300 text-[#081748] bg-blue-100"
                   onClick={scrollToCourses}
                   size="lg"
                 >
@@ -201,10 +201,10 @@ const Training = () => {
 
             {/* In-Person Training */}
             <Card className="relative overflow-hidden hover:shadow-lg transition-shadow bg-blue-50 border-blue-200">
-              <Badge className="absolute top-4 right-4 bg-blue-100 text-blue-700 border-blue-300">Customized</Badge> 
+              <Badge className="absolute top-4 right-4 bg-blue-100 text-blue-[#081748] border-blue-300">Customized</Badge> 
               <CardContent className="p-8">
                 <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-6">
-                  <Users className="w-8 h-8 text-blue-600" />
+                  <Users className="w-8 h-8 text-[#081748]" />
                 </div>
                 <h3 className="text-2xl font-bold text-card-foreground mb-4">In-Person Training</h3>
                 <p className="text-muted-foreground mb-6">
@@ -212,25 +212,25 @@ const Training = () => {
                 </p>
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Face-to-face interaction</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Hands-on workshops</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Networking opportunities</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Immediate feedback</span>
                   </li>
                 </ul>
                 <Button 
                   variant="outline" 
-                  className="w-full border-blue-300 text-blue-700 hover:bg-blue-100"
+                  className="w-full border-blue-300 text-[#081748] bg-blue-100"
                   onClick={scrollToCourses}
                   size="lg"
                 >
@@ -241,10 +241,10 @@ const Training = () => {
 
             {/* In-House Training */}
             <Card className="relative overflow-hidden hover:shadow-lg transition-shadow bg-blue-50 border-blue-200">
-              <Badge className="absolute top-4 right-4 bg-blue-100 text-blue-700 border-blue-300">Most Popular</Badge> 
+              <Badge className="absolute top-4 right-4 bg-blue-100 text-[#081748] border-blue-300">Most Popular</Badge> 
               <CardContent className="p-8">
                 <div className="w-16 h-16 rounded-full bg-accent/10 flex items-center justify-center mb-6">
-                  <Home className="w-8 h-8 text-blue-600" />
+                  <Home className="w-8 h-8 text-[#081748]" />
                 </div>
                 <h3 className="text-2xl font-bold text-card-foreground mb-4">Group Training/Events</h3>
                 <p className="text-muted-foreground mb-6">
@@ -252,25 +252,25 @@ const Training = () => {
                 </p>
                 <ul className="space-y-3 mb-8">
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Customized content</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Team building</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Cost-effective for groups</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <CheckCircle2 className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0"/>
+                    <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0"/>
                     <span className="text-card-foreground">Your preferred location</span>
                   </li>
                 </ul>
                 <Button 
                   variant="outline" 
-                  className="w-full border-blue-300 text-blue-700 hover:bg-blue-100" 
+                  className="w-full border-blue-300 text-[#081748] bg-blue-100" 
                   onClick={() => navigate("/contact")}
                   size="lg"
                 >
@@ -312,7 +312,7 @@ const Training = () => {
                   </div>
                   <Link 
                     to={`/course/${course.id}`}
-                    className="text-blue-600 hover:text-blue-800 font-semibold inline-block"
+                    className="text-[#081748] hover:text-blue-800 font-semibold inline-block"
                   >
                     Read More →
                   </Link>
@@ -340,7 +340,7 @@ const Training = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button 
                 size="lg" 
-                className="bg-blue-100 text-black hover:bg-blue-900 hover:text-blue-700 font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
+                className="bg-blue-100 text-black hover:bg-blue-900 hover:text-[#081748] font-semibold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-300"
                 onClick={() => navigate("/contact")}
               >
                 Contact Us

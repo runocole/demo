@@ -30,10 +30,10 @@ interface Course {
 
 const courses: Course[] = [
   {
-    id: "drone-mapping",
-    title: "Drone Mapping Training",
+    id: "gnss",
+    title: "GNSS Surveying Course",
     description: "Introduce local regulation requirements and safety operation procedures",
-    longDescription: "Comprehensive drone mapping training covering local regulation requirements and safety operation procedures including flight checklist, daily maintenance, and compliance standards. This course provides hands-on experience with the latest mapping technologies and software.",
+   longDescription: "A comprehensive course designed to equip surveyors, engineers, and GIS professionals with the full spectrum of GNSS surveying knowledge and practical skills. Participants learn GNSS fundamentals, satellite constellations , signal types, sources of error, and correction techniques. The course covers a wide range of survey methods, including Static, Rapid Static, RTK, DGPS, CORS, and PPP surveys. Learners gain hands-on experience in field operations, including base and rover setup, stakeout, area computation, and data collection. Post-processing workflows are demonstrated using Compass Solution and Trimble Business Center, enabling participants to generate accurate, reliable, and professional survey outputs. By the end of the course, learners are able to deliver high-precision results for cadastral, engineering, and GIS projects, confidently handling real-world challenges in GNSS surveying.",
     image: heroSlide2,
     rating: 4.9,
     reviews: 127,
@@ -59,7 +59,7 @@ const courses: Course[] = [
     id: "bathymetric",
     title: "Bathymetric Training",
     description: "Field and flight path planning methods, and different operational modes",
-    longDescription: "Advanced bathymetric training focusing on underwater mapping techniques, field planning, flight path optimization, and various operational modes for accurate hydrographic surveys.",
+    longDescription: " A practical bathymetric surveying course teaching depth measurement, GNSS-echosounder integration, data cleaning, and processing workflows using HYSURVEY and HYPACK for producing accurate underwater terrain models.",
     image: heroSlide3,
     rating: 4.8,
     reviews: 89,
@@ -82,10 +82,10 @@ const courses: Course[] = [
     }
   },
   {
-    id: "parameter-setting",
-    title: "Parameter Setting Recommendations",
+    id: "dronemapping",
+    title: "Drone Mapping",
     description: "Flight parameters setting recommendations for efficient operations",
-    longDescription: "Master the art of parameter optimization for various flight operations. Learn to configure settings for different environments, payloads, and mission requirements to ensure maximum efficiency and data quality.",
+    longDescription: "A professional well structured  in-depth drone mapping course covering RTK and non-RTK workflows, from mission planning and field data capture to photogrammetry processing, accuracy assessment, software integration and client-ready deliverables for Surveying and Mapping professionals.",
     image: "/assets/parameters.jpg",
     rating: 4.7,
     reviews: 94,
@@ -275,19 +275,27 @@ const CourseDetail = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
+ {/* Try with Button component and force navigation */}
+<div className="container mx-auto px-4 py-6">
+  <Button
+    variant="ghost"
+    onClick={() => {
+      // First try React Router navigation
+      navigate("/training");
       
-      {/* Back Button */}
-      <div className="container mx-auto px-4 py-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate("/training")}
-          className="flex items-center gap-2 mb-6"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to Courses
-        </Button>
-      </div>
-
+      // Fallback after a short delay if nothing happens
+      setTimeout(() => {
+        if (window.location.pathname !== "/training") {
+          window.location.href = "/training";
+        }
+      }, 100);
+    }}
+    className="flex items-center gap-2 mb-6"
+  >
+    <ArrowLeft className="w-4 h-4" />
+    Back to Courses
+  </Button>
+</div>
       {/* Course Header */}
       <section className="py-12 bg-secondary">
         <div className="container mx-auto px-4">
@@ -407,7 +415,7 @@ const CourseDetail = () => {
               </div>
 
               <form 
-                action="https://formsubmit.co/your-email@example.com" 
+                action="https://formsubmit.co/runocole@gmail.com" 
                 method="POST"
                 className="space-y-4"
               >

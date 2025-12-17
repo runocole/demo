@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import { HeroSection } from "../components/HeroSection";
@@ -8,7 +7,8 @@ import { CarouselSection } from "../components/CarouselSection";
 import { VideoSection } from "../components/VideoSection";
 import { useYouTubeVideos } from "../hooks/useYouTubeVideos";
 import CurrencyBoxes from "../components/CurrencyBoxes";
-import type { CurrencyType } from "../types/currency";
+// 👇 Import the Product type so we can use it for casting
+import type { Product, ProductCategory } from "../types/product"; 
 
 // Import everything from the data file
 import {
@@ -21,43 +21,30 @@ import {
 // Main Component
 const LandingPage: React.FC = () => {
   const { videos, loading, refreshVideos } = useYouTubeVideos();
-  const [currentCurrency, setCurrentCurrency] = useState<CurrencyType>('USD');
-  const [exchangeRate, setExchangeRate] = useState<number>(1500);
 
-  // Fetch exchange rate
-  useEffect(() => {
-    const fetchExchangeRate = async () => {
-      try {
-        // Replace with your actual API endpoint
-        const response = await fetch('/api/exchange-rate');
-        const data = await response.json();
-        setExchangeRate(data.rate);
-      } catch (error) {
-        console.error('Error fetching exchange rate:', error);
-        // Fallback rate
-        setExchangeRate(1500);
-      }
-    };
+  // 👇 FIX: We cast the result 'as Product[]' to satisfy strict TypeScript checks
+  const accessoriesWithStock = ACCESSORIES.map(item => ({
+    ...item,
+    id: String(item.id), 
+    inStock: true,
+    specifications: [],
+    // Ensure category exists, or provide a default fallback
+    category: (item.category || "Accessories") as ProductCategory 
+  })) as Product[]; // 👈 THIS IS THE KEY FIX
 
-    fetchExchangeRate();
-    
-    // Optional: Refresh rate every hour
-    const interval = setInterval(fetchExchangeRate, 3600000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleCurrencyChange = (currency: CurrencyType) => {
-    setCurrentCurrency(currency);
-  };
+  const equipmentWithStock = FEATURED_EQUIPMENT.map(item => ({
+    ...item,
+    id: String(item.id),
+    inStock: true,
+    specifications: [],
+    // Ensure category exists, or provide a default fallback
+    category: (item.category || "Equipment") as ProductCategory
+  })) as Product[]; // 👈 THIS IS THE KEY FIX
 
   return (
     <div className="min-h-screen bg-white">
-      {/* CURRENCY BOXES - CENTER OF PAGE */}
-      <CurrencyBoxes
-        currentCurrency={currentCurrency}
-        exchangeRate={exchangeRate}
-        onCurrencyChange={handleCurrencyChange}
-      />
+      {/* CurrencyBoxes is now self-contained */}
+      <CurrencyBoxes />
 
       {/* HEADER WITH STAFF LOGIN */}
       <div className="relative">
@@ -74,14 +61,6 @@ const LandingPage: React.FC = () => {
         videoUrl={ABOUT_CONTENT.videoUrl}
       />
 
-      {/* YOUTUBE CHANNEL SECTION */}
-      <YouTubeSection 
-        videos={videos}
-        loading={loading}
-        onRefresh={refreshVideos}
-        channelUrl="https://youtube.com/channel/UCoTVchJ_pVHYhb-MFOj-eQQ"
-      />
-
       {/* ACCESSORIES SECTION */}
       <div className="container mx-auto px-6">
         <div className="h-0.5 bg-gray-400 my-16 w-full"></div>
@@ -89,7 +68,7 @@ const LandingPage: React.FC = () => {
 
       <CarouselSection 
         title="Accessories"
-        items={ACCESSORIES}
+        items={accessoriesWithStock} 
         buttonText="Browse All Accessories"
         showCategory={true}
       />
@@ -97,8 +76,16 @@ const LandingPage: React.FC = () => {
       {/* EQUIPMENT SECTION */}
       <CarouselSection 
         title="Equipments"
-        items={FEATURED_EQUIPMENT}
+        items={equipmentWithStock}
         buttonText="View All Equipment"
+      />
+       
+       {/* YOUTUBE CHANNEL SECTION */}
+      <YouTubeSection 
+        videos={videos}
+        loading={loading}
+        onRefresh={refreshVideos}
+        channelUrl="https://youtube.com/channel/UCoTVchJ_pVHYhb-MFOj-eQQ"
       />
 
       {/* FULL WIDTH VIDEO SECTION */}

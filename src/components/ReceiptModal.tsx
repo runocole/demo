@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/
 import { Button } from "../components/ui/button";
 import { Separator } from "../components/ui/separator";
 import type { CartItem, CustomerInfo } from "../types/product";
-import { CheckCircle, Download } from "lucide-react";
+import { CheckCircle, Download, MessageCircle } from "lucide-react";
 
 interface ReceiptModalProps {
   open: boolean;
@@ -10,9 +10,17 @@ interface ReceiptModalProps {
   cart: CartItem[];
   customerInfo: CustomerInfo;
   orderNumber: string;
+  onWhatsAppRedirect?: () => void; // Add this optional prop
 }
 
-export const ReceiptModal = ({ open, onClose, cart, customerInfo, orderNumber }: ReceiptModalProps) => {
+export const ReceiptModal = ({ 
+  open, 
+  onClose, 
+  cart, 
+  customerInfo, 
+  orderNumber,
+  onWhatsAppRedirect 
+}: ReceiptModalProps) => {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = subtotal * 0.08;
   const total = subtotal + tax;
@@ -26,6 +34,16 @@ export const ReceiptModal = ({ open, onClose, cart, customerInfo, orderNumber }:
     window.print();
   };
 
+  const handleWhatsAppClick = () => {
+    if (onWhatsAppRedirect) {
+      onWhatsAppRedirect();
+    }
+    // Close the modal after a delay
+    setTimeout(() => {
+      onClose();
+    }, 500);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-2xl bg-[#081748] border-border max-h-[90vh] overflow-y-auto">
@@ -36,7 +54,12 @@ export const ReceiptModal = ({ open, onClose, cart, customerInfo, orderNumber }:
             </div>
             <div>
               <DialogTitle className="text-2xl">Order Confirmed!</DialogTitle>
-              <p className="text-sm text-muted-foreground mt-1">Thank you for your purchase</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {onWhatsAppRedirect 
+                  ? "Review your receipt and complete payment via WhatsApp" 
+                  : "Thank you for your purchase"
+                }
+              </p>
             </div>
           </div>
         </DialogHeader>
@@ -121,15 +144,53 @@ export const ReceiptModal = ({ open, onClose, cart, customerInfo, orderNumber }:
             </div>
           </div>
 
+          {/* WhatsApp Notice */}
+          {onWhatsAppRedirect && (
+            <div className="p-4 bg-green-900/20 border border-green-800 rounded-lg">
+              <div className="flex items-start gap-3">
+                <MessageCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-green-300">Complete Payment via WhatsApp</h4>
+                  <p className="text-sm text-gray-300 mt-1">
+                    You'll be redirected to WhatsApp automatically in a few seconds to complete your payment.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
-          <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={handlePrint} className="flex-1 gap-2">
-              <Download className="w-4 h-4" />
-              Print Receipt
-            </Button>
-            <Button onClick={onClose} className="flex-1">
-              Continue Shopping
-            </Button>
+          <div className="flex flex-col gap-3 pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <Button variant="outline" onClick={handlePrint} className="gap-2">
+                <Download className="w-4 h-4" />
+                Print Receipt
+              </Button>
+              
+              {onWhatsAppRedirect ? (
+                <Button 
+                  onClick={handleWhatsAppClick} 
+                  className="gap-2 bg-green-600 hover:bg-green-700"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Complete via WhatsApp Now
+                </Button>
+              ) : (
+                <Button onClick={onClose} className="flex-1">
+                  Continue Shopping
+                </Button>
+              )}
+            </div>
+            
+            {onWhatsAppRedirect && (
+              <Button 
+                onClick={onClose} 
+                variant="ghost"
+                className="mt-2"
+              >
+                Continue Shopping (Close Receipt)
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>

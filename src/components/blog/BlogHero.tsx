@@ -1,45 +1,93 @@
-import { Sparkles } from 'lucide-react';
+// components/blog/BlogHero.tsx
+import { Link } from 'react-router-dom';
+import { Calendar, Clock, User, ArrowRight } from 'lucide-react';
+import { Button } from '../ui/button';
+import type { BlogPost } from '../../types/blog';
 
-export function BlogHero() {
-  return (
-    <section className="relative overflow-hidden bg-gradient-hero py-24 lg:py-32">
-      {/* Background Elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-1/2 left-1/4 h-[600px] w-[600px] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute -bottom-1/2 right-1/4 h-[500px] w-[500px] rounded-full bg-accent/5 blur-3xl" />
-      </div>
+interface BlogHeroProps {
+  featuredPost?: BlogPost | null;
+}
 
-      {/* Grid Pattern */}
-      <div 
-        className="absolute inset-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `linear-gradient(hsl(var(--primary)) 1px, transparent 1px),
-                           linear-gradient(90deg, hsl(var(--primary)) 1px, transparent 1px)`,
-          backgroundSize: '50px 50px'
-        }}
-      />
-
-      <div className="container relative z-10">
-        <div className="mx-auto max-w-3xl text-center">
-          {/* Badge */}
-          <div className="mb-6 inline-flex animate-fade-up items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-medium text-primary backdrop-blur-sm">
-            <Sparkles className="h-4 w-4" />
-            Fresh Insights Weekly
-          </div>
-
-          {/* Title */}
-          <h1 className="animate-fade-up font-display text-4xl font-bold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-6xl" style={{ animationDelay: '100ms' }}>
-            Discover Ideas That
-            <span className="block text-gradient">Inspire & Transform</span>
+export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
+  if (!featuredPost) {
+    return (
+      <section className="container mx-auto py-12 lg:py-20">
+        <div className="text-center">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+            Welcome to Our Blog
           </h1>
-
-          {/* Subtitle */}
-          <p className="mx-auto mt-6 max-w-xl animate-fade-up text-lg text-muted-foreground" style={{ animationDelay: '200ms' }}>
-            Explore thoughtful articles on design, technology, and creativity. 
-            Updated weekly with fresh perspectives and insights.
+          <p className="text-xl text-blue-300 mb-8 max-w-3xl mx-auto">
+            Discover insights, tutorials, and stories from our team.
           </p>
+        </div>
+      </section>
+    );
+  }
+
+  const readTime = Math.ceil(featuredPost.content.trim().split(/\s+/).length / 200);
+
+  return (
+    <section className="container mx-auto py-12 lg:py-20">
+      <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <div className="space-y-6">
+          <div>
+            <span className="inline-block px-3 py-1 text-sm font-medium rounded-full bg-blue-800 text-blue-200 mb-4">
+              Featured
+            </span>
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4">
+              {featuredPost.title}
+            </h1>
+            <p className="text-xl text-blue-300 mb-6">
+              {featuredPost.excerpt}
+            </p>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4 text-sm text-blue-400">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              <span>{featuredPost.author}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {new Date(featuredPost.publishDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4" />
+              <span>{readTime} min read</span>
+            </div>
+          </div>
+          
+          <div className="flex flex-wrap gap-4">
+            <Link to={`/blog/${featuredPost.slug}`}>
+              <Button className="gap-2">
+                Read Article
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Button variant="outline" className="border-blue-700 text-blue-300 hover:bg-blue-800">
+              View All Articles
+            </Button>
+          </div>
+        </div>
+        
+        <div className="relative">
+          <div className="aspect-[4/3] rounded-2xl overflow-hidden border border-blue-800">
+            <img
+              src={featuredPost.featuredImage}
+              alt={featuredPost.title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-600 rounded-2xl rotate-12 opacity-20"></div>
+          <div className="absolute -top-4 -left-4 w-16 h-16 bg-blue-400 rounded-full opacity-10"></div>
         </div>
       </div>
     </section>
   );
-}
+};

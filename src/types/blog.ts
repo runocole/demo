@@ -1,9 +1,10 @@
+// types/blog.ts
 export interface BlogPost {
   id: string;
   title: string;
   content: string;
   excerpt: string;
-  featuredImage: string;
+  featuredImage?: string; 
   publishDate: string;
   author: string;
   tags: string[];
@@ -24,7 +25,7 @@ export interface BlogPostInput {
   title: string;
   content: string;
   excerpt: string;
-  featuredImage: string;
+  featuredImage?: string; 
   publishDate: string;
   author: string;
   tags: string[];

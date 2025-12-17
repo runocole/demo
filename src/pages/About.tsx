@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -21,6 +21,13 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import aboutHero from "../assets/about-hero.jpg";
 import ImageCarousel from "../components/ImageCarousel";
+
+// Import your images
+import csr1 from "../assets/about-hero.jpg";
+import csr2 from "../assets/arrival1.jpg";
+import csr3 from "../assets/arrival2.jpg";
+import csr4 from "../assets/arrival3.jpg";
+import csr5 from "../assets/auth-hero.jpg";
 
 const About: React.FC = () => {
   const navigate = useNavigate();
@@ -57,6 +64,111 @@ const About: React.FC = () => {
       description: "Our consultants are pulling it all together to provide you with a turnkey drone program.",
     },
   ];
+
+  const HeroSlider: React.FC = () => {
+    const [currentSlide, setCurrentSlide] = useState<number>(0);
+    
+    
+    const slides = [
+      {
+        image: csr1, 
+        title: "Building Sustainable Communities",
+        description: "Our team volunteering at local education initiatives"
+      },
+      {
+        image: csr2, 
+        title: "Environmental Conservation",
+        description: "Participating in reforestation programs"
+      },
+      {
+        image: csr3, 
+        title: "Education Outreach",
+        description: "Training the next generation of surveyors"
+      },
+      {
+        image: csr4, 
+        title: "Community Support",
+        description: "Providing pro-bono surveying services"
+      },
+      {
+        image: csr5, 
+        title: "Technology Training",
+        description: "Equipping youth with modern skills"
+      }
+    ];
+    
+   
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+      }, 5000);
+      
+      return () => clearInterval(interval);
+    }, [slides.length]);
+    
+    const nextSlide = (): void => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    };
+    
+    const prevSlide = (): void => {
+      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+    };
+    
+    return (
+      <>
+        <div className="w-full h-[400px] relative">
+          <img
+            src={slides[currentSlide].image}
+            alt={slides[currentSlide].title}
+            className="w-full h-full object-cover transition-opacity duration-500"
+          />
+          
+          {/* Slider Navigation Dots */}
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+            {slides.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentSlide(index)}
+                className={`w-3 h-3 rounded-full transition-all ${currentSlide === index ? 'bg-white w-6' : 'bg-white/50'}`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            ))}
+          </div>
+          
+          {/* Image Caption */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+            <h3 className="text-white text-xl font-bold mb-2">
+              {slides[currentSlide].title}
+            </h3>
+            <p className="text-white/90 text-sm">
+              {slides[currentSlide].description}
+            </p>
+          </div>
+        </div>
+        
+        {/* Navigation Buttons */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
+          aria-label="Previous slide"
+        >
+          <ChevronRight className="w-6 h-6 text-white rotate-180" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="w-6 h-6 text-white" />
+        </button>
+        
+        {/* Slide Counter */}
+        <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
+          {currentSlide + 1} / {slides.length}
+        </div>
+      </>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-blue-100">
@@ -122,60 +234,61 @@ const About: React.FC = () => {
           </motion.div>
         </div>
       </section>
-{/* MAIN HEADING SECTION */}
-<section className="py-16 bg-blue-100">
-  <div className="container mx-auto px-6">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-    >
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-        Geospatial Solutions Provider & Technology Partner
-      </h2>
-      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
-        <p>
-          GeossoTech is the premier geospatial equipment and solutions provider. Our team brings extensive expertise in surveying technology and geospatial data applications. As an authorized distributor of leading geospatial brands, we deliver cutting-edge innovations in surveying instruments, GNSS systems, and geospatial software, tailored to meet the evolving needs of surveyors and allied professionals. We possess comprehensive knowledge across the entire geospatial spectrum - from hardware platforms and sensors to software solutions and system integration.
-        </p>
-        <p>
-          Whether you're establishing your surveying practice, expanding your operational capabilities, or seeking more efficient workflows to manage your geospatial projects; we are your trusted partner for equipment, technology, service and support. Our experts guide you through every stage - from needs assessment and equipment selection to training implementation and maintenance planning. We are committed to exceeding client expectations and providing the insights and support necessary to ensure our clients' success.
-        </p>
-      </div>
-    </motion.div>
-  </div>
-</section>
 
-{/* MISSION STATEMENT */}
-<section className="py-16 bg-blue-100">
-  <div className="container mx-auto px-6">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-    >
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-30">
-        To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
-      </h2>
-      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-5">
-        <p>
-          As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, including total stations, GNSS receivers, laser scanners, and UAV systems. From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
-        </p>
-      </div>
+      {/* MAIN HEADING SECTION */}
+      <section className="py-16 bg-blue-100">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+              Geospatial Solutions Provider & Technology Partner
+            </h2>
+            <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
+              <p>
+                GeossoTech is the premier geospatial equipment and solutions provider. Our team brings extensive expertise in surveying technology and geospatial data applications. As an authorized distributor of leading geospatial brands, we deliver cutting-edge innovations in surveying instruments, GNSS systems, and geospatial software, tailored to meet the evolving needs of surveyors and allied professionals. We possess comprehensive knowledge across the entire geospatial spectrum - from hardware platforms and sensors to software solutions and system integration.
+              </p>
+              <p>
+                Whether you're establishing your surveying practice, expanding your operational capabilities, or seeking more efficient workflows to manage your geospatial projects; we are your trusted partner for equipment, technology, service and support. Our experts guide you through every stage - from needs assessment and equipment selection to training implementation and maintenance planning. We are committed to exceeding client expectations and providing the insights and support necessary to ensure our clients' success.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
-      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-5 mb-4">
-        Geospatial Services for Professional Practice
-      </h3>
-      <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-        GeossoTech, a premier geospatial solutions company, delivers advanced surveying and mapping services across diverse sectors. Leveraging technological innovation, we provide significant time and cost-saving benefits through precise data collection and analysis to industries including Construction, Infrastructure Development, Land Surveying, Mining, and Environmental Management. Our expertise spans traditional surveying methods to modern geospatial technologies.
-      </p>
+      {/* MISSION STATEMENT */}
+      <section className="py-16 bg-blue-100">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-30">
+              To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
+            </h2>
+            <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-5">
+              <p>
+                As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, including total stations, GNSS receivers, laser scanners, and UAV systems. From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
+              </p>
+            </div>
 
-      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
-        Our Mission
-      </h3>
-      <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-        GeossoTech's mission is to empower surveyors and geospatial professionals with innovative technology solutions that streamline workflows, enhance accuracy, and drive efficiency in solving complex spatial challenges for their clients. We are dedicated to advancing the geospatial industry through cutting-edge equipment, comprehensive support, and expert guidance.
-      </p>
-    </motion.div>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-5 mb-4">
+              Geospatial Services for Professional Practice
+            </h3>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+              GeossoTech, a premier geospatial solutions company, delivers advanced surveying and mapping services across diverse sectors. Leveraging technological innovation, we provide significant time and cost-saving benefits through precise data collection and analysis to industries including Construction, Infrastructure Development, Land Surveying, Mining, and Environmental Management. Our expertise spans traditional surveying methods to modern geospatial technologies.
+            </p>
+
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
+              Our Mission
+            </h3>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
+              GeossoTech's mission is to empower surveyors and geospatial professionals with innovative technology solutions that streamline workflows, enhance accuracy, and drive efficiency in solving complex spatial challenges for their clients. We are dedicated to advancing the geospatial industry through cutting-edge equipment, comprehensive support, and expert guidance.
+            </p>
+          </motion.div>
 
           {/* IMAGE CAROUSEL */}
           <motion.div
@@ -188,92 +301,128 @@ const About: React.FC = () => {
           </motion.div>
         </div>
       </section>
- {/* CSR HIGHLIGHT SECTION */}
-<section className="py-16 bg-gradient-to-r from-blue-100 to-blue-100">
-  <div className="container mx-auto px-6">
-    <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-      {/* Left side - Empty for balance */}
-      <div className="lg:w-2/5"></div>
-      
-      {/* Right side - CSR Highlight Card */}
-      <motion.div
-        initial={{ opacity: 0, x: 50 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 0.6, duration: 0.8 }}
-        className="lg:w-3/5"
-      >
-        <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
-          <CardContent className="p-8">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                <Heart className="w-6 h-6 text-blue-600" />
-              </div>
-              <div>
-                <h3 className="text-2xl font-bold text-black">Community Impact</h3>
-                <p className="text-blue-600">Making a Difference Together</p>
-              </div>
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex items-start gap-3">
-                <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">Education & Training</h4>
-                  <p className="text-gray-700 text-sm">Scholarships and technical programs for aspiring surveyors</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">Community Development</h4>
-                  <p className="text-gray-700 text-sm">Pro-bono surveying services for local projects</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                <div>
-                  <h4 className="font-semibold text-gray-900">Environmental Care</h4>
-                  <p className="text-gray-700 text-sm">Green technologies and reforestation initiatives</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <Button 
-                className="bg-blue-600 hover:bg-blue-700 text-white w-full"
-                onClick={() => navigate('/contact')}
-              >
-                Learn About Our CSR Programs
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </div>
-  </div>
-</section>
 
-     {/* WHY CHOOSE US SECTION */}
-<section className="py-20 bg-blue-100">
-  <div className="container mx-auto px-6">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.5 }}
-    >
-      <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
-        Why choose GeossoTech?
-      </h2>
-      <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-        GeossoTech is a leading geospatial solutions provider and technology partner, serving as an innovative center of expertise that offers cutting-edge technology (sales and rentals), comprehensive training, professional consultation, and reliable service - all in one place. Our team of geospatial experts has been confidently supporting surveying professionals and businesses with unmatched technical knowledge and personalized service. At GeossoTech, we cultivate a customer-focused, expert approach through a culture of excellence, collaboration, and continuous improvement, which is directly reflected in the quality of service we provide to our clients. Choose GeossoTech, recognized as a trusted partner in geospatial technology solutions.
-      </p>
-           
-    {/* HORIZONTAL DIVIDER LINE */}
-      <div className="container mx-auto px-6">
-        <div className="h-0.5 bg-gray-400 my-16 w-full"></div>
-      </div>
+      {/* CSR HIGHLIGHT SECTION WITH HERO SLIDER */}
+      <section className="py-16 bg-gradient-to-r from-blue-100 to-blue-100">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+            {/* Left side - Hero Photo Slider */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              className="lg:w-1/2"
+            >
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl hover:shadow-3xl transition-all duration-500">
+                {/* Custom Hero Slider Component */}
+                <HeroSlider />
+              </div>
+              
+              {/* Optional: Multiple small thumbnails below main slider */}
+              <div className="flex gap-2 mt-4">
+                <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-blue-200">
+                  <img
+                    src={csr1}
+                    alt="Community activity 1"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-transparent hover:border-blue-200">
+                  <img
+                    src={csr2}
+                    alt="Community activity 2"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-transparent hover:border-blue-200">
+                  <img
+                    src={csr3}
+                    alt="Community activity 3"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            </motion.div>
+            
+            {/* Right side - CSR Highlight Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              className="lg:w-2/5"
+            >
+              <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
+                <CardContent className="p-8">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Heart className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-black">Community Impact</h3>
+                      <p className="text-blue-600">Making a Difference Together</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Education & Training</h4>
+                        <p className="text-gray-700 text-sm">Scholarships and technical programs for aspiring surveyors</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Community Development</h4>
+                        <p className="text-gray-700 text-sm">Pro-bono surveying services for local projects</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-start gap-3">
+                      <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Environmental Care</h4>
+                        <p className="text-gray-700 text-sm">Green technologies and reforestation initiatives</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <Button 
+                      className="bg-blue-600 hover:bg-blue-700 text-white w-full"
+                      onClick={() => navigate('/contact')}
+                    >
+                      Learn About Our CSR Programs
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* WHY CHOOSE US SECTION */}
+      <section className="py-20 bg-blue-100">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-6">
+              Why choose GeossoTech?
+            </h2>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
+              GeossoTech is a leading geospatial solutions provider and technology partner, serving as an innovative center of expertise that offers cutting-edge technology (sales and rentals), comprehensive training, professional consultation, and reliable service - all in one place. Our team of geospatial experts has been confidently supporting surveying professionals and businesses with unmatched technical knowledge and personalized service. At GeossoTech, we cultivate a customer-focused, expert approach through a culture of excellence, collaboration, and continuous improvement, which is directly reflected in the quality of service we provide to our clients. Choose GeossoTech, recognized as a trusted partner in geospatial technology solutions.
+            </p>
+                 
+          {/* HORIZONTAL DIVIDER LINE */}
+            <div className="container mx-auto px-6">
+              <div className="h-0.5 bg-gray-400 my-16 w-full"></div>
+            </div>
 
             {/* FEATURE CARDS GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">

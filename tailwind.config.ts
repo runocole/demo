@@ -47,6 +47,10 @@ export default {
       },
       fontFamily: {
         sans: ["Inter", "system-ui", "sans-serif"],
+        oswald: ["Oswald", "sans-serif"],
+        roboto: ["Roboto", "sans-serif"],
+        bebas: ["Bebas Neue", "sans-serif"],
+        montserrat: ["Montserrat", "sans-serif"],
       },
       keyframes: {
         "accordion-down": {

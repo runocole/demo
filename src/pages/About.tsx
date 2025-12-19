@@ -23,78 +23,72 @@ import aboutHero from "../assets/about-hero.jpg";
 import ImageCarousel from "../components/ImageCarousel";
 
 // Import your images
-import csr1 from "../assets/about-hero.jpg";
-import csr2 from "../assets/arrival1.jpg";
-import csr3 from "../assets/arrival2.jpg";
-import csr4 from "../assets/arrival3.jpg";
-import csr5 from "../assets/auth-hero.jpg";
+import csr1 from "../assets/csr1.jpg";
+import csr2 from "../assets/csr2.jpg";
+import csr3 from "../assets/csr3.jpg";
+import csr4 from "../assets/csr4.jpg";
+
 
 const About: React.FC = () => {
   const navigate = useNavigate();
 
-  const features = [
+ const features = [
     {
       icon: Package,
-      title: "Hardware & Software Sales",
-      description: "Our experts leverage over a decade of experience in the field to equip you with the perfect mission-ready solution",
-    },
-    {
-      icon: Cog,
-      title: "Mission-Critical Services",
-      description: "Our drone experts provide operational fleet support services.",
-    },
-    {
-      icon: HeadphonesIcon,
-      title: "Responsive Support",
-      description: "You're supported by experienced drone and robotics professionals whose sole job is to keep you operational 24/7",
+      title: "Equipment Sales",
+      description: "We supply high-quality surveying and geospatial hardware and software from leading global brands, helping professionals get tools that deliver reliable field results.",
     },
     {
       icon: Wrench,
-      title: "Repairs & Maintenance",
-      description: "We provide drone repairs and technical support to our customers.",
+      title: "Equipment Calibration",
+      description: "Ensure your surveying instruments remain accurate and reliable with expert calibration services tailored to industry standards.",
     },
     {
       icon: CalendarRange,
       title: "Equipment Rental",
-      description: "We offer drone rental so you can avoid capital investment and get the equipment you need on rental basis according to your project requirement.",
+      description: "Flexible rental options let you access advanced equipment for your project without making capital investments.",
+    },
+    {
+      icon: HeadphonesIcon,
+      title: "After-Sales Support",
+      description: "Comprehensive support after purchase, backed by extensive field experience to keep your tools operational and effective.",
+    },
+    {
+      icon: Cog,
+      title: "Tutorials & Training",
+      description: "Practical training and easy-to-follow tutorials help you master your equipment and get more value from your technology.",
     },
     {
       icon: FileText,
-      title: "Program Development",
-      description: "Our consultants are pulling it all together to provide you with a turnkey drone program.",
+      title: "CORS Network Services",
+      description: "Access real-time GNSS correction services via our nationwide CORS network — enabling high-accuracy positioning across Nigeria.",
     },
   ];
 
   const HeroSlider: React.FC = () => {
     const [currentSlide, setCurrentSlide] = useState<number>(0);
     
-    
-    const slides = [
-      {
-        image: csr1, 
-        title: "Building Sustainable Communities",
-        description: "Our team volunteering at local education initiatives"
-      },
-      {
-        image: csr2, 
-        title: "Environmental Conservation",
-        description: "Participating in reforestation programs"
-      },
-      {
-        image: csr3, 
-        title: "Education Outreach",
-        description: "Training the next generation of surveyors"
-      },
-      {
+ const slides = [
+  {
+    image: csr1,
+    title: "Pad-A-Girl Initiative in collaboration with JCI",
+    description: "Empowering girls through education and menstrual health advocacy."
+  },
+  {
+    image: csr2,
+    title: "Educational Outreach",
+    description: "Protecting ecosystems with community-led reforestation efforts."
+  },
+  {
+    image: csr3,
+    title: "Orphanage Visit",
+    description: "Bringing joy and support to orphaned children through visitation."
+  },
+ {
         image: csr4, 
         title: "Community Support",
-        description: "Providing pro-bono surveying services"
+        description: "Water is Life Project in Collaboration with JCI"
       },
-      {
-        image: csr5, 
-        title: "Technology Training",
-        description: "Equipping youth with modern skills"
-      }
     ];
     
    
@@ -175,14 +169,17 @@ const About: React.FC = () => {
       {/* HEADER */}
       <Header />
 
-      {/* HERO SECTION WITH BACKGROUND PHOTO */}
-      <section
-        className="relative w-full h-[50vh] flex items-center justify-center bg-cover bg-center"
-        style={{
-          backgroundImage: `url(${aboutHero})`,
-        }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/60" />
+      {/* HERO SECTION WITH BACKGROUND PHOTO - FIXED VERSION */}
+   <section className="relative w-full h-[50vh] flex items-center justify-center overflow-hidden">
+  {/* Background image container */}
+  <div className="absolute inset-0 flex items-center justify-center">
+    <img
+      src={aboutHero}
+      alt=""
+      className="w-auto h-auto min-w-full min-h-full object-contain"
+    />
+  </div>
+  
 
         {/* HERO CONTENT - LEFT ALIGNED */}
         <div className="relative z-10 w-full h-full flex items-center">
@@ -192,10 +189,10 @@ const About: React.FC = () => {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-4 max-w-2xl ml-0 md:ml-20"
             >
-              <h1 className="text-4xl md:text-5xl font-bold text-white leading-tight mt-45">
+              <h1 className="text-4xl md:text-5xl font-bold text-black leading-tight mt-45">
                 About
               </h1>
-              <p className="text-lg md:text-xl text-white/95 font-medium leading-relaxed">
+              <p className="text-lg md:text-xl text-black/95 font-medium leading-relaxed">
                 Leave us a little info, and we'll be in touch.
               </p>
 
@@ -235,72 +232,74 @@ const About: React.FC = () => {
         </div>
       </section>
 
-      {/* MAIN HEADING SECTION */}
-      <section className="py-16 bg-blue-100">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              Geospatial Solutions Provider & Technology Partner
-            </h2>
-            <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
-              <p>
-                GeossoTech is the premier geospatial equipment and solutions provider. Our team brings extensive expertise in surveying technology and geospatial data applications. As an authorized distributor of leading geospatial brands, we deliver cutting-edge innovations in surveying instruments, GNSS systems, and geospatial software, tailored to meet the evolving needs of surveyors and allied professionals. We possess comprehensive knowledge across the entire geospatial spectrum - from hardware platforms and sensors to software solutions and system integration.
-              </p>
-              <p>
-                Whether you're establishing your surveying practice, expanding your operational capabilities, or seeking more efficient workflows to manage your geospatial projects; we are your trusted partner for equipment, technology, service and support. Our experts guide you through every stage - from needs assessment and equipment selection to training implementation and maintenance planning. We are committed to exceeding client expectations and providing the insights and support necessary to ensure our clients' success.
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+{/* MAIN HEADING SECTION */}
+<section className="py-16 bg-blue-100">
+  <div className="container mx-auto px-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.2 }}
+    >
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+        Geospatial Solutions Provider & Technology Partner
+      </h2>
+      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
+        <p>
+         GeossoTech provides reliable geospatial equipment, services, and support for surveyors and professionals across surveying, engineering, construction, agriculture, energy, infrastructure, hydrographic operations, and government projects.
+        </p>
+        <p>
+          We supply and support GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software. Beyond supply, we calibrate and repair equipment, offer training, equipment rental, scanning services, and project support.
+        </p>
+        <p>
+          GeossoTech works as a technology partner—helping clients choose the right tools, deploy them correctly, and keep them working in the field.
+        </p>
+      </div>
+    </motion.div>
+  </div>
+</section>
 
-      {/* MISSION STATEMENT */}
-      <section className="py-16 bg-blue-100">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-30">
-              To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
-            </h2>
-            <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-5">
-              <p>
-                As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, including total stations, GNSS receivers, laser scanners, and UAV systems. From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
-              </p>
-            </div>
+{/* MISSION STATEMENT */}
+<section className="py-16 bg-blue-100">
+  <div className="container mx-auto px-6">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3 }}
+    >
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-30">
+        To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
+      </h2>
+      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-5">
+        <p>
+        As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software.  From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
+        </p>
+      </div>
 
-            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-5 mb-4">
-              Geospatial Services for Professional Practice
-            </h3>
-            <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-              GeossoTech, a premier geospatial solutions company, delivers advanced surveying and mapping services across diverse sectors. Leveraging technological innovation, we provide significant time and cost-saving benefits through precise data collection and analysis to industries including Construction, Infrastructure Development, Land Surveying, Mining, and Environmental Management. Our expertise spans traditional surveying methods to modern geospatial technologies.
-            </p>
+      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-5 mb-4">
+        Geospatial Services for Professional Practice
+      </h3>
+      <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+       GeossoTech works as a technology partner, helping clients choose the right tools, deploy them correctly, and keep them working in the field.
+      </p>
+      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
+        Our Mission
+      </h3>
+      <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
+        To solve our customers' everyday challenges by being reliable, knowledgeable, and consistent in the solutions and support we provide.
+      </p>
+    </motion.div>
 
-            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
-              Our Mission
-            </h3>
-            <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-              GeossoTech's mission is to empower surveyors and geospatial professionals with innovative technology solutions that streamline workflows, enhance accuracy, and drive efficiency in solving complex spatial challenges for their clients. We are dedicated to advancing the geospatial industry through cutting-edge equipment, comprehensive support, and expert guidance.
-            </p>
-          </motion.div>
-
-          {/* IMAGE CAROUSEL */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="mt-16"
-          >
-            <ImageCarousel />
-          </motion.div>
-        </div>
-      </section>
+    {/* IMAGE CAROUSEL */}
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.4 }}
+      className="mt-16"
+    >
+      <ImageCarousel />
+    </motion.div>
+  </div>
+</section>
 
       {/* CSR HIGHLIGHT SECTION WITH HERO SLIDER */}
       <section className="py-16 bg-gradient-to-r from-blue-100 to-blue-100">
@@ -327,13 +326,14 @@ const About: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-transparent hover:border-blue-200">
+                 <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-transparent hover:border-blue-200">
                   <img
                     src={csr2}
                     alt="Community activity 2"
                     className="w-full h-full object-cover"
                   />
                 </div>
+
                 <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-transparent hover:border-blue-200">
                   <img
                     src={csr3}
@@ -341,65 +341,74 @@ const About: React.FC = () => {
                     className="w-full h-full object-cover"
                   />
                 </div>
+                <div className="flex-1 h-20 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity border-2 border-transparent hover:border-blue-200">
+                  <img
+                    src={csr4}
+                    alt="Community activity 4"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
               </div>
             </motion.div>
             
-            {/* Right side - CSR Highlight Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="lg:w-2/5"
-            >
-              <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
-                <CardContent className="p-8">
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                      <Heart className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-black">Community Impact</h3>
-                      <p className="text-blue-600">Making a Difference Together</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <div className="flex items-start gap-3">
-                      <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Education & Training</h4>
-                        <p className="text-gray-700 text-sm">Scholarships and technical programs for aspiring surveyors</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Community Development</h4>
-                        <p className="text-gray-700 text-sm">Pro-bono surveying services for local projects</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-                      <div>
-                        <h4 className="font-semibold text-gray-900">Environmental Care</h4>
-                        <p className="text-gray-700 text-sm">Green technologies and reforestation initiatives</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-6 pt-6 border-t border-gray-200">
-                    <Button 
-                      className="bg-blue-600 hover:bg-blue-700 text-white w-full"
-                      onClick={() => navigate('/contact')}
-                    >
-                      Learn About Our CSR Programs
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
+           {/* Right side - CSR Highlight Card */}
+<motion.div
+  initial={{ opacity: 0, x: 50 }}
+  animate={{ opacity: 1, x: 0 }}
+  transition={{ delay: 0.6, duration: 0.8 }}
+  className="lg:w-2/5"
+>
+  <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
+    <CardContent className="p-8">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+          <Heart className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <h3 className="text-2xl font-bold text-black">Community Impact</h3>
+          <p className="text-blue-600">Creating value beyond business</p>
+        </div>
+      </div>
+
+      {/* CSR Items */}
+      <div className="space-y-5">
+        {/* Education & Training */}
+        <div className="flex items-start gap-3">
+          <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold text-gray-900">Education & Training</h4>
+            <p className="text-gray-700 text-sm">
+              Supporting future professionals through scholarships, mentorship, and hands-on technical training.
+            </p>
+          </div>
+        </div>
+
+        {/* Community Development */}
+        <div className="flex items-start gap-3">
+          <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold text-gray-900">Community Development</h4>
+            <p className="text-gray-700 text-sm">
+              Sponsoring community events and initiatives that promote growth, collaboration, and local development.
+            </p>
+          </div>
+        </div>
+
+        {/* Environmental Care */}
+        <div className="flex items-start gap-3">
+          <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+          <div>
+            <h4 className="font-semibold text-gray-900">Environmental Care</h4>
+            <p className="text-gray-700 text-sm">
+              Supporting environmental sustainability through eco-friendly practices and community-driven initiatives.
+            </p>
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</motion.div>
           </div>
         </div>
       </section>
@@ -416,8 +425,12 @@ const About: React.FC = () => {
               Why choose GeossoTech?
             </h2>
             <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-              GeossoTech is a leading geospatial solutions provider and technology partner, serving as an innovative center of expertise that offers cutting-edge technology (sales and rentals), comprehensive training, professional consultation, and reliable service - all in one place. Our team of geospatial experts has been confidently supporting surveying professionals and businesses with unmatched technical knowledge and personalized service. At GeossoTech, we cultivate a customer-focused, expert approach through a culture of excellence, collaboration, and continuous improvement, which is directly reflected in the quality of service we provide to our clients. Choose GeossoTech, recognized as a trusted partner in geospatial technology solutions.
-            </p>
+  GeossoTech is a trusted geospatial solutions provider and technology partner built to support professionals, organizations, and institutions across surveying, mapping, engineering, and allied fields. We offer a complete ecosystem of geospatial solutions, equipment sales and rentals, certified training, technical consulting, and after-sales support, delivered under one roof for efficiency and reliability.
+  <br /><br />
+  Our strength lies in deep technical expertise, hands-on industry experience, and a clear understanding of real project demands. We work closely with our clients to recommend practical, proven technologies that align with their operational goals, budgets, and environments. Beyond supplying equipment, we ensure users are properly trained, supported, and confident in deploying solutions effectively.
+  <br /><br />
+  At GeossoTech, service quality is driven by a culture of accountability, continuous improvement, and client-focused delivery. This approach has positioned us as a dependable long-term partner, trusted for accurate guidance, responsive support, and consistent value. Choosing GeossoTech means choosing a partner committed to helping you work smarter, deliver better results, and grow sustainably.
+</p>
                  
           {/* HORIZONTAL DIVIDER LINE */}
             <div className="container mx-auto px-6">

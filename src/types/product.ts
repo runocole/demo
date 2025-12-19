@@ -1,14 +1,17 @@
-export type ProductCategory = 
+// types/product.ts
+
+export type ProductCategory =
   | "GNSS Receiver"
-  | "Payloads"
-  | "Accessory"
   | "Handheld GPS"
+  | "Payloads"
+  | "Auto-steering Systems"
+  | "Accessory"
   | "Total Station"
   | "Level"
   | "Drones"
   | "EchoSounder"
   | "Laser Scanner"
-  | "Auto-steering Systems"
+  | "RTK Tablets"
   | "Other";
 
 export interface Product {
@@ -21,6 +24,10 @@ export interface Product {
   images?: string[];
   inStock: boolean;
   specifications?: string[];
+  
+  // MOBILE-OPTIMIZED PROPERTIES (Optional)
+  mobileDescription?: string; // Shorter description for mobile
+  popularOnMobile?: boolean; // Flag to prioritize on mobile
 }
 
 export interface CartItem extends Product {
@@ -28,11 +35,10 @@ export interface CartItem extends Product {
 }
 
 export interface CustomerInfo {
-  name: string;
-  state: string;
-  phone: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  phone: string;
+  country: string;
+  state: string;
 }
-
-export const ACCESSORIES = [];
-export const FEATURED_EQUIPMENT = [];

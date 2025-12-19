@@ -31,8 +31,10 @@ import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import CartPage from "./pages/CartPage";
 import { CurrencyProvider } from './context/CurrencyContext';
-import { CartProvider } from './context/CartContext'; // Add CartProvider import
+import { CartProvider } from './context/CartContext'; 
 import ProductDetailPage from "./pages/ProductDetailPage";
+import MobileNavigation from "./components/MobileNavigation"; 
+
 const queryClient = new QueryClient();
 
 // ✅ Secure route wrapper
@@ -202,6 +204,8 @@ const App = () => (
               {/* --- Fallback redirect --- */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            {/* Mobile Navigation - Shows on mobile only */}
+            <MobileNavigation />
           </BrowserRouter>
         </TooltipProvider>
       </CartProvider> {/* Close CartProvider */}

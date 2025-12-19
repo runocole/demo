@@ -1,86 +1,123 @@
-import { Users, CheckCircle2, Monitor, Home, Award, Star } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Users, CheckCircle2, Monitor, Home, Award, Star, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
+import CurrencyBoxes from "../components/CurrencyBoxes";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import heroImage from "../assets/hero-training.jpg";
+import heroImage1 from "../assets/hero-training.jpg";
+import heroImage2 from "../assets/hero-training-2.jpg";
+import heroImage3 from "../assets/mission-planning.jpg";
+import heroImage4 from "../assets/dronemapping.jpg";
 import safetyImage from "../assets/safety-training.jpg";
 import missionImage from "../assets/mission-planning.jpg";
-import parametersImage from "../assets/parameters.jpg";
+import dronemapping from "../assets/dronemapping.jpg";
 import fieldImage from "../assets/field-practice.jpg";
 import { Testimonials } from "../components/Testimonials";
+
+// Hero slides data
+const heroSlides = [
+  {
+    id: 1,
+    image: heroImage1,
+    title: "GeossoTech Academy",
+    description: "We train professionals worldwide to safely and efficiently operate in their field with comprehensive training programs",
+    position: "left"
+  },
+  {
+    id: 2,
+    image: heroImage2,
+    title: "Expert-Led Training",
+    description: "Learn from industry professionals with years of field experience",
+    position: "center"
+  },
+  {
+    id: 3,
+    image: heroImage3,
+    title: "Hands-On Experience",
+    description: "Practical training with real-world equipment and scenarios",
+    position: "right"
+  },
+  {
+    id: 4,
+    image: heroImage4,
+    title: "Certified Programs",
+    description: "Get industry-recognized certifications to advance your career",
+    position: "center"
+  }
+];
 
 const courses = [
   {
     id: "gnss",
     title: "GNSS Surveying Course",
-    description: "A comprehensive Professional GNSS surveying course  covering Static GNSS and more",
+    description: "A comprehensive course covering GNSS fundamentals, satellite constellations, and survey techniques including static, RTK, DGPS, CORS, and PPP. Participants gain hands-on experience in field data collection, stakeout, area computation, and professional post-processing using Compass Solution and Trimble Business Center, ensuring high-accuracy positioning and reliable survey outputs for Cadastral, Engineering, and GIS projects.",
     image: safetyImage,
     rating: 4.9,
     reviews: 127,
     price: "$299"
   },
   {
-    id: "bathymetric",
-    title: "Bathymetric Training",
-    description: "Field and flight path planning methods, and different operational modes.",
-    image: missionImage,
-    rating: 4.8,
-    reviews: 89,
-    price: "$399"
-  },
-  {
-    id: "dronemapping",
-    title: "Drone Mapping",
-    description: "Flight parameters setting recommendations to ensure efficient and effective operations.",
-    image: parametersImage,
-    rating: 4.7,
-    reviews: 94,
-    price: "$249"
-  },
-  {
-    id: "field-operation",
-    title: "Field Operation Practice",
-    description: "Hands-on training at the field including: automatic operations, configurations of spraying/spreading systems.",
+    id: "totalstation",
+    title: "Total Station Surveying Course",
+    description: "A complete course on Total Station surveying for precision measurement, site setup, traversing, topographic surveys, and construction layout. Learners practice workflows with Leica, FOIF and COMNAV Total Stations, focusing on accurate field data capture, error reduction, and generating professional deliverables for Cadastral, Engineering, and Construction projects.",
     image: fieldImage,
     rating: 4.9,
     reviews: 156,
     price: "$349"
   },
   {
-    id: "gis-fundamentals",
-    title: "GIS Fundamentals",
-    description: "Basic to intermediate GIS concepts and applications for spatial data analysis.",
-    image: safetyImage,
-    rating: 4.6,
-    reviews: 203,
-    price: "$199"
+    id: "dronemapping",
+    title: "Drone Mapping Course",
+    description: "This course teaches comprehensive drone mapping workflows, including mission planning, RTK and Non-RTK flights, aerial data acquisition, and photogrammetric processing. Participants create orthomosaics, 3D models, DSMs, and point clouds, integrating software such as Pix4D mapper, Drone deploy, Agisoft Metashape, and GIS software. Practical exercises and step-by-step demonstrations build expertise in surveying, construction monitoring, agriculture, and environmental mapping.",
+    image: dronemapping,
+    rating: 4.7,
+    reviews: 94,
+    price: "$249"
   },
   {
-    id: "remote-sensing",
-    title: "Remote Sensing Applications",
-    description: "Satellite imagery analysis and remote sensing techniques for environmental monitoring.",
+    id: "3dlaserscanning",
+    title: "3D Laser Scanning Course",
+    description: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Cyclone, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
     image: missionImage,
     rating: 4.8,
     reviews: 118,
     price: "$379"
   },
   {
-    id: "advanced-mapping",
-    title: "Advanced Mapping Techniques",
-    description: "Advanced cartography and spatial analysis methods for professional mapping.",
-    image: parametersImage,
+    id: "bathymetric",
+    title: "Bathymetric Survey Course",
+    description: "This course focuses on bathymetric surveying, including operation of echosounders, transducers, and GNSS-integrated systems. Learners practice depth measurement, data acquisition, calibration, tide correction, and noise filtering, and perform post-processing using HYSURVEY, AutoCAD, Global Mapper, and Surfer. Exercises enable creation of contour maps, 3D surfaces, and precise navigation-ready datasets for marine, engineering, and environmental applications.",
+    image: missionImage,
+    rating: 4.8,
+    reviews: 89,
+    price: "$399"
+  },
+  {
+    id: "autocad",
+    title: "AutoCAD Training",
+    description: "A practical course for surveyors, engineers, and designers covering 2D and 3D drafting, layer management, blocks, annotation, and professional technical drawing workflows. Participants learn to produce site plans, engineering layouts, topographic maps, and construction drawings, with exercises designed to deliver client-ready and industry-standard outputs.",
+    image: dronemapping,
     rating: 4.7,
     reviews: 76,
     price: "$329"
   },
   {
-    id: "data-analysis",
-    title: "Spatial Data Analysis",
-    description: "Statistical analysis and interpretation of spatial data for meaningful insights.",
+    id: "gis",
+    title: "GIS Training",
+    description: "A practical GIS training course teaching spatial data analysis, map creation, and geospatial workflows for surveying, environmental, and urban planning projects.",
+    image: safetyImage,
+    rating: 4.6,
+    reviews: 203,
+    price: "$199"
+  },
+  {
+    id: "engineering",
+    title: "Engineering Survey Course",
+    description: "A professional Engineering Survey course designed for Surveyors, Civil Engineers, and Infrastructure professionals, covering precision site measurements, road and topographic surveys, cross-sections, longitudinal sections, drainage mapping, contour generation, and field-to-office workflows using AutoCAD, Global Mapper, and Surfer.",
     image: fieldImage,
     rating: 4.8,
     reviews: 92,
@@ -90,6 +127,35 @@ const courses = [
 
 const Training = () => {
   const navigate = useNavigate();
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  const nextSlide = useCallback(() => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentSlide((prev) => (prev === heroSlides.length - 1 ? 0 : prev + 1));
+    setTimeout(() => setIsTransitioning(false), 500);
+  }, [isTransitioning]);
+
+  const prevSlide = useCallback(() => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentSlide((prev) => (prev === 0 ? heroSlides.length - 1 : prev - 1));
+    setTimeout(() => setIsTransitioning(false), 500);
+  }, [isTransitioning]);
+
+  const goToSlide = (index: number) => {
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+    setCurrentSlide(index);
+    setTimeout(() => setIsTransitioning(false), 500);
+  };
+
+  // Auto-rotate slides every 5 seconds
+  useEffect(() => {
+    const interval = setInterval(nextSlide, 5000);
+    return () => clearInterval(interval);
+  }, [nextSlide]);
 
   const scrollToCourses = () => {
     const coursesSection = document.getElementById('content');
@@ -98,34 +164,96 @@ const Training = () => {
     }
   };
 
+  const getTextAlignment = (position: string) => {
+    switch (position) {
+      case 'left': return 'text-left';
+      case 'center': return 'text-center';
+      case 'right': return 'text-right';
+      default: return 'text-left';
+    }
+  };
+
   return (
+    
     <div className="flex min-h-screen flex-col">
+       <CurrencyBoxes />
+
       <Header />
-      {/* Hero Section */}
-      <section className="relative h-[750px] flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
-        >
-          <div className="absolute inset-0 bg-primary/60" />
-        </div>
-        <div className="relative z-10 container mx-auto px-4 text-left">
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-8 font-montserrat tracking-tight">
-            GeossoTech Academy 
-          </h1>
-          <p className="text-xl md:text-2xl text-white max-w-2xl mx-0 mb-10 font-montserrat font-bold">
-            We train professionals worldwide to safely and efficiently operate
-            in their field with comprehensive training programs
-          </p>
-          <div className="flex justify-start">
-            <Button
-              onClick={() => navigate("/contact")}
-              size="lg"
-              className="bg-[#081748] text-white hover:bg-[#081748] font-bold text-base px-8 py-4 shadow-xl hover:shadow-2xl transition-all mt-0"
+      
+      {/* Hero Carousel Section */}
+      <section className="relative h-[750px] overflow-hidden">
+        {/* Slides Container */}
+        <div className="relative w-full h-full">
+          {heroSlides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-500 ${
+                index === currentSlide ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
             >
-              Get Started →
-            </Button>
-          </div>
+              <div 
+                className="absolute inset-0 bg-cover bg-center"
+                style={{ backgroundImage: `url(${slide.image})` }}
+              >
+                <div className="absolute inset-0 bg-primary/60" />
+              </div>
+              
+              {/* Slide Content */}
+              <div className={`relative z-10 h-full flex items-center justify-center ${getTextAlignment(slide.position)}`}>
+                <div className="container mx-auto px-4">
+                  <div className={`max-w-2xl ${slide.position === 'center' ? 'mx-auto' : slide.position === 'right' ? 'ml-auto' : 'mr-auto'}`}>
+                    <h1 className="text-4xl md:text-5xl font-bold text-white mb-8 font-montserrat tracking-tight">
+                      {slide.title}
+                    </h1>
+                    <p className="text-xl md:text-2xl text-white mb-10 font-montserrat font-bold">
+                      {slide.description}
+                    </p>
+                    <div className={slide.position === 'center' ? 'flex justify-center' : 'flex justify-start'}>
+                      <Button
+                        onClick={() => navigate("/contact")}
+                        size="lg"
+                        className="bg-[#081748] text-white hover:bg-blue-800 font-bold text-base px-8 py-4 shadow-xl hover:shadow-2xl transition-all"
+                      >
+                        Get Started →
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Arrows */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all"
+          aria-label="Previous slide"
+        >
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <button
+          onClick={nextSlide}
+          className="absolute right-4 top-1/2 transform -translate-y-1/2 z-20 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full transition-all"
+          aria-label="Next slide"
+        >
+          <ChevronRight className="w-6 h-6" />
+        </button>
+
+        {/* Slide Indicators */}
+        <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2">
+          {heroSlides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                index === currentSlide 
+                  ? 'bg-white w-8' 
+                  : 'bg-white/50 hover:bg-white/75'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
         </div>
       </section>
 

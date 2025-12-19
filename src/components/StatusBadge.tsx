@@ -10,7 +10,7 @@ interface StatusBadgeProps {
     | "overdue"
     | "completed"
     | "pending"
-    | "sold"; // ✅ Added sold
+    | "sold"; 
   className?: string;
 }
 

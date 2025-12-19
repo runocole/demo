@@ -5,7 +5,43 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useToast } from "../hooks/use-toast";
 import type { CustomerInfo, CartItem } from "../types/product";
-import { CreditCard, CheckCircle, ArrowLeft } from "lucide-react";
+import { 
+  CreditCard, CheckCircle, ArrowLeft, Search, MessageCircle, 
+  ExternalLink, MapPin, User, Mail, Phone, ChevronDown,
+} from "lucide-react";
+import { generateWhatsAppUrl } from "../config/whatsapp";
+import { Badge } from "./ui/badge";
+
+// List of all 195 countries
+const COUNTRIES = [
+  "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", 
+  "Armenia", "Australia", "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", 
+  "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bhutan", "Bolivia", "Bosnia and Herzegovina", 
+  "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", 
+  "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", 
+  "Colombia", "Comoros", "Congo", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", 
+  "Democratic Republic of the Congo", "Denmark", "Djibouti", "Dominica", "Dominican Republic", 
+  "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", 
+  "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana", 
+  "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", 
+  "Hungary", "Iceland", "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", 
+  "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Kuwait", "Kyrgyzstan", 
+  "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", 
+  "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands", 
+  "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", 
+  "Montenegro", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands", 
+  "New Zealand", "Nicaragua", "Niger", "Nigeria", "North Korea", "North Macedonia", "Norway", 
+  "Oman", "Pakistan", "Palau", "Palestine", "Panama", "Papua New Guinea", "Paraguay", "Peru", 
+  "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda", "Saint Kitts and Nevis", 
+  "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", 
+  "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", 
+  "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", 
+  "Sri Lanka", "Sudan", "Suriname", "Sweden", "Switzerland", "Syria", "Taiwan", "Tajikistan", 
+  "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago", "Tunisia", 
+  "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", 
+  "United States", "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", 
+  "Yemen", "Zambia", "Zimbabwe"
+];
 
 const NIGERIAN_STATES = [
   "Abia", "Adamawa", "Akwa Ibom", "Anambra", "Bauchi", "Bayelsa", "Benue", "Borno",
@@ -15,32 +51,102 @@ const NIGERIAN_STATES = [
   "Sokoto", "Taraba", "Yobe", "Zamfara"
 ];
 
+type PaymentMethod = "paystack" | "whatsapp";
+type CheckoutStep = "form" | "review" | "method";
+
 interface CheckoutModalProps {
   open: boolean;
   onClose: () => void;
   onComplete: (info: CustomerInfo, orderNumber: string) => void;
   cart?: CartItem[];
+  currency?: 'NGN' | 'USD';
+  exchangeRate?: number;
 }
 
-export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: CheckoutModalProps) => {
+export const CheckoutModal = ({ 
+  open, 
+  onClose, 
+  onComplete, 
+  cart = [], 
+  currency = 'NGN',
+  exchangeRate = 1500
+}: CheckoutModalProps) => {
   const { toast } = useToast();
   const [formData, setFormData] = useState<CustomerInfo>({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
+    country: "",
     state: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState<"form" | "review">("form");
+  const [step, setStep] = useState<CheckoutStep>("form");
   const [generatedOrderNumber, setGeneratedOrderNumber] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  // Check if mobile
+  useState(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  });
+
+  // Filter countries based on search
+  const filteredCountries = COUNTRIES.filter(country =>
+    country.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Currency formatting function
+  const formatCurrency = (amount: number): string => {
+    if (currency === 'USD') {
+      const usdAmount = amount / exchangeRate;
+      return `$${usdAmount.toFixed(2)}`;
+    }
+    return `₦${amount.toFixed(2)}`;
+  };
+
+  // Get currency symbol
+  const currencySymbol = currency === 'USD' ? '$' : '₦';
+
+  // Convert amount based on currency
+  const convertAmount = (amount: number): number => {
+    if (currency === 'USD') {
+      return amount / exchangeRate;
+    }
+    return amount;
+  };
+
+  // Format amount for display
+  const formatAmount = (amount: number): string => {
+    const converted = convertAmount(amount);
+    return currency === 'USD' ? converted.toFixed(2) : converted.toFixed(0);
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.phone) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.phone || !formData.country) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // If country is Nigeria, state is required
+    if (formData.country === "Nigeria" && !formData.state) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a state for Nigeria",
         variant: "destructive",
       });
       return;
@@ -51,7 +157,7 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
     try {
       const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
       setGeneratedOrderNumber(orderNumber);
-      setStep("review");
+      setStep("method");
       
     } catch (error) {
       toast({
@@ -64,9 +170,17 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
     }
   };
 
+  const handleSelectPaymentMethod = (method: PaymentMethod) => {
+    setSelectedPaymentMethod(method);
+    setStep("review");
+  };
+
   const handlePaystackPayment = async () => {
     setIsLoading(true);
     const totalAmount = calculateTotal();
+    
+    // Convert to NGN for Paystack if currency is USD
+    const amountForPayment = currency === 'USD' ? totalAmount * exchangeRate : totalAmount;
     
     try {
       const response = await fetch('http://localhost:5000/api/paystack/initialize', {
@@ -74,17 +188,23 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: formData.email,
-          amount: totalAmount,
+          amount: amountForPayment,
           orderNumber: generatedOrderNumber,
           metadata: {
-            customer_name: formData.name,
+            customer_name: `${formData.firstName} ${formData.lastName}`,
             customer_phone: formData.phone,
+            customer_country: formData.country,
             customer_state: formData.state,
+            original_currency: currency,
+            exchange_rate: exchangeRate,
+            original_amount: totalAmount,
             cart_items: cart.map(item => ({
               id: item.id,
               name: item.name,
               quantity: item.quantity,
               price: item.price,
+              original_price: item.price,
+              converted_price: currency === 'USD' ? item.price / exchangeRate : item.price,
               category: item.category
             }))
           }
@@ -94,10 +214,7 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
       const data = await response.json();
       
       if (response.ok) {
-        // Call onComplete before redirecting
         onComplete(formData, generatedOrderNumber);
-        
-        // Redirect to Paystack payment page
         window.location.href = data.authorization_url;
       } else {
         throw new Error(data.error || 'Payment failed');
@@ -114,6 +231,52 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
     }
   };
 
+  const handleWhatsAppCheckout = () => {
+    const customerName = `${formData.firstName} ${formData.lastName}`;
+    const customerState = formData.state || "Not specified";
+    
+    // Format cart items for WhatsApp
+    const formattedCartItems = cart.map(item => ({
+      name: item.name,
+      quantity: item.quantity,
+      price: convertAmount(item.price), // Convert price based on currency
+      originalPrice: item.price // Keep original price for reference
+    }));
+
+    const customerInfo = {
+      name: customerName,
+      email: formData.email,
+      phone: formData.phone,
+      state: customerState,
+      country: formData.country
+    };
+
+    // Generate WhatsApp URL
+    const whatsappUrl = generateWhatsAppUrl(
+      formattedCartItems,
+      customerInfo,
+      generatedOrderNumber
+    );
+
+    // Complete checkout and redirect to WhatsApp
+    onComplete(formData, generatedOrderNumber);
+    
+    // Open WhatsApp in new tab
+    window.open(whatsappUrl, '_blank');
+    
+    // Show success message
+    toast({
+      title: "WhatsApp Order Created",
+      description: "Your order has been sent via WhatsApp. Please complete your payment with the business.",
+      variant: "default",
+    });
+    
+    // Close modal after a delay
+    setTimeout(() => {
+      handleClose();
+    }, 2000);
+  };
+
   const calculateTotal = () => {
     return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   };
@@ -123,301 +286,878 @@ export const CheckoutModal = ({ open, onClose, onComplete, cart = [] }: Checkout
   };
 
   const calculateTax = () => {
-    return calculateSubtotal() * 0.08;
+    const subtotal = calculateSubtotal();
+    return subtotal * 0.08; // 8% tax
   };
+
+  // Calculate converted totals
+  const convertedSubtotal = convertAmount(calculateSubtotal());
+  const convertedTax = convertAmount(calculateTax());
+  const convertedTotal = convertAmount(calculateTotal() + calculateTax());
 
   const handleClose = () => {
     onClose();
     setStep("form");
-    setFormData({ name: "", email: "", phone: "", state: "" });
+    setFormData({ 
+      firstName: "", 
+      lastName: "", 
+      email: "", 
+      phone: "", 
+      country: "", 
+      state: "" 
+    });
+    setSearchQuery("");
+    setShowSearch(false);
+    setSelectedPaymentMethod(null);
   };
+
+  const handleCountryChange = (country: string) => {
+    setFormData({ 
+      ...formData, 
+      country, 
+      state: "" // Reset state when country changes
+    });
+    setShowSearch(false);
+    setSearchQuery("");
+  };
+
+  const handleCountrySelect = (country: string) => {
+    handleCountryChange(country);
+  };
+
+  // Update the dialog title based on step
+  const getDialogTitle = () => {
+    switch (step) {
+      case "form":
+        return "Checkout";
+      case "method":
+        return "Payment Method";
+      case "review":
+        return selectedPaymentMethod === "whatsapp" 
+          ? "WhatsApp Order" 
+          : "Review Payment";
+      default:
+        return "Checkout";
+    }
+  };
+
+  // Mobile-friendly country selector
+  const CountrySelector = () => {
+    if (isMobile) {
+      return (
+        <div className="space-y-2">
+          <Label htmlFor="country" className="text-white">
+            Country <span className="text-red-500">*</span>
+          </Label>
+          <select
+            id="country"
+            value={formData.country}
+            onChange={(e) => handleCountryChange(e.target.value)}
+            className="w-full px-4 py-3 bg-gray-900 text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            required
+            disabled={isLoading}
+          >
+            <option value="">Select your country</option>
+            {COUNTRIES.map((country) => (
+              <option key={country} value={country}>
+                {country}
+              </option>
+            ))}
+          </select>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-2 md:col-span-2">
+        <Label htmlFor="country" className="text-white">
+          Country <span className="text-red-500">*</span>
+        </Label>
+        
+        {!showSearch ? (
+          <div className="flex gap-2">
+            <select
+              id="country"
+              value={formData.country}
+              onChange={(e) => handleCountryChange(e.target.value)}
+              className="flex-1 px-3 py-2 bg-gray-900 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              required
+              disabled={isLoading}
+            >
+              <option value="">Select your country</option>
+              {COUNTRIES.map((country) => (
+                <option key={country} value={country}>
+                  {country}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowSearch(true)}
+              className="border-gray-700 text-white hover:bg-gray-800"
+            >
+              <Search className="w-4 h-4" />
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search for a country..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-gray-900 text-white border-gray-700"
+                autoFocus
+              />
+            </div>
+            
+            <div className="max-h-60 overflow-y-auto border border-gray-700 rounded-md">
+              {filteredCountries.length > 0 ? (
+                filteredCountries.map((country) => (
+                  <div
+                    key={country}
+                    onClick={() => handleCountrySelect(country)}
+                    className={`px-3 py-2 cursor-pointer hover:bg-gray-800 ${
+                      formData.country === country ? 'bg-gray-800' : ''
+                    }`}
+                  >
+                    {country}
+                  </div>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-gray-400 text-center">
+                  No countries found
+                </div>
+              )}
+            </div>
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowSearch(false);
+                setSearchQuery("");
+              }}
+              className="w-full border-gray-700 text-white hover:bg-gray-800 mt-2"
+            >
+              Back to dropdown
+            </Button>
+          </div>
+        )}
+        
+        {formData.country && (
+          <p className="text-sm text-gray-400 mt-1">
+            Selected: <span className="font-semibold text-white">{formData.country}</span>
+          </p>
+        )}
+      </div>
+    );
+  };
+
+  // Mobile step indicator
+  const MobileStepIndicator = () => (
+    <div className="flex items-center justify-between mb-6">
+      {["form", "method", "review"].map((s, index) => (
+        <div key={s} className="flex flex-col items-center flex-1">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${
+            step === s ? 'bg-blue-600 text-white' : 
+            step === "review" && index === 2 ? 'bg-blue-600 text-white' :
+            step === "method" && index <= 1 ? 'bg-blue-600 text-white' :
+            'bg-gray-800 text-gray-400'
+          }`}>
+            {index + 1}
+          </div>
+          <span className={`text-xs ${
+            step === s ? 'text-white font-medium' : 'text-gray-400'
+          }`}>
+            {s === "form" ? "Details" : 
+             s === "method" ? "Payment" : 
+             "Review"}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-black text-white border border-gray-800">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-white">
-            <div className="flex items-center gap-2">
-              {step === "form" ? (
-                <CreditCard className="w-6 h-6 text-blue-500" />
-              ) : (
-                <CheckCircle className="w-6 h-6 text-green-500" />
-              )}
-              {step === "form" ? "Secure Checkout" : "Review & Pay"}
-            </div>
-          </DialogTitle>
+      <DialogContent className={`
+        ${isMobile ? 'w-[95vw] max-w-[95vw] h-[90vh]' : 'max-w-2xl max-h-[90vh]'} 
+        overflow-y-auto bg-gray-900 text-white border border-gray-800 rounded-lg
+      `}>
+        <DialogHeader className="sticky top-0 bg-gray-900 z-10 pb-4 border-b border-gray-800">
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-white">
+              <div className="flex items-center gap-2">
+                {step === "form" ? (
+                  <User className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
+                ) : step === "method" ? (
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+                ) : (
+                  <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
+                )}
+                <span className="text-base sm:text-xl">{getDialogTitle()}</span>
+              </div>
+            </DialogTitle>
+            <Badge className="bg-gray-800 px-3 py-1 text-xs sm:text-sm">
+              {currency === 'USD' ? 'USD ($)' : 'NGN (₦)'}
+            </Badge>
+          </div>
+          {isMobile && <MobileStepIndicator />}
           <p className="text-sm text-gray-400 mt-2">
             {step === "form" 
               ? "Complete your order with secure payment"
+              : step === "method"
+              ? "Choose how you'd like to complete your order"
+              : selectedPaymentMethod === "whatsapp"
+              ? "Review your order before sending via WhatsApp"
               : "Review your order before payment"}
           </p>
+          {currency === 'USD' && (
+            <p className="text-xs text-yellow-400 mt-1">
+              Rate: 1 USD = {exchangeRate.toLocaleString()} NGN
+            </p>
+          )}
         </DialogHeader>
 
-        {step === "form" ? (
-          <>
-            <div className="mb-6 p-4 bg-gray-900 rounded-lg border border-gray-800">
-              <h3 className="font-semibold mb-3 text-white">Order Summary</h3>
-              <div className="space-y-2 max-h-40 overflow-y-auto">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex justify-between text-sm">
-                    <span className="text-white">
-                      {item.name} x {item.quantity}
-                    </span>
-                    <span className="font-medium text-white">
-                      ₦{(item.price * item.quantity).toFixed(2)}
+        {/* Main Content */}
+        <div className="flex-1 overflow-y-auto px-1 sm:px-0">
+          {step === "form" ? (
+            <>
+              {/* Order Summary - Mobile Collapsed */}
+              {isMobile && (
+                <div className="mb-4 p-3 bg-gray-800 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-400">Order Total</p>
+                      <p className="text-xl font-bold text-white">
+                        {currencySymbol}{formatAmount(calculateTotal() + calculateTax())}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-400">{cart.length} items</p>
+                      <button 
+                        onClick={() => setStep("review")}
+                        className="text-sm text-blue-400 hover:text-blue-300"
+                      >
+                        View details
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Order Summary - Desktop */}
+              {!isMobile && (
+                <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold text-white">Order Summary</h3>
+                    <span className="text-sm text-gray-400">
+                      {currency === 'USD' ? 'USD' : 'NGN'}
                     </span>
                   </div>
-                ))}
-              </div>
-              <div className="mt-4 pt-4 border-t border-gray-800 flex justify-between font-bold text-lg">
-                <span className="text-white">Total:</span>
-                <span className="text-primary">₦{calculateTotal().toFixed(2)}</span>
-              </div>
-            </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span className="text-white truncate max-w-[200px]">
+                          {item.name} x {item.quantity}
+                        </span>
+                        <div className="text-right">
+                          <span className="font-medium text-white">
+                            {currencySymbol}{formatAmount(item.price * item.quantity)}
+                          </span>
+                          {currency === 'USD' && (
+                            <div className="text-xs text-gray-400">
+                              ₦{(item.price * item.quantity).toFixed(0)}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between font-bold text-lg">
+                    <span className="text-white">Total:</span>
+                    <div className="text-right">
+                      <span className="text-blue-400">
+                        {currencySymbol}{formatAmount(calculateTotal())}
+                      </span>
+                      {currency === 'USD' && (
+                        <div className="text-sm text-gray-400 font-normal">
+                          ₦{calculateTotal().toFixed(0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name" className="text-white">
-                    Full Name <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="bg-gray-900 text-white border-gray-700 placeholder-gray-400"
-                    required
-                    disabled={isLoading}
-                  />
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* First Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="text-white text-sm sm:text-base">
+                      First Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="firstName"
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                        className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
+                        required
+                        disabled={isLoading}
+                        placeholder="John"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Last Name */}
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName" className="text-white text-sm sm:text-base">
+                      Last Name <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="lastName"
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                        className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
+                        required
+                        disabled={isLoading}
+                        placeholder="Doe"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-2">
+                    <Label htmlFor="email" className="text-white text-sm sm:text-base">
+                      Email <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
+                        required
+                        disabled={isLoading}
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Phone Number */}
+                  <div className="space-y-2">
+                    <Label htmlFor="phone" className="text-white text-sm sm:text-base">
+                      Phone Number <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
+                        placeholder="2348012345678"
+                        required
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <p className="text-xs text-gray-400">
+                      For order confirmation and updates
+                    </p>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-white">
-                    Email <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="bg-gray-900 text-white border-gray-700 placeholder-gray-400"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
+                {/* Country */}
+                <CountrySelector />
 
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-white">
-                    Phone Number <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="bg-gray-900 text-white border-gray-700 placeholder-gray-400"
-                    placeholder="2348012345678"
-                    required
-                    disabled={isLoading}
-                  />
-                  <p className="text-xs text-gray-400">
-                    For order confirmation and updates
-                  </p>
-                </div>
+                {/* State - Only show if country is Nigeria */}
+                {formData.country === "Nigeria" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="state" className="text-white text-sm sm:text-base">
+                      State <span className="text-red-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <select
+                        id="state"
+                        value={formData.state}
+                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                        className="w-full px-10 py-3 bg-gray-800 text-white border border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+                        required
+                        disabled={isLoading}
+                      >
+                        <option value="">Select a state</option>
+                        {NIGERIAN_STATES.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <Label htmlFor="state" className="text-white">
-                    State
-                  </Label>
-                  <select
-                    id="state"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-3 py-2 bg-gray-900 text-white border border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                {/* Payment Notice */}
+                {!isMobile && (
+                  <div className="p-4 bg-blue-900/20 border border-blue-800 rounded-lg">
+                    <div className="flex items-start gap-3">
+                      <CreditCard className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-blue-300 text-sm sm:text-base">Secure Checkout Process:</h4>
+                        <ul className="text-sm text-gray-300 mt-2 space-y-1">
+                          <li>• Fill in your details above</li>
+                          <li>• Choose payment method (Paystack or WhatsApp)</li>
+                          <li>• Review your order details</li>
+                          <li>• Complete payment securely</li>
+                          <li>• Receive order confirmation</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Notice */}
+                {isMobile && (
+                  <div className="p-3 bg-blue-900/20 border border-blue-800 rounded-lg">
+                    <p className="text-sm text-blue-300">
+                      <span className="font-semibold">Next:</span> Choose payment method
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleClose}
+                    className="flex-1 border-gray-700 text-white hover:bg-gray-800 h-12"
                     disabled={isLoading}
                   >
-                    <option value="">Select a state</option>
-                    {NIGERIAN_STATES.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      "Processing..."
+                    ) : (
+                      <>
+                        <CheckCircle className="w-5 h-5" />
+                        Continue
+                      </>
+                    )}
+                  </Button>
                 </div>
+              </form>
+            </>
+          ) : step === "method" ? (
+            // PAYMENT METHOD SELECTION STEP
+            <div className="space-y-6">
+              <div className="text-center mb-6">
+                <h3 className="text-lg font-semibold text-white mb-2">Choose Payment Method</h3>
+                <p className="text-gray-400 text-sm">Select how you'd like to complete your purchase</p>
               </div>
 
-              {/* Payment Notice */}
-              <div className="p-4 bg-blue-900/20 border border-blue-800 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <CreditCard className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-blue-300">Secure Payment Process:</h4>
-                    <ul className="text-sm text-gray-300 mt-2 space-y-1">
-                      <li>• Fill in your details above</li>
-                      <li>• Review your order summary</li>
-                      <li>• Pay securely via Paystack (Cards, Bank Transfer, USSD)</li>
-                      <li>• Receive email confirmation instantly</li>
-                      <li>• Get order updates via email</li>
-                    </ul>
+              <div className="space-y-4">
+                {/* Paystack Option */}
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedPaymentMethod === "paystack" 
+                      ? "border-blue-500 bg-blue-900/20" 
+                      : "border-gray-700 hover:border-gray-600 hover:bg-gray-800/50"
+                  }`}
+                  onClick={() => handleSelectPaymentMethod("paystack")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-blue-900/30 rounded-lg">
+                      <CreditCard className="w-6 h-6 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white text-base">Pay with Paystack</h4>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Secure online payment with cards, bank transfer, or USSD
+                      </p>
+                      <div className="mt-3 space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-gray-300">Instant payment confirmation</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-gray-300">Secure & encrypted</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-gray-300">Multiple payment options</span>
+                        </div>
+                      </div>
+                    </div>
+                    {selectedPaymentMethod === "paystack" && (
+                      <CheckCircle className="w-5 h-5 text-blue-400" />
+                    )}
+                  </div>
+                </div>
+
+                {/* WhatsApp Option */}
+                <div 
+                  className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                    selectedPaymentMethod === "whatsapp" 
+                      ? "border-green-500 bg-green-900/20" 
+                      : "border-gray-700 hover:border-gray-600 hover:bg-gray-800/50"
+                  }`}
+                  onClick={() => handleSelectPaymentMethod("whatsapp")}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-green-900/30 rounded-lg">
+                      <MessageCircle className="w-6 h-6 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="font-semibold text-white text-base">Order via WhatsApp</h4>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Send your order via WhatsApp and pay directly with the business
+                      </p>
+                      <div className="mt-3 space-y-1">
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-gray-300">Direct communication</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-gray-300">Flexible payment options</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-500" />
+                          <span className="text-gray-300">Personalized service</span>
+                        </div>
+                      </div>
+                    </div>
+                    {selectedPaymentMethod === "whatsapp" && (
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                    )}
                   </div>
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="pt-4 border-t border-gray-800">
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <h4 className="font-semibold text-white mb-2 text-base">Order Summary</h4>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-400">{cart.length} items</p>
+                      <p className="text-xs text-gray-400 truncate max-w-[150px]">
+                        Order: {generatedOrderNumber}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-bold text-blue-400">
+                        {currencySymbol}{formatAmount(calculateTotal() + calculateTax())}
+                      </p>
+                      {currency === 'USD' && (
+                        <p className="text-sm text-gray-400">
+                          ₦{(calculateTotal() + calculateTax()).toFixed(0)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={handleClose}
-                  className="flex-1 border-gray-700 text-white hover:bg-gray-800"
-                  disabled={isLoading}
+                  onClick={() => setStep("form")}
+                  className="flex-1 border-gray-700 text-white hover:bg-gray-800 h-12"
                 >
-                  Cancel
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
                 </Button>
                 <Button
-                  type="submit"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                  disabled={isLoading}
+                  type="button"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12"
+                  disabled={!selectedPaymentMethod}
+                  onClick={() => selectedPaymentMethod && setStep("review")}
                 >
-                  {isLoading ? (
-                    "Processing..."
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      Review Order
-                    </>
-                  )}
+                  Continue
                 </Button>
               </div>
-            </form>
-          </>
-        ) : (
-          // REVIEW STEP
-          <div className="space-y-6">
-            {/* Order Info */}
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <h3 className="font-semibold mb-3 text-white">Order Summary</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Order Number</span>
-                  <span className="font-mono font-semibold text-white">{generatedOrderNumber}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Order Date</span>
-                  <span className="font-semibold text-white">
-                    {new Date().toLocaleDateString("en-US", { 
-                      year: "numeric", 
-                      month: "long", 
-                      day: "numeric" 
-                    })}
-                  </span>
-                </div>
-              </div>
             </div>
-
-            {/* Customer Info */}
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <h3 className="font-semibold mb-3 text-white">Customer Information</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Name</span>
-                  <span className="font-semibold text-white">{formData.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Email</span>
-                  <span className="font-semibold text-white">{formData.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">Phone</span>
-                  <span className="font-semibold text-white">{formData.phone}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-400">State</span>
-                  <span className="font-semibold text-white">{formData.state || "Not specified"}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Order Items */}
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <h3 className="font-semibold mb-3 text-white">Order Items</h3>
-              <div className="space-y-3 max-h-60 overflow-y-auto">
-                {cart.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-800 rounded">
-                    <img
-                      src={item.image}
-                      alt={item.name}
-                      className="w-12 h-12 object-cover rounded"
-                    />
-                    <div className="flex-1">
-                      <h4 className="font-semibold text-sm text-white">{item.name}</h4>
-                      <p className="text-xs text-gray-400">{item.category}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-white">x{item.quantity}</p>
-                      <p className="text-sm font-bold text-primary">
-                        ₦{(item.price * item.quantity).toFixed(2)}
-                      </p>
-                    </div>
+          ) : (
+            // REVIEW STEP (for both payment methods)
+            <div className="space-y-6 pb-4">
+              {/* Order Info */}
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div className="flex justify-between items-center mb-3">
+                  <h3 className="font-semibold text-white text-base">Order Details</h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs bg-gray-700 px-2 py-1 rounded">
+                      {selectedPaymentMethod === "whatsapp" ? "WhatsApp" : "Paystack"}
+                    </span>
                   </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Order Total */}
-            <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Subtotal</span>
-                  <span className="font-semibold text-white">₦{calculateSubtotal().toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Tax (8%)</span>
-                  <span className="font-semibold text-white">₦{calculateTax().toFixed(2)}</span>
-                </div>
-                <div className="border-t border-gray-700 pt-2 mt-2">
-                  <div className="flex justify-between text-lg font-bold">
-                    <span className="text-white">Total</span>
-                    <span className="text-primary">
-                      ₦{(calculateSubtotal() + calculateTax()).toFixed(2)}
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Order #</span>
+                    <span className="font-mono font-semibold text-white text-xs truncate max-w-[180px]">
+                      {generatedOrderNumber}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Date</span>
+                    <span className="font-semibold text-white">
+                      {new Date().toLocaleDateString("en-US", { 
+                        month: "short", 
+                        day: "numeric",
+                        year: "numeric"
+                      })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Payment</span>
+                    <span className="font-semibold text-white flex items-center gap-2">
+                      {selectedPaymentMethod === "whatsapp" ? (
+                        <>
+                          <MessageCircle className="w-4 h-4 text-green-400" />
+                          WhatsApp
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="w-4 h-4 text-blue-400" />
+                          Paystack
+                        </>
+                      )}
                     </span>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Actions */}
-            <div className="flex gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep("form")}
-                className="flex-1 border-gray-700 text-white hover:bg-gray-800"
-                disabled={isLoading}
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Edit Details
-              </Button>
-              <Button
-                onClick={handlePaystackPayment}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  "Processing..."
+              {/* Customer Info */}
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <h3 className="font-semibold mb-3 text-white text-base">Customer Details</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Name</span>
+                    <span className="font-semibold text-white truncate max-w-[180px] text-right">
+                      {formData.firstName} {formData.lastName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Email</span>
+                    <span className="font-semibold text-white truncate max-w-[180px] text-right">
+                      {formData.email}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Phone</span>
+                    <span className="font-semibold text-white">{formData.phone}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Country</span>
+                    <span className="font-semibold text-white">{formData.country}</span>
+                  </div>
+                  {formData.state && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-400">State</span>
+                      <span className="font-semibold text-white">{formData.state}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Order Items - Mobile Collapsed View */}
+              {isMobile && (
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold text-white text-base">Order Items</h3>
+                    <span className="text-sm text-gray-400">
+                      {currency === 'USD' ? 'USD' : 'NGN'}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {cart.slice(0, 2).map((item) => (
+                      <div key={item.id} className="flex items-center gap-3">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-10 h-10 object-cover rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm text-white truncate">{item.name}</h4>
+                          <p className="text-xs text-gray-400">x{item.quantity}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-bold text-blue-400">
+                            {currencySymbol}{formatAmount(item.price * item.quantity)}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {cart.length > 2 && (
+                      <div className="text-center pt-2 border-t border-gray-700">
+                        <p className="text-sm text-gray-400">
+                          + {cart.length - 2} more items
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Order Items - Desktop View */}
+              {!isMobile && (
+                <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                  <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-semibold text-white text-base">Order Items</h3>
+                    <span className="text-sm text-gray-400">
+                      {currency === 'USD' ? 'Prices in USD' : 'Prices in NGN'}
+                    </span>
+                  </div>
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {cart.map((item) => (
+                      <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-700/50 rounded">
+                        <img
+                          src={item.image}
+                          alt={item.name}
+                          className="w-12 h-12 object-cover rounded"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-sm text-white truncate">{item.name}</h4>
+                          <p className="text-xs text-gray-400">{item.category}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm text-white">x{item.quantity}</p>
+                          <p className="text-sm font-bold text-blue-400">
+                            {currencySymbol}{formatAmount(item.price * item.quantity)}
+                          </p>
+                          {currency === 'USD' && (
+                            <p className="text-xs text-gray-400">
+                              ₦{(item.price * item.quantity).toFixed(0)}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Order Total */}
+              <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Subtotal</span>
+                    <div className="text-right">
+                      <span className="font-semibold text-white">
+                        {currencySymbol}{formatAmount(calculateSubtotal())}
+                      </span>
+                      {currency === 'USD' && (
+                        <div className="text-xs text-gray-400">
+                          ₦{calculateSubtotal().toFixed(0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Tax (8%)</span>
+                    <div className="text-right">
+                      <span className="font-semibold text-white">
+                        {currencySymbol}{formatAmount(calculateTax())}
+                      </span>
+                      {currency === 'USD' && (
+                        <div className="text-xs text-gray-400">
+                          ₦{calculateTax().toFixed(0)}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="border-t border-gray-700 pt-2 mt-2">
+                    <div className="flex justify-between text-lg font-bold">
+                      <span className="text-white">Total</span>
+                      <div className="text-right">
+                        <span className="text-blue-400">
+                          {currencySymbol}{formatAmount(calculateTotal() + calculateTax())}
+                        </span>
+                        {currency === 'USD' && (
+                          <div className="text-sm text-gray-400 font-normal">
+                            ₦{(calculateTotal() + calculateTax()).toFixed(0)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep("method")}
+                  className="flex-1 border-gray-700 text-white hover:bg-gray-800 h-12"
+                  disabled={isLoading}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back
+                </Button>
+                
+                {selectedPaymentMethod === "paystack" ? (
+                  <Button
+                    onClick={handlePaystackPayment}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white gap-2 h-12"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      "Processing..."
+                    ) : (
+                      <>
+                        <CreditCard className="w-4 h-4" />
+                        {isMobile ? "Pay" : "Pay Securely"}
+                      </>
+                    )}
+                  </Button>
                 ) : (
-                  <>
-                    <CreditCard className="w-4 h-4" />
-                    Pay Securely with Paystack
-                  </>
+                  <Button
+                    onClick={handleWhatsAppCheckout}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white gap-2 h-12"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      "Processing..."
+                    ) : (
+                      <>
+                        <ExternalLink className="w-4 h-4" />
+                        {isMobile ? "Send" : "Send via WhatsApp"}
+                      </>
+                    )}
+                  </Button>
                 )}
-              </Button>
-            </div>
+              </div>
 
-            <p className="text-center text-sm text-gray-400">
-              You'll be redirected to Paystack for secure payment processing.
-            </p>
-          </div>
-        )}
+              <p className="text-center text-sm text-gray-400 px-2">
+                {selectedPaymentMethod === "paystack"
+                  ? currency === 'USD' 
+                    ? `You'll be redirected to Paystack for secure payment.`
+                    : "You'll be redirected to Paystack for secure payment."
+                  : "You'll be redirected to WhatsApp to send your order."}
+              </p>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );

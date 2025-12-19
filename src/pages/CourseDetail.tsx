@@ -6,8 +6,13 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
-import heroSlide2 from "../assets/hero-slide-2.jpg";
-import heroSlide3 from "../assets/hero-slide-3.jpg";
+
+// Import all images from the training component
+import safetyImage from "../assets/safety-training.jpg";
+import fieldImage from "../assets/field-practice.jpg";
+import dronemapping from "../assets/dronemapping.jpg";
+import missionImage from "../assets/mission-planning.jpg";
+
 interface Course {
   id: string;
   title: string;
@@ -32,9 +37,9 @@ const courses: Course[] = [
   {
     id: "gnss",
     title: "GNSS Surveying Course",
-    description: "Introduce local regulation requirements and safety operation procedures",
-   longDescription: "A comprehensive course designed to equip surveyors, engineers, and GIS professionals with the full spectrum of GNSS surveying knowledge and practical skills. Participants learn GNSS fundamentals, satellite constellations , signal types, sources of error, and correction techniques. The course covers a wide range of survey methods, including Static, Rapid Static, RTK, DGPS, CORS, and PPP surveys. Learners gain hands-on experience in field operations, including base and rover setup, stakeout, area computation, and data collection. Post-processing workflows are demonstrated using Compass Solution and Trimble Business Center, enabling participants to generate accurate, reliable, and professional survey outputs. By the end of the course, learners are able to deliver high-precision results for cadastral, engineering, and GIS projects, confidently handling real-world challenges in GNSS surveying.",
-    image: heroSlide2,
+    description: "Master GNSS surveying with static, RTK, DGPS, and PPP techniques",
+    longDescription: "A comprehensive course covering GNSS fundamentals, satellite constellations, and survey techniques including static, RTK, DGPS, CORS, and PPP. Participants gain hands-on experience in field data collection, stakeout, area computation, and professional post-processing using Compass Solution and Trimble Business Center, ensuring high-accuracy positioning and reliable survey outputs for Cadastral, Engineering, and GIS projects.",
+    image: safetyImage,
     rating: 4.9,
     reviews: 127,
     duration: "4 weeks",
@@ -42,25 +47,25 @@ const courses: Course[] = [
     format: ["Online", "In-Person"],
     price: "$299",
     features: [
-      "Flight planning and execution",
-      "Regulatory compliance",
-      "Safety procedures",
-      "Data processing",
-      "Quality control",
-      "Certification preparation"
+      "GNSS survey planning and setup",
+      "Field data collection (Static, RTK, DGPS, CORS, PPP)",
+      "Safety and professional survey practices",
+      "Accuracy and quality control",
+      "Data processing using Compass & Trimble Business Center",
+      "Producing professional survey outputs"
     ],
     instructor: {
       name: "Sarah Johnson",
-      role: "Senior GIS Specialist",
-      experience: "8+ years in drone mapping"
+      role: "Senior GNSS Specialist",
+      experience: "8+ years in GNSS surveying"
     }
   },
   {
     id: "bathymetric",
-    title: "Bathymetric Training",
-    description: "Field and flight path planning methods, and different operational modes",
-    longDescription: " A practical bathymetric surveying course teaching depth measurement, GNSS-echosounder integration, data cleaning, and processing workflows using HYSURVEY and HYPACK for producing accurate underwater terrain models.",
-    image: heroSlide3,
+    title: "Bathymetric Survey Course",
+    description: "Master underwater surveying with echosounders and GNSS integration",
+    longDescription: "This course focuses on bathymetric surveying, including operation of echosounders, transducers, and GNSS-integrated systems. Learners practice depth measurement, data acquisition, calibration, tide correction, and noise filtering, and perform post-processing using HYSURVEY, AutoCAD, Global Mapper, and Surfer. Exercises enable creation of contour maps, 3D surfaces, and precise navigation-ready datasets for marine, engineering, and environmental applications.",
+    image: missionImage,
     rating: 4.8,
     reviews: 89,
     duration: "6 weeks",
@@ -68,12 +73,12 @@ const courses: Course[] = [
     format: ["In-Person", "Hybrid"],
     price: "$399",
     features: [
-      "Underwater data collection",
-      "Sonar technology",
-      "Depth measurement",
-      "Data interpretation",
-      "Quality assurance",
-      "Field operations"
+      "Survey planning and equipment setup",
+      "Safe handling of echosounders and transducers",
+      "Accurate depth and GNSS data capture",
+      "Quality control and data cleaning",
+      "Processing in HYSURVEY, AutoCAD, Global Mapper, Surfer",
+      "Producing contour maps, 3D surfaces, and reports"
     ],
     instructor: {
       name: "Michael Chen",
@@ -83,10 +88,10 @@ const courses: Course[] = [
   },
   {
     id: "dronemapping",
-    title: "Drone Mapping",
-    description: "Flight parameters setting recommendations for efficient operations",
-    longDescription: "A professional well structured  in-depth drone mapping course covering RTK and non-RTK workflows, from mission planning and field data capture to photogrammetry processing, accuracy assessment, software integration and client-ready deliverables for Surveying and Mapping professionals.",
-    image: "/assets/parameters.jpg",
+    title: "Drone Mapping Course",
+    description: "Comprehensive drone mapping with RTK & photogrammetry workflows",
+    longDescription: "This course teaches comprehensive drone mapping workflows, including mission planning, RTK and Non-RTK flights, aerial data acquisition, and photogrammetric processing. Participants create orthomosaics, 3D models, DSMs, and point clouds, integrating software such as Pix4D mapper, Drone deploy, Agisoft Metashape, and GIS software. Practical exercises and step-by-step demonstrations build expertise in surveying, construction monitoring, agriculture, and environmental mapping.",
+    image: dronemapping,
     rating: 4.7,
     reviews: 94,
     duration: "3 weeks",
@@ -94,25 +99,25 @@ const courses: Course[] = [
     format: ["Online", "In-Person"],
     price: "$249",
     features: [
-      "Parameter optimization",
-      "Environmental considerations",
-      "Payload configuration",
-      "Mission-specific settings",
-      "Troubleshooting",
-      "Best practices"
+      "Flight planning for RTK and Non-RTK missions",
+      "Safety precautions and regulatory compliance",
+      "High-quality aerial data capture",
+      "Data accuracy and quality control",
+      "Processing images into maps, DSMs, and 3D models",
+      "Producing professional mapping deliverables"
     ],
     instructor: {
       name: "David Martinez",
-      role: "Flight Operations Specialist",
+      role: "Drone Mapping Specialist",
       experience: "6+ years in UAV operations"
     }
   },
   {
-    id: "field-operation",
-    title: "Field Operation Practice",
-    description: "Hands-on training including automatic operations and system configurations",
-    longDescription: "Practical field operation training covering automatic flight operations, spraying/spreading system configurations, and real-world scenario simulations. Gain confidence through extensive hands-on practice.",
-    image: "/assets/field-practice.jpg",
+    id: "totalstation",
+    title: "Total Station Surveying Course",
+    description: "Precision measurement, traversing, and topographic surveys",
+    longDescription: "A complete course on Total Station surveying for precision measurement, site setup, traversing, topographic surveys, and construction layout. Learners practice workflows with Leica, FOIF and COMNAV Total Stations, focusing on accurate field data capture, error reduction, and generating professional deliverables for Cadastral, Engineering, and Construction projects.",
+    image: fieldImage,
     rating: 4.9,
     reviews: 156,
     duration: "5 weeks",
@@ -120,25 +125,25 @@ const courses: Course[] = [
     format: ["In-Person"],
     price: "$349",
     features: [
-      "Automatic operations",
-      "System configuration",
-      "Field safety",
-      "Equipment handling",
-      "Practical exercises",
-      "Real-world scenarios"
+      "Instrument setup and calibration",
+      "Traversing and topographic surveys",
+      "Safety and field accuracy practices",
+      "Quality control of measurements",
+      "Data management and processing",
+      "Producing client-ready survey plans"
     ],
     instructor: {
       name: "Emily Rodriguez",
-      role: "Field Operations Manager",
+      role: "Surveying Operations Manager",
       experience: "7+ years in field operations"
     }
   },
   {
-    id: "gis-fundamentals",
-    title: "GIS Fundamentals",
-    description: "Basic to intermediate GIS concepts and applications",
-    longDescription: "Comprehensive GIS fundamentals course covering spatial data concepts, coordinate systems, data management, and basic spatial analysis techniques for beginners and intermediate users.",
-    image: "/assets/safety-training.jpg",
+    id: "gis",
+    title: "GIS Training Course",
+    description: "Spatial data analysis, map creation, and geospatial workflows",
+    longDescription: "A practical GIS training course teaching spatial data analysis, map creation, and geospatial workflows for surveying, environmental, and urban planning projects.",
+    image: safetyImage,
     rating: 4.6,
     reviews: 203,
     duration: "8 weeks",
@@ -146,12 +151,12 @@ const courses: Course[] = [
     format: ["Online"],
     price: "$199",
     features: [
-      "Spatial data concepts",
-      "Coordinate systems",
-      "Data management",
-      "Basic analysis",
-      "Map creation",
-      "Software skills"
+      "Spatial data collection and management",
+      "Map creation and visualization",
+      "Quality control of GIS data",
+      "Spatial analysis and geoprocessing",
+      "Producing thematic maps and reports",
+      "Delivering professional GIS outputs"
     ],
     instructor: {
       name: "Dr. James Wilson",
@@ -160,11 +165,11 @@ const courses: Course[] = [
     }
   },
   {
-    id: "remote-sensing",
-    title: "Remote Sensing Applications",
-    description: "Satellite imagery analysis and remote sensing techniques",
-    longDescription: "Advanced remote sensing course focusing on satellite imagery analysis, spectral analysis, change detection, and various applications in environmental monitoring and resource management.",
-    image: "/assets/mission-planning.jpg",
+    id: "3dlaserscanning",
+    title: "3D Laser Scanning Course",
+    description: "Point cloud capture, processing for survey and BIM applications",
+    longDescription: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Cyclone, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
+    image: missionImage,
     rating: 4.8,
     reviews: 118,
     duration: "7 weeks",
@@ -172,25 +177,25 @@ const courses: Course[] = [
     format: ["Online", "Hybrid"],
     price: "$379",
     features: [
-      "Image processing",
-      "Spectral analysis",
-      "Change detection",
-      "Environmental monitoring",
-      "Data interpretation",
-      "Software tools"
+      "Scanner setup and scan planning",
+      "Field point cloud capture techniques",
+      "Safety and precision in scanning",
+      "Quality control of 3D data",
+      "Processing with LSMASTER, ReCap, CloudCompare, Revit",
+      "Producing accurate 3D models and reports"
     ],
     instructor: {
       name: "Dr. Lisa Wang",
-      role: "Remote Sensing Scientist",
-      experience: "9+ years in remote sensing"
+      role: "3D Scanning Specialist",
+      experience: "9+ years in laser scanning"
     }
   },
   {
-    id: "advanced-mapping",
-    title: "Advanced Mapping Techniques",
-    description: "Advanced cartography and spatial analysis methods",
-    longDescription: "Master advanced mapping techniques including 3D visualization, web mapping, spatial statistics, and custom cartography for professional-grade map production and spatial analysis.",
-    image: "/assets/parameters.jpg",
+    id: "autocad",
+    title: "AutoCAD Training",
+    description: "2D/3D drafting for surveyors, engineers, and designers",
+    longDescription: "A comprehensive AutoCAD training course teaching 2D drafting, design documentation, and professional drawing workflows for survey, engineering, and construction projects. Participants learn to produce site plans, engineering layouts, topographic maps, and construction drawings, with exercises designed to deliver client-ready and industry-standard outputs.",
+    image: dronemapping,
     rating: 4.7,
     reviews: 76,
     duration: "6 weeks",
@@ -198,25 +203,25 @@ const courses: Course[] = [
     format: ["Online"],
     price: "$329",
     features: [
-      "3D visualization",
-      "Web mapping",
-      "Spatial statistics",
-      "Custom cartography",
-      "Data visualization",
-      "Professional workflows"
+      "2D and 3D drafting techniques",
+      "Layer management and annotation",
+      "Accuracy and drawing standards",
+      "Technical plan and layout preparation",
+      "Creating professional site and engineering plans",
+      "Producing client-ready CAD drawings"
     ],
     instructor: {
       name: "Robert Taylor",
-      role: "Cartography Specialist",
-      experience: "8+ years in mapping"
+      role: "CAD Specialist",
+      experience: "8+ years in AutoCAD"
     }
   },
   {
-    id: "data-analysis",
-    title: "Spatial Data Analysis",
-    description: "Statistical analysis and interpretation of spatial data",
-    longDescription: "Comprehensive spatial data analysis course covering statistical methods, spatial patterns, hotspot analysis, and advanced techniques for extracting meaningful insights from geographic data.",
-    image: "/assets/field-practice.jpg",
+    id: "engineering",
+    title: "Engineering Survey Course",
+    description: "Professional surveying for civil engineers and infrastructure projects",
+    longDescription: "A professional Engineering Survey course designed for Surveyors, Civil Engineers, and Infrastructure professionals, covering precision site measurements, road and topographic surveys, cross-sections, longitudinal sections, drainage mapping, contour generation, and field-to-office workflows using AutoCAD, Global Mapper, and Surfer.",
+    image: fieldImage,
     rating: 4.8,
     reviews: 92,
     duration: "5 weeks",
@@ -224,17 +229,17 @@ const courses: Course[] = [
     format: ["Online", "In-Person"],
     price: "$299",
     features: [
-      "Statistical analysis",
-      "Spatial patterns",
-      "Hotspot analysis",
-      "Data interpretation",
-      "Advanced techniques",
-      "Case studies"
+      "Road, topographic, and site survey planning",
+      "Cross-sections, longitudinal sections, and drainage mapping",
+      "Accuracy and field data quality control",
+      "Contour generation and layout preparation",
+      "Integrating data with AutoCAD, Global Mapper, Surfer",
+      "Producing professional plans, 3D models, and reports"
     ],
     instructor: {
       name: "Dr. Amanda Lee",
-      role: "Data Scientist",
-      experience: "11+ years in spatial analysis"
+      role: "Engineering Survey Specialist",
+      experience: "11+ years in engineering surveys"
     }
   }
 ];
@@ -275,27 +280,17 @@ const CourseDetail = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
- {/* Try with Button component and force navigation */}
-<div className="container mx-auto px-4 py-6">
-  <Button
-    variant="ghost"
-    onClick={() => {
-      // First try React Router navigation
-      navigate("/training");
-      
-      // Fallback after a short delay if nothing happens
-      setTimeout(() => {
-        if (window.location.pathname !== "/training") {
-          window.location.href = "/training";
-        }
-      }, 100);
-    }}
-    className="flex items-center gap-2 mb-6"
-  >
-    <ArrowLeft className="w-4 h-4" />
-    Back to Courses
-  </Button>
-</div>
+      <div className="container mx-auto px-4 py-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate("/training")}
+          className="flex items-center gap-2 mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Courses
+        </Button>
+      </div>
+
       {/* Course Header */}
       <section className="py-12 bg-secondary">
         <div className="container mx-auto px-4">
@@ -365,13 +360,6 @@ const CourseDetail = () => {
                   </div>
                 ))}
               </div>
-
-              <h3 className="text-2xl font-bold mb-4">Course Description</h3>
-              <p className="text-muted-foreground mb-6">
-                {course.longDescription} This comprehensive course is designed to provide you with 
-                practical skills and theoretical knowledge that you can immediately apply in your 
-                professional work. Our expert instructors will guide you through every step of the process.
-              </p>
             </div>
 
             {/* Instructor Info */}

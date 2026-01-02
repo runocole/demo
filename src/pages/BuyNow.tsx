@@ -10,7 +10,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { 
   Search, X, ChevronDown, Home, ShoppingCart, 
-  Trash2, Plus, Minus, Filter, Grid3x3, List, ChevronRight,
+  Trash2, Plus, Minus, Grid3x3, List, ChevronRight,
   Menu
 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
@@ -58,7 +58,6 @@ const BuyNow = () => {
   const [sortOption, setSortOption] = useState<SortOption>("featured");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [cartOpen, setCartOpen] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   // Check if mobile

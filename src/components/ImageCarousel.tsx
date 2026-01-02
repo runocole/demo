@@ -204,27 +204,6 @@ const ImageCarousel: React.FC = () => {
         </Button>
       </div>
 
-      {/* Mobile Touch Instructions */}
-      {isMobile && (
-        <div className="mt-4 text-center">
-          <p className="text-sm text-gray-600">
-            Swipe left or right to navigate
-          </p>
-        </div>
-      )}
-
-      {/* Progress Indicator */}
-      <div className="mt-4">
-        <div className="relative h-1 bg-gray-200 rounded-full overflow-hidden">
-          <div 
-            className="absolute top-0 left-0 h-full bg-blue-600 transition-all duration-1000 ease-out"
-            style={{
-              width: `${((selectedIndex + slidesToShow) / images.length) * 100}%`
-            }}
-          />
-        </div>
-      </div>
-
       {/* Mobile Floating Navigation (for easier access) */}
       {isMobile && (
         <div className="fixed bottom-24 right-4 z-40 flex flex-col gap-2">
@@ -248,14 +227,6 @@ const ImageCarousel: React.FC = () => {
           </Button>
         </div>
       )}
-
-      {/* Current Position Indicator */}
-      <div className="mt-2 text-center">
-        <p className="text-sm text-gray-600">
-          {selectedIndex + 1} of {images.length} images
-          {slidesToShow > 1 && ` (showing ${slidesToShow} at a time)`}
-        </p>
-      </div>
     </div>
   );
 };

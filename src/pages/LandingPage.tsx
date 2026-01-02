@@ -87,7 +87,7 @@ const LandingPage: React.FC = () => {
           title="Accessories"
           items={accessoriesWithStock} 
           buttonText="Browse All Accessories"
-          showCategory={true}
+
         />
       </div>
 

@@ -23,7 +23,13 @@ export interface Product {
   image: string;
   images?: string[];
   inStock: boolean;
-  specifications?: string[];
+  specifications: string[];
+  featured?: boolean;
+  discount?: number;
+  tags?: string[];
+  brand?: string;
+  model?: string;
+  warranty?: string;
   
   // MOBILE-OPTIMIZED PROPERTIES (Optional)
   mobileDescription?: string; // Shorter description for mobile
@@ -32,6 +38,8 @@ export interface Product {
 
 export interface CartItem extends Product {
   quantity: number;
+  firstName: string;
+  lastName: string;
 }
 
 export interface CustomerInfo {

@@ -17,7 +17,7 @@ import { ReceiptModal } from "../components/ReceiptModal";
 import type { CustomerInfo } from "../types/product";
 import { generateWhatsAppUrl } from "../config/whatsapp";
 import { useCart } from "../context/CartContext";
-import { Sheet, SheetContent, SheetTrigger } from "../components/ui/sheet";
+import { Sheet, SheetContent } from "../components/ui/sheet";
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -259,7 +259,7 @@ const CartPage = () => {
         <div className="mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-15">
                 Shopping Cart
               </h1>
               <p className="text-gray-600 mt-2 text-sm sm:text-base">

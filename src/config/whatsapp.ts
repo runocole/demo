@@ -1,8 +1,7 @@
 // config/whatsapp.ts
 
 export const WHATSAPP_CONFIG = {
-  // 👇 Replace with your actual WhatsApp business number
-  businessNumber: "2348063304716", // Without +, country code format
+  businessNumber: "2349026194016", 
   
   // Message templates
   templates: {
@@ -27,21 +26,17 @@ export const WHATSAPP_CONFIG = {
     days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
   },
   
-  // Mobile-optimized settings
   mobile: {
-    maxItemsInMessage: 3, // Show only 3 items in mobile message
-    truncateItemName: 50, // Truncate long item names on mobile
-    useEmojis: true, // Use emojis for better mobile readability
+    maxItemsInMessage: 3, 
+    truncateItemName: 50, 
+    useEmojis: true,
   }
 };
 
-// Helper function to format WhatsApp number
 export const formatWhatsAppNumber = (number: string): string => {
-  // Remove any spaces, dashes, or plus signs
   return number.replace(/[\s\-+]/g, '');
 };
 
-// Helper function to detect mobile device
 export const isMobileDevice = (): boolean => {
   if (typeof window === 'undefined') return false;
   
@@ -278,7 +273,6 @@ export const formatPhoneDisplay = (phone: string): string => {
   const cleaned = formatWhatsAppNumber(phone);
   
   if (cleaned.startsWith('234')) {
-    // Nigerian number format: 234 80X XXX XXXX
     const areaCode = cleaned.substring(3, 6);
     const firstPart = cleaned.substring(6, 9);
     const secondPart = cleaned.substring(9, 13);

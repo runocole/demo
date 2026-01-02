@@ -13,7 +13,8 @@ import {
   SLIDES,
   ACCESSORIES,
   FEATURED_EQUIPMENT,
-  ABOUT_CONTENT
+  ABOUT_CONTENT,
+  MOBILE_ABOUT_CONTENT // ADD THIS IMPORT
 } from "../data/product";
 
 // Main Component
@@ -48,6 +49,10 @@ const LandingPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Get the appropriate about content based on device
+  const aboutTitle = isMobile ? MOBILE_ABOUT_CONTENT.title : ABOUT_CONTENT.title;
+  const aboutDescription = isMobile ? MOBILE_ABOUT_CONTENT.description : ABOUT_CONTENT.description;
+
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
       {/* CurrencyBoxes is now self-contained */}
@@ -71,8 +76,8 @@ const LandingPage: React.FC = () => {
       {/* ABOUT PREVIEW SECTION */}
       <div className={`${isMobile ? 'px-4' : ''}`}>
         <AboutSection 
-          title={ABOUT_CONTENT.title}
-          description={ABOUT_CONTENT.description}
+          title={aboutTitle} 
+          description={aboutDescription}
           videoUrl={ABOUT_CONTENT.videoUrl}
         />
       </div>
@@ -87,7 +92,6 @@ const LandingPage: React.FC = () => {
           title="Accessories"
           items={accessoriesWithStock} 
           buttonText="Browse All Accessories"
-
         />
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, ShoppingCart, Info, BookOpen, Phone, X, Map, Mail, Globe, FileText } from "lucide-react";
+import { Home, ShoppingCart, Info, BookOpen, Phone, X, Mail, Globe, FileText } from "lucide-react";
 import { useCart } from "../context/CartContext";
 
 const MobileNavigation = () => {
@@ -71,17 +71,32 @@ const MobileNavigation = () => {
 
   return (
     <>
-      {/* Mobile Menu Button - Simple hamburger */}
-      <div className="fixed top-6 right-20 z-50 lg:hidden">
+      {/* Mobile Menu Buttons - Hamburger and Cart side by side */}
+      <div className="fixed top-6 right-4 z-50 lg:hidden flex items-center gap-2">
+        {/* Cart Button */}
+        <button
+          onClick={() => navigate("/cart")}
+          className="p-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 relative"
+          aria-label="Open cart"
+        >
+          <ShoppingCart className="w-5 h-5 text-black" />
+          {itemCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {itemCount}
+            </span>
+          )}
+        </button>
+        
+        {/* Hamburger Menu Button */}
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
           className="p-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20"
           aria-label="Open menu"
         >
           <div className="flex flex-col gap-1">
-            <div className="w-6 h-0.5 bg-white"></div>
-            <div className="w-6 h-0.5 bg-white"></div>
-            <div className="w-6 h-0.5 bg-white"></div>
+            <div className="w-6 h-0.5 bg-black"></div>
+            <div className="w-6 h-0.5 bg-black"></div>
+            <div className="w-6 h-0.5 bg-black"></div>
           </div>
         </button>
       </div>
@@ -124,7 +139,7 @@ const MobileNavigation = () => {
                           : 'text-gray-700 hover:bg-gray-50'
                       }`}
                     >
-                      <Icon className="w-5 h-5 mr-3 flex-shrink-0" />
+                      <Icon className="w-5 h-5 mr-3 flex-shrink-0 text-black" />
                       <span className="font-medium text-base">{item.label}</span>
                       {item.label === "Shop" && itemCount > 0 && (
                         <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -176,7 +191,7 @@ const MobileNavigation = () => {
                   onClick={() => navigate("/cart")}
                   className="flex items-center w-full px-6 py-4 text-left text-gray-700 hover:bg-gray-50 border-t border-gray-100"
                 >
-                  <ShoppingCart className="w-5 h-5 mr-3" />
+                  <ShoppingCart className="w-5 h-5 mr-3 text-black" />
                   <span className="font-medium text-base">My Cart</span>
                   {itemCount > 0 && (
                     <span className="ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">

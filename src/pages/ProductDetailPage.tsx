@@ -340,7 +340,7 @@ const ProductDetailPage = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+                  className="flex-1 bg-[#081748] hover:bg-blue-700 text-white"
                   onClick={handleAddToCart}
                   disabled={!product.inStock}
                 >
@@ -418,78 +418,74 @@ const ProductDetailPage = () => {
           </div>
         </div>
 
-        {/* Tabs for Details, Specs, Reviews */}
+        {/* Tabs for Details and Specifications */}
         <div className="mt-8 sm:mt-12">
           <Tabs defaultValue="description" className="w-full">
-            <TabsList className="grid grid-cols-3 mb-6 sm:mb-8">
+            <TabsList className="grid grid-cols-2 mb-6 sm:mb-8">
               <TabsTrigger value="description" className="text-sm sm:text-base">
                 Description
               </TabsTrigger>
               <TabsTrigger value="specifications" className="text-sm sm:text-base">
                 Specifications
               </TabsTrigger>
-              <TabsTrigger value="reviews" className="text-sm sm:text-base">
-                Reviews (12)
-              </TabsTrigger>
             </TabsList>
             
             <TabsContent value="description" className="space-y-4">
               <h3 className="text-xl font-bold mb-4">Product Description</h3>
-              <div className="prose max-w-none">
-                <p className="text-gray-700 leading-relaxed mb-4">{product.description}</p>
-                <p className="text-gray-700 leading-relaxed">
-                  This premium survey equipment offers unparalleled accuracy and durability for 
-                  professional surveying applications. Built with state-of-the-art technology, 
-                  it ensures reliable performance in the most challenging environments.
-                </p>
-                <ul className="mt-4 space-y-2 text-gray-700">
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>High-precision measurements with millimeter accuracy</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Rugged design for outdoor use in harsh conditions</span>
-                  </li>
-                  <li className="flex items-start">
-                    <Check className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
-                    <span>Long battery life for extended field work</span>
-                  </li>
-                </ul>
+              <div className="bg-white rounded-xl p-6">
+                <p className="text-gray-700 leading-relaxed mb-6 text-lg">{product.description}</p>
+                
+                {/* Brand and Model Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  {product.brand && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="font-semibold text-gray-900 mb-2">Brand Information</h4>
+                      <p className="text-gray-700">Brand: {product.brand}</p>
+                      {product.model && <p className="text-gray-700">Model: {product.model}</p>}
+                      {product.warranty && <p className="text-gray-700">Warranty: {product.warranty}</p>}
+                    </div>
+                  )}
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold text-gray-900 mb-2">Product Details</h4>
+                    <p className="text-gray-700">Category: {product.category}</p>
+                    <p className="text-gray-700">SKU: {product.id}</p>
+                    <p className="text-gray-700">Availability: {product.inStock ? 'In Stock' : 'Out of Stock'}</p>
+                  </div>
+                </div>
+                
+                {/* Key Features Section */}
+                <div className="mb-6">
+                  <h4 className="text-lg font-semibold mb-4">Key Features</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {product.specifications.slice(0, 6).map((spec, index) => (
+                      <div key={index} className="flex items-start">
+                        <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700">{spec}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </TabsContent>
             
             <TabsContent value="specifications">
               <h3 className="text-xl font-bold mb-4">Technical Specifications</h3>
               <div className="bg-gray-50 rounded-xl p-4 sm:p-6">
-                <dl className="space-y-3 sm:space-y-4">
-                  {product.specifications?.map((spec, index) => (
-                    <div key={index} className="py-3 border-b border-gray-200 last:border-0">
-                      <dt className="font-semibold text-gray-900 text-sm sm:text-base">
-                        {spec.split(':')[0]}
-                      </dt>
-                      <dd className="text-gray-600 mt-1 text-sm sm:text-base">
-                        {spec.split(':').slice(1).join(':').trim() || spec}
-                      </dd>
-                    </div>
-                  )) || (
-                    <div className="col-span-2 text-center py-8 text-gray-500">
-                      No specifications available
-                    </div>
-                  )}
-                </dl>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="reviews">
-              <h3 className="text-xl font-bold mb-6">Customer Reviews</h3>
-              <div className="bg-gray-50 rounded-xl p-6">
-                <div className="text-center py-8">
-                  <Star className="w-12 h-12 text-yellow-400 mx-auto mb-4" />
-                  <h4 className="text-lg font-semibold mb-2">Be the first to review</h4>
-                  <p className="text-gray-600 mb-4">Share your experience with this product</p>
-                  <Button>Write a Review</Button>
-                </div>
+                {product.specifications && product.specifications.length > 0 ? (
+                  <div className="space-y-4">
+                    {product.specifications.map((spec, index) => (
+                      <div key={index} className="flex items-start py-3 border-b border-gray-200 last:border-0">
+                        <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                        <span className="text-gray-700 leading-relaxed">{spec}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No specifications available for this product.</p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
@@ -512,7 +508,7 @@ const ProductDetailPage = () => {
                     </div>
                     <Button 
                       size="lg" 
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      className="bg-[#081748] hover:bg-blue-700 text-white"
                       onClick={() => setMobileActionsOpen(true)}
                     >
                       Add to Cart

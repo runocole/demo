@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, ShoppingCart, Menu, X } from "lucide-react";
+import { ArrowLeft, ShoppingCart } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface LayoutProps {
@@ -35,62 +35,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('click', handleClickOutside);
   }, [isMobileMenuOpen]);
 
-  const mobileMenuItems = [
-    { name: "Home", path: "/" },
-    { name: "Shop", path: "/buynow" },
-    { name: "About", path: "/about" },
-    { name: "Training", path: "/training" },
-    { name: "CORS Network", path: "/corsnetwork" },
-    { name: "Equipments", path: "/buynow?category=survey-equipment" },
-    { name: "Blog", path: "/blog" },
-    { name: "Contact", path: "/contact" },
-    { name: "My Cart", path: "/cart" },
-  ];
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => navigate("/")}
-              aria-label="Back to shop"
-              className="p-2 rounded-md hover:bg-muted transition-colors"
-            >
-              <ArrowLeft className="w-5 h-5 text-foreground" />
-            </button>
+      {/* Header - Remove the entire header section since you have MobileNavigation */}
+      {/* Only show this Layout header on desktop */}
+      {!isMobile && (
+        <header className="sticky top-0 z-50 bg-card/95 backdrop-blur border-b border-border">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => navigate("/")}
+                aria-label="Back to shop"
+                className="p-2 rounded-md hover:bg-muted transition-colors"
+              >
+                <ArrowLeft className="w-5 h-5 text-foreground" />
+              </button>
 
-            <div className="flex items-center gap-3">
-              <div className="leading-tight">
-                <h1 className="font-extrabold text-lg md:text-2xl text-foreground">
-                  GEOSSO TECHNOLOGIES
-                </h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">
-                  Precision surveying equipment
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="leading-tight">
+                  <h1 className="font-extrabold text-lg md:text-2xl text-foreground">
+                    GEOSSO TECHNOLOGIES
+                  </h1>
+                  <p className="text-xs text-muted-foreground hidden sm:block">
+                    Precision surveying equipment
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Mobile Menu Toggle */}
-          {isMobile ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => navigate("/cart")}
-                className="relative p-2 rounded-md hover:bg-muted transition-colors"
-              >
-                <ShoppingCart className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="p-2 rounded-md hover:bg-muted transition-colors menu-toggle"
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
-          ) : (
+            {/* Desktop buttons in Layout */}
             <div className="flex items-center gap-4">
               <button
                 onClick={() => navigate("/")}
@@ -100,30 +73,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 Shop
               </button>
             </div>
-          )}
-        </div>
-      </header>
-
-      {/* Mobile Menu */}
-      {isMobile && isMobileMenuOpen && (
-        <div className="fixed inset-x-0 top-16 z-40 bg-card border-b border-border mobile-menu">
-          <div className="container mx-auto px-4 py-3">
-            <div className="flex flex-col space-y-2">
-              {mobileMenuItems.map((item) => (
-                <button
-                  key={item.name}
-                  onClick={() => {
-                    navigate(item.path);
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="text-left px-4 py-3 rounded-md hover:bg-muted transition-colors font-medium"
-                >
-                  {item.name}
-                </button>
-              ))}
-            </div>
           </div>
-        </div>
+        </header>
       )}
 
       {/* Main Content */}

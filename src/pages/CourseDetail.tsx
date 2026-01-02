@@ -3,9 +3,9 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Star, Clock, Users, Calendar, CheckCircle2, ArrowLeft } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { Card, CardContent } from "../components/ui/card";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
+import { useCurrency } from "../context/CurrencyContext";
 
 // Import all images from the training component
 import safetyImage from "../assets/safety-training.jpg";
@@ -24,13 +24,9 @@ interface Course {
   duration: string;
   students: number;
   format: string[];
-  price: string;
+  price: number; // Changed to number
+  groupPrice?: number; // Added optional group price
   features: string[];
-  instructor: {
-    name: string;
-    role: string;
-    experience: string;
-  };
 }
 
 const courses: Course[] = [
@@ -45,7 +41,8 @@ const courses: Course[] = [
     duration: "4 weeks",
     students: 300,
     format: ["Online", "In-Person"],
-    price: "$299",
+    price: 175, // 250k NGN = ~$172 USD + $3 = $175
+    groupPrice: 141, // 200k NGN = ~$138 USD + $3 = $141
     features: [
       "GNSS survey planning and setup",
       "Field data collection (Static, RTK, DGPS, CORS, PPP)",
@@ -54,11 +51,6 @@ const courses: Course[] = [
       "Data processing using Compass & Trimble Business Center",
       "Producing professional survey outputs"
     ],
-    instructor: {
-      name: "Sarah Johnson",
-      role: "Senior GNSS Specialist",
-      experience: "8+ years in GNSS surveying"
-    }
   },
   {
     id: "bathymetric",
@@ -71,7 +63,8 @@ const courses: Course[] = [
     duration: "6 weeks",
     students: 150,
     format: ["In-Person", "Hybrid"],
-    price: "$399",
+    price: 348, // 500k NGN = ~$345 USD + $3 = $348
+    groupPrice: 244, // 350k NGN = ~$241 USD + $3 = $244
     features: [
       "Survey planning and equipment setup",
       "Safe handling of echosounders and transducers",
@@ -80,11 +73,6 @@ const courses: Course[] = [
       "Processing in HYSURVEY, AutoCAD, Global Mapper, Surfer",
       "Producing contour maps, 3D surfaces, and reports"
     ],
-    instructor: {
-      name: "Michael Chen",
-      role: "Hydrographic Survey Expert",
-      experience: "10+ years in bathymetry"
-    }
   },
   {
     id: "dronemapping",
@@ -97,7 +85,8 @@ const courses: Course[] = [
     duration: "3 weeks",
     students: 220,
     format: ["Online", "In-Person"],
-    price: "$249",
+    price: 279, // 400k NGN = ~$276 USD + $3 = $279
+    groupPrice: 175, // 250k NGN = ~$172 USD + $3 = $175
     features: [
       "Flight planning for RTK and Non-RTK missions",
       "Safety precautions and regulatory compliance",
@@ -106,11 +95,6 @@ const courses: Course[] = [
       "Processing images into maps, DSMs, and 3D models",
       "Producing professional mapping deliverables"
     ],
-    instructor: {
-      name: "David Martinez",
-      role: "Drone Mapping Specialist",
-      experience: "6+ years in UAV operations"
-    }
   },
   {
     id: "totalstation",
@@ -123,7 +107,8 @@ const courses: Course[] = [
     duration: "5 weeks",
     students: 180,
     format: ["In-Person"],
-    price: "$349",
+    price: 244, // 350k NGN = ~$241 USD + $3 = $244
+    groupPrice: 175, // 250k NGN = ~$172 USD + $3 = $175
     features: [
       "Instrument setup and calibration",
       "Traversing and topographic surveys",
@@ -132,11 +117,6 @@ const courses: Course[] = [
       "Data management and processing",
       "Producing client-ready survey plans"
     ],
-    instructor: {
-      name: "Emily Rodriguez",
-      role: "Surveying Operations Manager",
-      experience: "7+ years in field operations"
-    }
   },
   {
     id: "gis",
@@ -149,7 +129,8 @@ const courses: Course[] = [
     duration: "8 weeks",
     students: 450,
     format: ["Online"],
-    price: "$199",
+    price: 210, // 300k NGN = ~$207 USD + $3 = $210
+    groupPrice: 175, // 250k NGN = ~$172 USD + $3 = $175
     features: [
       "Spatial data collection and management",
       "Map creation and visualization",
@@ -158,11 +139,6 @@ const courses: Course[] = [
       "Producing thematic maps and reports",
       "Delivering professional GIS outputs"
     ],
-    instructor: {
-      name: "Dr. James Wilson",
-      role: "GIS Professor",
-      experience: "12+ years in GIS education"
-    }
   },
   {
     id: "3dlaserscanning",
@@ -175,7 +151,8 @@ const courses: Course[] = [
     duration: "7 weeks",
     students: 190,
     format: ["Online", "Hybrid"],
-    price: "$379",
+    price: 520, // 750k NGN = ~$517 USD + $3 = $520
+    groupPrice: 348, // 500k NGN = ~$345 USD + $3 = $348
     features: [
       "Scanner setup and scan planning",
       "Field point cloud capture techniques",
@@ -184,11 +161,6 @@ const courses: Course[] = [
       "Processing with LSMASTER, ReCap, CloudCompare, Revit",
       "Producing accurate 3D models and reports"
     ],
-    instructor: {
-      name: "Dr. Lisa Wang",
-      role: "3D Scanning Specialist",
-      experience: "9+ years in laser scanning"
-    }
   },
   {
     id: "autocad",
@@ -201,7 +173,8 @@ const courses: Course[] = [
     duration: "6 weeks",
     students: 120,
     format: ["Online"],
-    price: "$329",
+    price: 175, // 250k NGN = ~$172 USD + $3 = $175
+    groupPrice: 127, // 180k NGN = ~$124 USD + $3 = $127
     features: [
       "2D and 3D drafting techniques",
       "Layer management and annotation",
@@ -210,11 +183,6 @@ const courses: Course[] = [
       "Creating professional site and engineering plans",
       "Producing client-ready CAD drawings"
     ],
-    instructor: {
-      name: "Robert Taylor",
-      role: "CAD Specialist",
-      experience: "8+ years in AutoCAD"
-    }
   },
   {
     id: "engineering",
@@ -227,7 +195,8 @@ const courses: Course[] = [
     duration: "5 weeks",
     students: 160,
     format: ["Online", "In-Person"],
-    price: "$299",
+    price: 313, // 450k NGN = ~$310 USD + $3 = $313
+    groupPrice: 244, // 350k NGN = ~$241 USD + $3 = $244
     features: [
       "Road, topographic, and site survey planning",
       "Cross-sections, longitudinal sections, and drainage mapping",
@@ -235,19 +204,36 @@ const courses: Course[] = [
       "Contour generation and layout preparation",
       "Integrating data with AutoCAD, Global Mapper, Surfer",
       "Producing professional plans, 3D models, and reports"
-    ],
-    instructor: {
-      name: "Dr. Amanda Lee",
-      role: "Engineering Survey Specialist",
-      experience: "11+ years in engineering surveys"
-    }
+    ]
+  },
+  {
+    id: "lidar-drone",
+    title: "LIDAR Drone Course (Advanced)",
+    description: "Advanced LIDAR drone surveying and data processing",
+    longDescription: "An advanced course focusing on LIDAR drone technology for high-precision surveying. Learn to operate LIDAR-equipped drones, capture accurate point cloud data, and process results for topographic mapping, volumetric analysis, and infrastructure monitoring.",
+    image: dronemapping,
+    rating: 4.9,
+    reviews: 65,
+    duration: "4 weeks",
+    students: 90,
+    format: ["In-Person", "Hybrid"],
+    price: 520, // 750k NGN = ~$517 USD + $3 = $520 (fixed from 750000)
+    groupPrice: 348, // 500k NGN = ~$345 USD + $3 = $348 (fixed from 500000)
+    features: [
+      "LIDAR drone operation and safety",
+      "Advanced point cloud data capture",
+      "Data accuracy and quality assurance",
+      "Processing LIDAR data in specialized software",
+      "Creating high-precision topographic maps",
+      "Volumetric calculations and analysis"
+    ]
   }
 ];
-
 const CourseDetail = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const { getConvertedPrice } = useCurrency();
 
   const course = courses.find(c => c.id === courseId);
 
@@ -323,7 +309,16 @@ const CourseDetail = () => {
                 </div>
               </div>
 
-              <div className="text-3xl font-bold text-primary mb-6">{course.price}</div>
+              <div className="space-y-3 mb-6">
+                <div className="text-2xl font-bold text-primary">
+                  Personal Training: {getConvertedPrice(course.price)}
+                </div>
+                {course.groupPrice && (
+                  <div className="text-xl font-semibold text-green-600">
+                    Group Training: {getConvertedPrice(course.groupPrice)}
+                  </div>
+                )}
+              </div>
 
               <Button
                 size="lg"
@@ -360,27 +355,6 @@ const CourseDetail = () => {
                   </div>
                 ))}
               </div>
-            </div>
-
-            {/* Instructor Info */}
-            <div>
-              <Card>
-                <CardContent className="p-6">
-                  <h3 className="text-xl font-bold mb-4">Instructor</h3>
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Users className="w-8 h-8 text-primary" />
-                    </div>
-                    <div>
-                      <div className="font-semibold">{course.instructor.name}</div>
-                      <div className="text-sm text-muted-foreground">{course.instructor.role}</div>
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {course.instructor.experience} of professional experience
-                  </p>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </div>

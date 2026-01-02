@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
-import { RefreshCw, Calendar, ArrowRight, Play, ExternalLink, Users, Eye } from "lucide-react";
+import { RefreshCw, Calendar, ArrowRight, Play, ExternalLink, Users } from "lucide-react";
 import { cn } from "../lib/utils";
 
 interface YouTubeVideo {
@@ -301,11 +301,6 @@ export const YouTubeSection = ({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-10 md:mb-16">
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-sm font-medium mb-4">
-            <Eye className="w-4 h-4" />
-            Latest Content
-          </div>
-          
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
             Explore Our Tutorials
           </h2>
@@ -346,7 +341,7 @@ export const YouTubeSection = ({
           <div className="flex flex-col justify-center items-center h-40 space-y-4">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
             <span className="text-gray-600 text-sm md:text-base">
-              Loading latest videos from GeoSSOS...
+              Loading latest videos from GeossoTech...
             </span>
           </div>
         ) : (

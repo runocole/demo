@@ -362,6 +362,17 @@ const CorsNetwork = () => {
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStation, setSelectedStation] = useState<CorsStation | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll to the map section
+  const scrollToMap = () => {
+    if (mapSectionRef.current) {
+      mapSectionRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  };
 
   // Calculate distance function
   const calculateDistance = useCallback((lat1: number, lon1: number, lat2: number, lon2: number): number => {
@@ -421,6 +432,8 @@ const CorsNetwork = () => {
         setNearestStation(nearest);
         setSelectedStation(nearest);
         setIsLoading(false);
+        // Scroll to map after finding location
+        scrollToMap();
       },
       (error) => {
         setIsLoading(false);
@@ -469,33 +482,36 @@ const CorsNetwork = () => {
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
-   {/* Hero Section */}
-<section className="relative h-[750px] flex items-center justify-center overflow-hidden">
-  <div 
-    className="absolute inset-0 bg-cover bg-center"
-    style={{ backgroundImage: `url(${heroImage})` }}
-  >
-    <div className="absolute inset-0 bg-primary/60" />
-  </div>
-  <div className="relative z-10 container mx-auto px-4 text-center">
-    <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 font-montserrat tracking-tight">
-      Find & Log Your Nearest CORS Station
-    </h1>
-    <p className="text-xl md:text-2xl text-gray-800 max-w-2xl mx-auto mb-8 font-montserrat">
-      Locate Continuously Operating Reference Stations instantly. 
-      Access correction streams and upload RINEX data in seconds.
-    </p>
-    <div className="flex flex-col sm:flex-row justify-center gap-4">
-      <Button
-        onClick={() => navigate("/map")}
-        size="lg"
-        className="bg-[#081748] text-white hover:bg-blue-800 font-bold text-base px-8 py-4 shadow-xl hover:shadow-2xl transition-all"
-      >
-        Find Nearest CORS →
-      </Button>
-    </div>
-  </div>
-</section>
+      
+      {/* Hero Section - Fixed with better text contrast */}
+      <section className="relative h-[750px] flex items-center justify-center overflow-hidden">
+        {/* Darker overlay for better text contrast on light image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${heroImage})` }}
+        >
+          <div className="absolute inset-0 bg-black/70" /> {/* Changed from bg-primary/60 to darker overlay */}
+        </div>
+        
+        <div className="relative z-10 container mx-auto px-4 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 font-montserrat tracking-tight drop-shadow-lg">
+            Find & Log Your Nearest CORS Station
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-200 max-w-2xl mx-auto mb-8 font-montserrat drop-shadow-md">
+            Locate Continuously Operating Reference Stations instantly. 
+            Access correction streams and upload RINEX data in seconds.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button
+              onClick={scrollToMap} // Changed to scroll to map instead of navigate
+              size="lg"
+              className="bg-[#081748] text-white hover:bg-[#0a1f5a] font-bold text-base px-8 py-4 shadow-xl hover:shadow-2xl transition-all"
+            >
+              Find Nearest CORS →
+            </Button>
+          </div>
+        </div>
+      </section>
 
       {/* Stats Section */}
       <section className="py-16 bg-blue-100">
@@ -537,16 +553,19 @@ const CorsNetwork = () => {
                 </div>
               </div>
               
-              <button className="bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
-                Register Now
-              </button>
+             <button 
+  onClick={() => navigate("/contact")}
+  className="bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors"
+>
+  Register Now
+</button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CORS Network Section */}
-      <section id="cors-map" className="py-16 bg-gray-50">
+      {/* CORS Network Section - Added ref for scrolling */}
+      <section id="cors-map" ref={mapSectionRef} className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center space-y-4 mb-12">
             <h2 className="text-4xl font-bold text-primary">CORS Network Coverage</h2>
@@ -755,10 +774,10 @@ const CorsNetwork = () => {
           <p className="text-lg text-gray-800">
             Need a quotation or further inquiries? Call{" "}
             <a 
-              href="tel:+234987654234534" 
+              href="tel: +2349026194016" 
               className="font-bold text-blue-600 hover:text-blue-800 underline transition-colors"
             >
-              +234 987 654 2345 34
+              +234 902 6194 016
             </a>
           </p>
         </div>

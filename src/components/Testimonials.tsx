@@ -14,10 +14,10 @@ interface Testimonial {
 const testimonials: Testimonial[] = [
   {
     id: 1,
-    name: "Sarah Johnson",
+    name: "Surv. Ndidi Obieti",
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
     title: "Professional Drone Pilot",
-    text: "The training program exceeded my expectations. The instructors were knowledgeable and the hands-on experience was invaluable. I feel confident in my drone mapping abilities now.",
+    text: "I am greatly impressed with this training. It exceeded my expectations. I am also ready for the next step which is getting a drone",
     rating: 5,
   },
   {

@@ -50,23 +50,32 @@ const MobileNavigation = () => {
     { icon: FileText, label: "Blog", path: "/blog" },
   ];
 
-  const equipmentItems = [
-    "Total Stations",
-    "GNSS Receivers", 
-    "EchoSounders & USV",
-    "Payloads",
-    "Auto-steering Systems",
-    "Handheld GPS",
-    "Laser Scanners",
-    "Drones",
-    "Levels",
-    "RTK Tablets",
-  ];
-
-  const supportItems = [
-    "Technical Support",
-    "Maintenance",
-    "Calibration",
+  const navigationItems = [
+    {
+      name: "Equipments",
+      href: "/buynow?category=survey-equipment",
+      items: [
+        { name: "Total Stations", href: "/buynow?category=Total Station" },
+        { name: "GNSS Receivers", href: "/buynow?category=GNSS Receiver" },
+        { name: "EchoSounders & USV", href: "/buynow?category=EchoSounder" },
+        { name: "Payloads", href: "/buynow?category=Payloads" },
+        { name: "Auto-steering Systems", href: "/buynow?category=Auto-steering Systems" },
+        { name: "Handheld GPS", href: "/buynow?category=Handheld GPS" },
+        { name: "Laser Scanners", href: "/buynow?category=Laser Scanner" },
+        { name: "Drones", href: "/buynow?category=Drones" },
+        { name: "Levels", href: "/buynow?category=Level" },
+        { name: "RTK Tablets", href: "/buynow?category=RTK Tablets" },
+      ],
+    },
+    {
+      name: "Support & Services",
+      href: "/contact",
+      items: [
+        { name: "Technical Support", href: "/contact?service=technical-support" },
+        { name: "Maintenance", href: "/contact?service=maintenance" },
+        { name: "Calibration", href: "/contact?service=calibration" },
+      ],
+    },
   ];
 
   return (
@@ -150,41 +159,39 @@ const MobileNavigation = () => {
                   );
                 })}
                 
-                {/* Equipments Dropdown */}
-                <div className="border-t border-gray-100">
-                  <div className="px-6 py-4">
-                    <h3 className="font-bold text-gray-700 mb-2">Equipments</h3>
-                    <div className="pl-4 space-y-2">
-                      {equipmentItems.map((item) => (
-                        <button
-                          key={item}
-                          onClick={() => navigate(`/buynow?category=${encodeURIComponent(item)}`)}
-                          className="block w-full text-left py-2 text-gray-600 hover:text-[#081748]"
-                        >
-                          {item}
-                        </button>
-                      ))}
+                {/* Navigation Items with Dropdowns */}
+                {navigationItems.map((section) => (
+                  <div key={section.name} className="border-t border-gray-100">
+                    <div className="px-6 py-4">
+                      {/* Section Header - Clickable to go to main page */}
+                      <button
+                        onClick={() => {
+                          navigate(section.href);
+                          setIsMenuOpen(false);
+                        }}
+                        className="font-bold text-gray-700 mb-2 hover:text-[#081748] text-left w-full"
+                      >
+                        {section.name}
+                      </button>
+                      
+                      {/* Section Items */}
+                      <div className="pl-4 space-y-2">
+                        {section.items.map((item) => (
+                          <button
+                            key={item.name}
+                            onClick={() => {
+                              navigate(item.href);
+                              setIsMenuOpen(false);
+                            }}
+                            className="block w-full text-left py-2 text-gray-600 hover:text-[#081748]"
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-                
-                {/* Support & Services Dropdown */}
-                <div className="border-t border-gray-100">
-                  <div className="px-6 py-4">
-                    <h3 className="font-bold text-gray-700 mb-2">Support & Services</h3>
-                    <div className="pl-4 space-y-2">
-                      {supportItems.map((item) => (
-                        <button
-                          key={item}
-                          onClick={() => navigate(`/contact?service=${encodeURIComponent(item.toLowerCase().replace(/\s+/g, '-'))}`)}
-                          className="block w-full text-left py-2 text-gray-600 hover:text-[#081748]"
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                ))}
                 
                 {/* Cart Item in Menu */}
                 <button

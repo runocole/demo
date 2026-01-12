@@ -32,7 +32,8 @@ import csr4 from "../assets/csr4.jpg";
 const About: React.FC = () => {
   const navigate = useNavigate();
 
- const features = [
+
+  const features = [
     {
       icon: Package,
       title: "Equipment Sales",
@@ -437,8 +438,8 @@ const About: React.FC = () => {
               <div className="h-0.5 bg-gray-400 my-16 w-full"></div>
             </div>
 
-            {/* FEATURE CARDS GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+  {/* FEATURE CARDS GRID - Updated for mobile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-8 md:mt-12">
               {features.map((feature, index) => {
                 const Icon = feature.icon;
                 return (
@@ -447,20 +448,25 @@ const About: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.6 + index * 0.1 }}
+                    className="h-full"
                   >
                     <Card className="h-full hover:shadow-lg transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-[#081748]-100 rounded-lg flex items-center justify-center">
-                              <Icon className="w-6 h-6 text-blue-600" />
+                      <CardContent className="p-4 md:p-6">
+                        {/* Mobile Layout: Stacked with centered icon */}
+                        <div className="flex flex-col items-center text-center md:items-start md:text-left md:flex-row md:gap-4">
+                          {/* Icon container - larger on mobile for better visibility */}
+                          <div className="flex-shrink-0 mb-4 md:mb-0">
+                            <div className="w-14 h-14 md:w-12 md:h-12 bg-[#081748]-100 rounded-lg flex items-center justify-center mx-auto md:mx-0">
+                              <Icon className="w-7 h-7 md:w-6 md:h-6 text-blue-600" />
                             </div>
                           </div>
-                          <div>
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">
+                          
+                          {/* Content */}
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-gray-900 mb-2 md:mb-3">
                               {feature.title}
                             </h3>
-                            <p className="text-gray-700 leading-relaxed">
+                            <p className="text-gray-700 leading-relaxed text-sm md:text-base">
                               {feature.description}
                             </p>
                           </div>

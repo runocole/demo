@@ -106,39 +106,43 @@ export const CheckoutModal = ({
     country.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Use this helper function for displaying prices
-  const formatPrice = (amount: number): string => {
-    return getConvertedPrice(amount);
-  };
-
-  // Calculate totals based on current currency
-  const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
-
-  const calculateSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
-
-  const calculateTax = () => {
-    const subtotal = calculateSubtotal();
-    return subtotal * 0.08;
-  };
-
-  // Get the actual amount in the selected currency
-  const getAmountInSelectedCurrency = () => {
-    const subtotal = calculateSubtotal();
-    const tax = subtotal * 0.08;
-    return subtotal + tax;
-  };
-
-  // Convert to Naira for Paystack
-  const convertToNaira = (amount: number, currency: string): number => {
-    if (currency === 'NGN') {
-      return amount; // Already in Naira
+  // FIXED: Helper function to convert USD amount to current currency (as number)
+  const convertAmountToCurrentCurrency = (usdAmount: number): number => {
+    if (currentCurrency === 'NGN') {
+      return usdAmount * exchangeRate;
     }
-    // Convert from current currency to Naira
-    return amount * exchangeRate;
+    return usdAmount;
+  };
+
+  // FIXED: Calculate everything in USD first, then convert for display/calculation
+  const calculateSubtotalUSD = (): number => {
+    return cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  };
+
+  const calculateTaxUSD = (): number => {
+    return calculateSubtotalUSD() * 0.08;
+  };
+
+  const calculateTotalUSD = (): number => {
+    return calculateSubtotalUSD() + calculateTaxUSD();
+  };
+
+  // FIXED: Get amounts in current currency (as numbers)
+  const getSubtotalInCurrentCurrency = (): number => {
+    return convertAmountToCurrentCurrency(calculateSubtotalUSD());
+  };
+
+  const getTaxInCurrentCurrency = (): number => {
+    return convertAmountToCurrentCurrency(calculateTaxUSD());
+  };
+
+  const getTotalInCurrentCurrency = (): number => {
+    return convertAmountToCurrentCurrency(calculateTotalUSD());
+  };
+
+  // FIXED: For Paystack - convert USD to NGN
+  const convertUSDToNGN = (usdAmount: number): number => {
+    return Math.round(usdAmount * exchangeRate);
   };
 
   const handleFormSubmit = async (e: React.FormEvent) => {
@@ -188,15 +192,18 @@ export const CheckoutModal = ({
   const handlePaystackPayment = async () => {
     setIsLoading(true);
     
-    // Calculate total in selected currency
-    const totalInSelectedCurrency = getAmountInSelectedCurrency();
+    // Calculate total in USD
+    const totalUSD = calculateTotalUSD();
     
-    console.log('Total in selected currency:', totalInSelectedCurrency, currentCurrency);
-    console.log('Exchange rate:', exchangeRate);
+    console.log('=== PAYSTACK PAYMENT CALCULATION ===');
+    console.log('Total USD:', totalUSD);
+    console.log('Current Currency:', currentCurrency);
+    console.log('Exchange Rate:', exchangeRate);
     
-    // Convert to Naira for Paystack
-    const amountInNGN = convertToNaira(totalInSelectedCurrency, currentCurrency);
+    // Convert to NGN for Paystack
+    const amountInNGN = convertUSDToNGN(totalUSD);
     console.log('Amount in NGN:', amountInNGN);
+    console.log('Expected: ₦', amountInNGN.toLocaleString('en-NG'));
     
     // Paystack expects amount in kobo (smallest NGN unit)
     // Check if amount is within Paystack limits
@@ -212,8 +219,8 @@ export const CheckoutModal = ({
     
     const amountForPayment = Math.round(amountInNGN * 100); // Convert to kobo
     
-    console.log('Amount being sent to Paystack (kobo):', amountForPayment);
-    console.log('Amount in NGN:', amountForPayment / 100);
+    console.log('Amount for Paystack (kobo):', amountForPayment);
+    console.log('====================================');
     
     try {
       const response = await fetch('http://localhost:5000/api/paystack/initialize', {
@@ -229,13 +236,16 @@ export const CheckoutModal = ({
             customer_country: formData.country,
             customer_state: formData.state,
             original_currency: currentCurrency,
-            original_amount: totalInSelectedCurrency,
-            exchange_rate: currentCurrency === 'NGN' ? 1 : exchangeRate,
+            original_amount_usd: totalUSD,
+            original_amount_current: getTotalInCurrentCurrency(),
+            exchange_rate: exchangeRate,
+            conversion_applied: currentCurrency !== 'NGN',
             cart_items: cart.map(item => ({
               id: item.id,
               name: item.name,
               quantity: item.quantity,
-              price: item.price,
+              price_usd: item.price,
+              price_current: convertAmountToCurrentCurrency(item.price),
               price_currency: currentCurrency,
               category: item.category
             }))
@@ -246,6 +256,9 @@ export const CheckoutModal = ({
       const data = await response.json();
       
       if (response.ok) {
+        // Clear cart after successful payment initialization
+        localStorage.removeItem('cart');
+        
         onComplete(formData, generatedOrderNumber);
         window.location.href = data.authorization_url;
       } else {
@@ -265,65 +278,57 @@ export const CheckoutModal = ({
   };
 
   const handleWhatsAppCheckout = () => {
-  const customerState = formData.state || "Not specified";
-  
-  // Format cart items - we need prices in the current currency
-  // Since we're not sure if item.price changes, let's calculate it properly
-  const formattedCartItems = cart.map(item => {
-    // Get the displayed price as a string
-    const priceString = formatPrice(item.price); // e.g., "$299.00" or "₦468,234"
+    const customerState = formData.state || "Not specified";
     
-    // Convert back to number by removing currency symbols and commas
-    // This handles both "$299.00" and "₦468,234" formats
-    const numericPrice = parseFloat(
-      priceString
-        .replace(/[^\d.-]/g, '') // Remove all non-numeric except dots and minus
-        .replace(/,/g, '') // Remove commas
-    );
-    
-    return {
-      firstName: item.name,
-      lastName: "",
-      quantity: item.quantity,
-      price: numericPrice || item.price, // Fallback to original price if parsing fails
-    };
-  });
+    // Format cart items - use USD prices
+    const formattedCartItems = cart.map(item => {
+      return {
+        firstName: item.name,
+        lastName: "",
+        quantity: item.quantity,
+        price: item.price, // USD price
+      };
+    });
 
-  const customerInfo = {
-    firstName: formData.firstName,
-    lastName: formData.lastName,
-    email: formData.email,
-    phone: formData.phone,
-    country: formData.country,
-    state: customerState
+    const customerInfo = {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      country: formData.country,
+      state: customerState
+    };
+
+    // Generate WhatsApp URL with correct currency
+    const whatsappUrl = generateWhatsAppUrl(
+      formattedCartItems,
+      customerInfo,
+      generatedOrderNumber,
+      currentCurrency as 'NGN' | 'USD'
+    );
+
+    // Clear cart
+    localStorage.removeItem('cart');
+    
+    // Complete checkout and redirect to WhatsApp
+    onComplete(formData, generatedOrderNumber);
+    
+    // Open WhatsApp in new tab
+    window.open(whatsappUrl, '_blank');
+    
+    // Show success message
+    toast({
+      title: "WhatsApp Order Created",
+      description: "Your order has been sent via WhatsApp. Please complete your payment with the business.",
+      variant: "default",
+    });
+    
+    // Close modal after a delay
+    setTimeout(() => {
+      handleClose();
+    }, 2000);
   };
 
-  // Generate WhatsApp URL with correct currency
-  const whatsappUrl = generateWhatsAppUrl(
-    formattedCartItems,
-    customerInfo,
-    generatedOrderNumber,
-    currentCurrency as 'NGN' | 'USD' // This is crucial!
-  );
-
-  // Complete checkout and redirect to WhatsApp
-  onComplete(formData, generatedOrderNumber);
-  
-  // Open WhatsApp in new tab
-  window.open(whatsappUrl, '_blank');
-  
-  // Show success message
-  toast({
-    title: "WhatsApp Order Created",
-    description: "Your order has been sent via WhatsApp. Please complete your payment with the business.",
-    variant: "default",
-  });
-  
-  // Close modal after a delay
-  setTimeout(() => {
-    handleClose();
-  }, 2000);
-};
   const handleClose = () => {
     onClose();
     setStep("form");
@@ -526,7 +531,15 @@ export const CheckoutModal = ({
 
   const ReviewDetails = ({ isViewDetailsMode = false }: { isViewDetailsMode?: boolean }) => {
     const isReviewStep = step === "review" && !isViewDetailsMode;
-    const totalAmount = getAmountInSelectedCurrency();
+    const subtotalUSD = calculateSubtotalUSD();
+    const taxUSD = calculateTaxUSD();
+    const totalUSD = calculateTotalUSD();
+    
+    const subtotalCurrent = getSubtotalInCurrentCurrency();
+    const taxCurrent = getTaxInCurrentCurrency();
+    const totalCurrent = getTotalInCurrentCurrency();
+    
+    const requiresConversion = selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN';
     
     return (
       <div className="space-y-6 pb-4">
@@ -579,7 +592,7 @@ export const CheckoutModal = ({
                 </span>
               </div>
             )}
-            {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN' && (
+            {isReviewStep && requiresConversion && (
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Currency Conversion</span>
                 <span className="font-semibold text-white text-xs">
@@ -643,24 +656,29 @@ export const CheckoutModal = ({
               </span>
             </div>
             <div className="space-y-3">
-              {cart.slice(0, 2).map((item) => (
-                <div key={item.id} className="flex items-center gap-3">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-10 h-10 object-cover rounded"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm text-white truncate">{item.name}</h4>
-                    <p className="text-xs text-gray-400">x{item.quantity}</p>
+              {cart.slice(0, 2).map((item) => {
+                const itemTotalUSD = item.price * item.quantity;
+                const itemTotalCurrent = convertAmountToCurrentCurrency(itemTotalUSD);
+                
+                return (
+                  <div key={item.id} className="flex items-center gap-3">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-10 h-10 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-white truncate">{item.name}</h4>
+                      <p className="text-xs text-gray-400">x{item.quantity}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-blue-400">
+                        {getConvertedPrice(itemTotalUSD)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-blue-400">
-                      {formatPrice(item.price * item.quantity)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {cart.length > 2 && (
                 <div className="text-center pt-2 border-t border-gray-700">
                   <p className="text-sm text-gray-400">
@@ -679,25 +697,29 @@ export const CheckoutModal = ({
               </span>
             </div>
             <div className="space-y-3 max-h-60 overflow-y-auto">
-              {cart.map((item) => (
-                <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-700/50 rounded">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="w-12 h-12 object-cover rounded"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-sm text-white truncate">{item.name}</h4>
-                    <p className="text-xs text-gray-400">{item.category}</p>
+              {cart.map((item) => {
+                const itemTotalUSD = item.price * item.quantity;
+                
+                return (
+                  <div key={item.id} className="flex items-center gap-3 p-2 bg-gray-700/50 rounded">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-white truncate">{item.name}</h4>
+                      <p className="text-xs text-gray-400">{item.category}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-white">x{item.quantity}</p>
+                      <p className="text-sm font-bold text-blue-400">
+                        {getConvertedPrice(itemTotalUSD)}
+                      </p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm text-white">x{item.quantity}</p>
-                    <p className="text-sm font-bold text-blue-400">
-                      {formatPrice(item.price * item.quantity)}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -709,28 +731,34 @@ export const CheckoutModal = ({
               <span className="text-gray-400">Subtotal</span>
               <div className="text-right">
                 <span className="font-semibold text-white">
-                  {formatPrice(calculateSubtotal())}
+                  {getConvertedPrice(subtotalUSD)}
                 </span>
+                <p className="text-xs text-gray-400">
+                  ({subtotalUSD.toFixed(2)} USD)
+                </p>
               </div>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-400">Tax (8%)</span>
               <div className="text-right">
                 <span className="font-semibold text-white">
-                  {formatPrice(calculateTax())}
+                  {getConvertedPrice(taxUSD)}
                 </span>
+                <p className="text-xs text-gray-400">
+                  ({taxUSD.toFixed(2)} USD)
+                </p>
               </div>
             </div>
             
-            {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN' && (
+            {isReviewStep && requiresConversion && (
               <div className="border-t border-gray-700 pt-2 mt-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Converted to NGN</span>
                   <div className="text-right">
                     <span className="font-semibold text-yellow-400">
-                      ₦{convertToNaira(totalAmount, currentCurrency).toLocaleString('en-NG', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
+                      ₦{convertUSDToNGN(totalUSD).toLocaleString('en-NG', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0
                       })}
                     </span>
                     <p className="text-xs text-gray-400">
@@ -746,11 +774,16 @@ export const CheckoutModal = ({
                 <span className="text-white">Total</span>
                 <div className="text-right">
                   <span className="text-blue-400">
-                    {formatPrice(totalAmount)}
+                    {getConvertedPrice(totalUSD)}
                   </span>
-                  {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN' && (
+                  {isReviewStep && selectedPaymentMethod === "paystack" && requiresConversion && (
                     <p className="text-xs text-gray-400 mt-1">
-                      Will charge: ₦{convertToNaira(totalAmount, currentCurrency).toLocaleString('en-NG')}
+                      Will charge: ₦{convertUSDToNGN(totalUSD).toLocaleString('en-NG')}
+                    </p>
+                  )}
+                  {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency === 'NGN' && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Will charge: ₦{Math.round(totalCurrent).toLocaleString('en-NG')}
                     </p>
                   )}
                 </div>
@@ -793,7 +826,7 @@ export const CheckoutModal = ({
                   ) : (
                     <>
                       <CreditCard className="w-4 h-4" />
-                      {isMobile ? "Pay" : "Pay Securely"}
+                      {isMobile ? "Pay" : currentCurrency === 'NGN' ? "Pay in NGN" : "Pay Securely"}
                     </>
                   )}
                 </Button>
@@ -821,7 +854,7 @@ export const CheckoutModal = ({
           <p className="text-center text-sm text-gray-400 px-2">
             {selectedPaymentMethod === "paystack"
               ? currentCurrency === 'NGN' 
-                ? "You'll be redirected to Paystack for secure payment."
+                ? "You'll be redirected to Paystack for secure NGN payment."
                 : `Amount will be converted from ${currentCurrency} to NGN and charged in Naira.`
               : "You'll be redirected to WhatsApp to send your order."}
           </p>
@@ -876,7 +909,7 @@ export const CheckoutModal = ({
                       <div>
                         <p className="text-sm text-gray-400">Order Total</p>
                         <p className="text-xl font-bold text-white">
-                          {formatPrice(getAmountInSelectedCurrency())}
+                          {getConvertedPrice(calculateTotalUSD())}
                         </p>
                       </div>
                       <div className="text-right">
@@ -901,24 +934,28 @@ export const CheckoutModal = ({
                       </span>
                     </div>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {cart.map((item) => (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span className="text-white truncate max-w-[200px]">
-                            {item.name} x {item.quantity}
-                          </span>
-                          <div className="text-right">
-                            <span className="font-medium text-white">
-                              {formatPrice(item.price * item.quantity)}
+                      {cart.map((item) => {
+                        const itemTotalUSD = item.price * item.quantity;
+                        
+                        return (
+                          <div key={item.id} className="flex justify-between text-sm">
+                            <span className="text-white truncate max-w-[200px]">
+                              {item.name} x {item.quantity}
                             </span>
+                            <div className="text-right">
+                              <span className="font-medium text-white">
+                                {getConvertedPrice(itemTotalUSD)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                     <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between font-bold text-lg">
                       <span className="text-white">Total:</span>
                       <div className="text-right">
                         <span className="text-blue-400">
-                          {formatPrice(getAmountInSelectedCurrency())}
+                          {getConvertedPrice(calculateTotalUSD())}
                         </span>
                       </div>
                     </div>
@@ -1140,6 +1177,12 @@ export const CheckoutModal = ({
                               <span className="text-gray-300">Converts {currentCurrency} to NGN automatically</span>
                             </div>
                           )}
+                          {currentCurrency === 'NGN' && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-gray-300">Pay directly in NGN without conversion</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {selectedPaymentMethod === "paystack" && (
@@ -1201,14 +1244,19 @@ export const CheckoutModal = ({
                             Will be converted from {currentCurrency} to NGN for Paystack
                           </p>
                         )}
+                        {currentCurrency === 'NGN' && (
+                          <p className="text-xs text-green-400 mt-1">
+                            Will be processed directly in NGN
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-blue-400">
-                          {formatPrice(getAmountInSelectedCurrency())}
+                          {getConvertedPrice(calculateTotalUSD())}
                         </p>
                         {currentCurrency !== 'NGN' && (
                           <p className="text-xs text-gray-400">
-                            ≈ ₦{convertToNaira(getAmountInSelectedCurrency(), currentCurrency).toLocaleString('en-NG')}
+                            ≈ ₦{convertUSDToNGN(calculateTotalUSD()).toLocaleString('en-NG')}
                           </p>
                         )}
                       </div>

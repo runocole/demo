@@ -14,7 +14,7 @@ router.post('/initialize', async (req, res) => {
   try {
     const { email, amount, orderNumber, metadata } = req.body;
     
-    console.log('Initializing payment for:', email, 'Amount:', amount);
+    console.log('Initializing payment for:', email, 'Amount:', amount, 'Currency in metadata:', metadata?.original_currency);
     
     const response = await axios.post(
       'https://api.paystack.co/transaction/initialize',

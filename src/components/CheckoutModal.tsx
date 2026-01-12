@@ -277,57 +277,68 @@ export const CheckoutModal = ({
     }
   };
 
-  const handleWhatsAppCheckout = () => {
-    const customerState = formData.state || "Not specified";
+const handleWhatsAppCheckout = () => {
+  const customerState = formData.state || "Not specified";
+  
+  // FIXED: Pass UNIT PRICE in current currency
+  const formattedCartItems = cart.map(item => {
+    // Convert item UNIT PRICE to current currency
+    const unitPriceInCurrentCurrency = convertAmountToCurrentCurrency(item.price);
     
-    // Format cart items - use USD prices
-    const formattedCartItems = cart.map(item => {
-      return {
-        firstName: item.name,
-        lastName: "",
-        quantity: item.quantity,
-        price: item.price, // USD price
-      };
-    });
-
-    const customerInfo = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      country: formData.country,
-      state: customerState
+    return {
+      firstName: item.name,
+      lastName: "",
+      quantity: item.quantity,
+      price: unitPriceInCurrentCurrency, // UNIT PRICE, not total
     };
+  });
 
-    // Generate WhatsApp URL with correct currency
-    const whatsappUrl = generateWhatsAppUrl(
-      formattedCartItems,
-      customerInfo,
-      generatedOrderNumber,
-      currentCurrency as 'NGN' | 'USD'
-    );
-
-    // Clear cart
-    localStorage.removeItem('cart');
-    
-    // Complete checkout and redirect to WhatsApp
-    onComplete(formData, generatedOrderNumber);
-    
-    // Open WhatsApp in new tab
-    window.open(whatsappUrl, '_blank');
-    
-    // Show success message
-    toast({
-      title: "WhatsApp Order Created",
-      description: "Your order has been sent via WhatsApp. Please complete your payment with the business.",
-      variant: "default",
-    });
-    
-    // Close modal after a delay
-    setTimeout(() => {
-      handleClose();
-    }, 2000);
+  const customerInfo = {
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    email: formData.email,
+    phone: formData.phone,
+    country: formData.country,
+    state: customerState
   };
+
+  // Debug: Show what we're sending
+  console.log('WhatsApp Cart Items:', formattedCartItems.map(item => ({
+    name: item.firstName,
+    quantity: item.quantity,
+    unitPrice: item.price,
+    total: item.price * item.quantity
+  })));
+
+  // Generate WhatsApp URL with correct currency
+  const whatsappUrl = generateWhatsAppUrl(
+    formattedCartItems,
+    customerInfo,
+    generatedOrderNumber,
+    currentCurrency as 'NGN' | 'USD'
+  );
+
+  // Clear cart
+  localStorage.removeItem('cart');
+  
+  // Complete checkout and redirect to WhatsApp
+  onComplete(formData, generatedOrderNumber);
+  
+  // Open WhatsApp in new tab
+  window.open(whatsappUrl, '_blank');
+  
+  // Show success message
+  toast({
+    title: "WhatsApp Order Created",
+    description: `Your order has been sent via WhatsApp. Please complete your payment with the business.`,
+    variant: "default",
+  });
+  
+  // Close modal after a delay
+  setTimeout(() => {
+    handleClose();
+  }, 2000);
+};
 
   const handleClose = () => {
     onClose();

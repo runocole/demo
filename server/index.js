@@ -1,3 +1,10 @@
+import dotenv from 'dotenv';
+dotenv.config(); 
+
+console.log('🚀 Starting server...');
+console.log('   Mode:', process.env.NODE_ENV);
+console.log('   Frontend URL:', process.env.FRONTEND_URL);
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';

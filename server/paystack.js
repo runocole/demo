@@ -20,7 +20,7 @@ router.post('/initialize', async (req, res) => {
       'https://api.paystack.co/transaction/initialize',
       {
         email,
-        amount: amount * 100,
+        amount: amount, 
         reference: orderNumber,
         metadata,
         callback_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/order-confirmation`

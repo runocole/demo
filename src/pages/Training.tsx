@@ -14,7 +14,9 @@ import heroImage4 from "../assets/dronemapping.jpg";
 import safetyImage from "../assets/safety-training.jpg";
 import bathImage from "../assets/bath.jpg";
 import dronemapping from "../assets/dronemapping.jpg";
-import fieldImage from "../assets/field-practice.jpg";
+import threed from "../assets/3d.png"
+import engineering from "../assets/engineering.jpg"
+import totalstation from "../assets/total-training.jpg";
 import { Testimonials } from "../components/Testimonials";
 import { useCurrency } from "../context/CurrencyContext";
 
@@ -32,14 +34,14 @@ const heroSlides = [
     image: heroImage2,
     title: "Expert-Led Training",
     description: "Learn from industry professionals with years of field experience",
-    position: "center"
+    position: "left"
   },
   {
     id: 3,
     image: heroImage4,
     title: "Certified Programs",
     description: "Get industry-recognized certifications to advance your career",
-    position: "center"
+    position: "left"
   }
 ];
 
@@ -65,7 +67,7 @@ const courses: Course[] = [
     id: "totalstation",
     title: "Total Station Surveying Course",
     description: "A complete course on Total Station surveying for precision measurement, site setup, traversing, topographic surveys, and construction layout. Learners practice workflows with Leica, FOIF and COMNAV Total Stations, focusing on accurate field data capture, error reduction, and generating professional deliverables for Cadastral, Engineering, and Construction projects.",
-    image: fieldImage,
+    image: totalstation,
     price: 244,
     groupPrice: 175
   },
@@ -81,7 +83,7 @@ const courses: Course[] = [
     id: "3dlaserscanning",
     title: "3D Laser Scanning Course",
     description: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Cyclone, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
-    image: bathImage,
+    image:threed,
     price: 520,
     groupPrice: 348
   },
@@ -113,7 +115,7 @@ const courses: Course[] = [
     id: "engineering",
     title: "Engineering Survey Course",
     description: "A professional Engineering Survey course designed for Surveyors, Civil Engineers, and Infrastructure professionals, covering precision site measurements, road and topographic surveys, cross-sections, longitudinal sections, drainage mapping, contour generation, and field-to-office workflows using AutoCAD, Global Mapper, and Surfer.",
-    image: fieldImage,
+    image: engineering,
     price: 313,
     groupPrice: 244
   },
@@ -190,8 +192,8 @@ const Training = () => {
   const getTextAlignment = (position: string) => {
     switch (position) {
       case 'left': return 'text-left';
-      case 'center': return 'text-center';
-      case 'right': return 'text-right';
+      case 'center': return 'text-left';
+      case 'right': return 'text-left';
       default: return 'text-left';
     }
   };
@@ -284,20 +286,20 @@ const Training = () => {
               {/* Slide Content */}
               <div className={`relative z-10 h-full flex items-center justify-center ${getTextAlignment(slide.position)}`}>
                 <div className="container mx-auto px-4">
-                  <div className={`${isMobile ? 'max-w-full' : 'max-w-2xl'} ${slide.position === 'center' ? 'mx-auto' : slide.position === 'right' ? 'ml-auto' : 'mr-auto'}`}>
-                    <h1 className={`${isMobile ? 'text-2xl' : 'text-4xl md:text-5xl'} font-bold text-white mb-4 font-montserrat tracking-tight`}>
+                  <div className={`${isMobile ? 'max-w-full' : 'max-w-3xl'} ${slide.position === 'center' ? 'mx-auto' : slide.position === 'right' ? 'ml-auto' : ''}`}>
+                    <h1 className={`${isMobile ? 'text-3xl md:text-4xl' : 'text-5xl md:text-6xl'} font-extrabold text-white mb-6 leading-tight`}>
                       {slide.title}
                     </h1>
-                    <p className={`${isMobile ? 'text-sm' : 'text-xl md:text-2xl'} text-white mb-6 font-montserrat font-bold`}>
+                    <p className={`${isMobile ? 'text-lg md:text-xl' : 'text-2xl md:text-3xl'} text-white mb-8 font-bold leading-relaxed`}>
                       {slide.description}
                     </p>
-                    <div className={slide.position === 'center' ? 'flex justify-center' : 'flex justify-start'}>
+                    <div className={slide.position === 'center' ? 'flex justify-start' : 'flex justify-start'}>
                       <Button
                         onClick={scrollToCourses}
-                        size={isMobile ? "sm" : "lg"}
-                        className="bg-[#081748] text-white hover:bg-blue-800 font-bold px-6 py-3 shadow-xl hover:shadow-2xl transition-all"
+                        size={isMobile ? "lg" : "lg"}
+                        className="bg-[#081748] text-white hover:bg-blue-800 font-extrabold px-8 py-6 text-lg md:text-xl shadow-xl hover:shadow-2xl transition-all"
                       >
-                        {isMobile ? "View Courses →" : "View Courses →"}
+                        {isMobile ? "VIEW COURSES →" : "VIEW COURSES →"}
                       </Button>
                     </div>
                   </div>
@@ -349,32 +351,32 @@ const Training = () => {
         <div className="container mx-auto px-4 bg-blue-100">
           {isMobile ? (
             <div className="flex overflow-x-auto gap-6 pb-4 -mx-4 px-4 scrollbar-hide">
-              <div className="flex-shrink-0 w-[120px] text-center">
-                <div className="text-3xl font-bold text-primary">10+</div>
-                <div className="text-sm text-muted-foreground">Courses</div>
+              <div className="flex-shrink-0 w-[140px] text-left">
+                <div className="text-4xl font-extrabold text-primary">10+</div>
+                <div className="text-base font-semibold text-muted-foreground">Courses</div>
               </div>
-              <div className="flex-shrink-0 w-[120px] text-center">
-                <div className="text-3xl font-bold text-primary">500+</div>
-                <div className="text-sm text-muted-foreground">Trainees</div>
+              <div className="flex-shrink-0 w-[140px] text-left">
+                <div className="text-4xl font-extrabold text-primary">500+</div>
+                <div className="text-base font-semibold text-muted-foreground">Trainees</div>
               </div>
-              <div className="flex-shrink-0 w-[140px] text-center">
-                <div className="text-3xl font-bold text-primary">500+</div>
-                <div className="text-sm text-muted-foreground">Certificates</div>
+              <div className="flex-shrink-0 w-[160px] text-left">
+                <div className="text-4xl font-extrabold text-primary">500+</div>
+                <div className="text-base font-semibold text-muted-foreground">Certificates</div>
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-              <div className="space-y-2">
-                <div className="text-5xl font-bold text-primary">10+</div>
-                <div className="text-xl text-muted-foreground">Courses</div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+              <div className="space-y-4">
+                <div className="text-6xl font-extrabold text-primary">10+</div>
+                <div className="text-2xl font-bold text-muted-foreground">Courses</div>
               </div>
-              <div className="space-y-2">
-                <div className="text-5xl font-bold text-primary">500+</div>
-                <div className="text-xl text-muted-foreground">Trainees</div>
+              <div className="space-y-4">
+                <div className="text-6xl font-extrabold text-primary">500+</div>
+                <div className="text-2xl font-bold text-muted-foreground">Trainees</div>
               </div>
-              <div className="space-y-2">
-                <div className="text-5xl font-bold text-primary">500+</div>
-                <div className="text-xl text-muted-foreground">Certificates Issued</div>
+              <div className="space-y-4">
+                <div className="text-6xl font-extrabold text-primary">500+</div>
+                <div className="text-2xl font-bold text-muted-foreground">Certificates Issued</div>
               </div>
             </div>
           )}
@@ -384,11 +386,11 @@ const Training = () => {
       {/* Training Formats Section - Mobile Optimized */}
       <section id="formats" className="py-12 md:py-20 bg-blue-100">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8 md:mb-12">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              Choose Your Training Format
+          <div className="text-left mb-8 md:mb-12">
+            <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-4">
+              CHOOSE YOUR TRAINING FORMAT
             </h2>
-            <p className="text-sm md:text-base text-muted-foreground">
+            <p className="text-lg md:text-xl font-semibold text-muted-foreground">
               Select the learning style that works best for you
             </p>
           </div>
@@ -400,32 +402,32 @@ const Training = () => {
                 {formatCards.map((format) => (
                   <div 
                     key={format.id}
-                    className="flex-shrink-0 w-[280px] bg-white rounded-lg shadow-md p-4"
+                    className="flex-shrink-0 w-[300px] bg-white rounded-lg shadow-md p-5"
                     onClick={() => openMobileFormatModal(format.id)}
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <format.icon className="w-5 h-5 text-[#081748]" />
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
+                        <format.icon className="w-7 h-7 text-[#081748]" />
                       </div>
                       <div>
-                        <h3 className="font-bold text-[#081748]">{format.title}</h3>
-                        <Badge className="text-xs bg-blue-100 text-[#081748] border-blue-300 mt-1">
+                        <h3 className="font-extrabold text-lg text-[#081748]">{format.title}</h3>
+                        <Badge className="text-sm font-bold bg-blue-100 text-[#081748] border-blue-300 mt-2 px-3 py-1">
                           {format.badge}
                         </Badge>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                    <p className="text-base font-semibold text-gray-700 mb-4 line-clamp-2">
                       {format.description}
                     </p>
                     <Button 
-                      size="sm"
-                      className="w-full text-sm"
+                      size="lg"
+                      className="w-full text-base font-bold py-3"
                       onClick={(e) => {
                         e.stopPropagation();
                         openMobileFormatModal(format.id);
                       }}
                     >
-                      Read More
+                      READ MORE
                     </Button>
                   </div>
                 ))}
@@ -435,43 +437,43 @@ const Training = () => {
               {showMobileFormatModal && selectedFormat && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden">
-                    <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-                      <h3 className="font-bold text-lg">
+                    <div className="sticky top-0 bg-white border-b p-6 flex justify-between items-center">
+                      <h3 className="font-extrabold text-xl">
                         {formatCards.find(f => f.id === selectedFormat)?.title}
                       </h3>
                       <button 
                         onClick={() => setShowMobileFormatModal(false)}
-                        className="p-1 hover:bg-gray-100 rounded-full"
+                        className="p-2 hover:bg-gray-100 rounded-full"
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-6 h-6" />
                       </button>
                     </div>
                     
                     <div className="p-6 overflow-y-auto">
-                      <div className="flex items-center gap-3 mb-4">
-                        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                          {selectedFormat === 'online' && <Monitor className="w-6 h-6 text-[#081748]" />}
-                          {selectedFormat === 'inperson' && <Users className="w-6 h-6 text-[#081748]" />}
-                          {selectedFormat === 'group' && <Home className="w-6 h-6 text-[#081748]" />}
+                      <div className="flex items-center gap-4 mb-6">
+                        <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                          {selectedFormat === 'online' && <Monitor className="w-8 h-8 text-[#081748]" />}
+                          {selectedFormat === 'inperson' && <Users className="w-8 h-8 text-[#081748]" />}
+                          {selectedFormat === 'group' && <Home className="w-8 h-8 text-[#081748]" />}
                         </div>
                         <div>
-                          <Badge className="bg-blue-100 text-[#081748] border-blue-300">
+                          <Badge className="bg-blue-100 text-[#081748] border-blue-300 font-bold px-4 py-1.5">
                             {formatCards.find(f => f.id === selectedFormat)?.badge}
                           </Badge>
                         </div>
                       </div>
                       
-                      <p className="text-gray-700 mb-6">
+                      <p className="text-gray-800 font-semibold text-lg mb-8">
                         {formatCards.find(f => f.id === selectedFormat)?.description}
                       </p>
                       
-                      <div className="space-y-4 mb-6">
-                        <h4 className="font-bold text-[#081748]">What's Included:</h4>
-                        <ul className="space-y-3">
+                      <div className="space-y-6 mb-8">
+                        <h4 className="font-extrabold text-xl text-[#081748]">WHAT'S INCLUDED:</h4>
+                        <ul className="space-y-4">
                           {formatCards.find(f => f.id === selectedFormat)?.features.map((feature, index) => (
-                            <li key={index} className="flex items-start gap-2">
-                              <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                              <span className="text-gray-700">{feature}</span>
+                            <li key={index} className="flex items-start gap-3">
+                              <CheckCircle2 className="w-6 h-6 text-green-600 mt-0.5 flex-shrink-0" />
+                              <span className="text-gray-800 font-semibold">{feature}</span>
                             </li>
                           ))}
                         </ul>
@@ -479,20 +481,20 @@ const Training = () => {
                       
                       <div className="flex gap-3">
                         <Button 
-                          className="flex-1 bg-[#081748] text-white"
+                          className="flex-1 bg-[#081748] text-white font-extrabold py-3 text-lg"
                           onClick={scrollToCourses}
                         >
-                          Enroll Now
+                          ENROLL NOW
                         </Button>
                         <Button 
                           variant="outline"
-                          className="flex-1"
+                          className="flex-1 font-bold py-3 text-lg"
                           onClick={() => {
                             setShowMobileFormatModal(false);
                             navigate("/contact");
                           }}
                         >
-                          Contact Us
+                          CONTACT US
                         </Button>
                       </div>
                     </div>
@@ -502,37 +504,37 @@ const Training = () => {
             </>
           ) : (
             /* Desktop Layout */
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
               {formatCards.map((format) => (
-                <Card key={format.id} className={`relative overflow-hidden hover:shadow-lg transition-shadow ${format.color} border-blue-200`}>
-                  <Badge className="absolute top-4 right-4 bg-blue-100 text-[#081748] border-blue-300">
+                <Card key={format.id} className={`relative overflow-hidden hover:shadow-xl transition-shadow ${format.color} border-blue-200`}>
+                  <Badge className="absolute top-6 right-6 bg-blue-100 text-[#081748] border-blue-300 font-extrabold text-base px-4 py-2">
                     {format.badge}
                   </Badge> 
-                  <CardContent className="p-6">
-                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-6">
-                      <format.icon className="w-8 h-8 text-[#081748]" />
+                  <CardContent className="p-8">
+                    <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-8">
+                      <format.icon className="w-10 h-10 text-[#081748]" />
                     </div>
-                    <h3 className="text-2xl font-bold text-card-foreground mb-4">
+                    <h3 className="text-3xl font-extrabold text-card-foreground mb-6">
                       {format.title}
                     </h3>
-                    <p className="text-muted-foreground mb-6">
+                    <p className="text-xl font-semibold text-muted-foreground mb-8">
                       {format.description}
                     </p>
-                    <ul className="space-y-3 mb-8">
+                    <ul className="space-y-4 mb-10">
                       {format.features.map((feature, index) => (
-                        <li key={index} className="flex items-start gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-[#081748] mt-0.5 flex-shrink-0" />
-                          <span className="text-card-foreground">{feature}</span>
+                        <li key={index} className="flex items-start gap-3">
+                          <CheckCircle2 className="w-6 h-6 text-[#081748] mt-1 flex-shrink-0" />
+                          <span className="text-lg font-semibold text-card-foreground">{feature}</span>
                         </li>
                       ))}
                     </ul>
                     <Button 
                       variant="outline" 
-                      className="w-full border-blue-300 text-[#081748] bg-blue-100"
+                      className="w-full border-blue-300 text-[#081748] bg-blue-100 font-extrabold py-6 text-lg"
                       onClick={scrollToCourses}
                       size="lg"
                     >
-                      {format.id === 'group' ? 'View Events' : 'Enroll Now'}
+                      {format.id === 'group' ? 'VIEW EVENTS' : 'ENROLL NOW'}
                     </Button>
                   </CardContent>
                 </Card>
@@ -545,47 +547,47 @@ const Training = () => {
       {/* Our Courses Section - Mobile Optimized */}
       <section id="content" className="py-12 md:py-20 bg-blue-100">
         <div className="container mx-auto px-4">
-          <div className="text-center mb-8 md:mb-16">
-            <h2 className="text-2xl md:text-4xl font-bold text-foreground mb-2">
-              Our Courses
+          <div className="text-left mb-8 md:mb-16">
+            <h2 className="text-3xl md:text-5xl font-extrabold text-foreground mb-4">
+              OUR COURSES
             </h2>
-            <p className="text-sm md:text-base text-muted-foreground">
+            <p className="text-lg md:text-2xl font-semibold text-muted-foreground">
               Browse through our comprehensive training programs
             </p>
           </div>
 
-          <div className={isMobile ? "space-y-4" : "grid md:grid-cols-2 gap-8"}>
+          <div className={isMobile ? "space-y-6" : "grid md:grid-cols-2 gap-10"}>
             {courses.map((course) => (
-              <div key={course.id} className="bg-background rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow">
-                <div className={isMobile ? "flex" : ""}>
+              <div key={course.id} className="bg-background rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-shadow">
+                <div className={isMobile ? "flex flex-col" : "flex"}>
                   <img 
                     src={course.image} 
                     alt={course.title} 
-                    className={`${isMobile ? 'w-32 h-32 object-cover' : 'w-full h-48 object-cover'}`}
+                    className={`${isMobile ? 'w-full h-48 object-cover' : 'w-48 h-56 object-cover flex-shrink-0'}`}
                   />
-                  <div className={`${isMobile ? 'flex-1' : ''} p-4 space-y-2`}>
-                    <h3 className={`${isMobile ? 'text-lg' : 'text-2xl'} font-bold text-foreground`}>
+                  <div className={`${isMobile ? 'p-5' : 'p-6'} space-y-4 flex-1`}>
+                    <h3 className={`${isMobile ? 'text-2xl' : 'text-2xl'} font-extrabold text-foreground leading-tight`}>
                       {course.title}
                     </h3>
-                    <p className={`${isMobile ? 'text-xs' : 'text-base'} text-muted-foreground line-clamp-2`}>
+                    <p className={`${isMobile ? 'text-base' : 'text-lg'} text-muted-foreground line-clamp-3 font-medium`}>
                       {course.description}
                     </p>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-1">
-                        <div className={`${isMobile ? 'text-base' : 'text-lg'} font-bold text-primary`}>
+                    <div className="flex items-center justify-between pt-2">
+                      <div className="space-y-2">
+                        <div className={`${isMobile ? 'text-2xl' : 'text-2xl'} font-extrabold text-primary`}>
                           {getConvertedPrice(course.price)}
                         </div>
                         {course.groupPrice && (
-                          <div className={`${isMobile ? 'text-xs' : 'text-sm'} font-semibold text-green-600`}>
+                          <div className={`${isMobile ? 'text-lg' : 'text-lg'} font-bold text-green-700`}>
                             Group: {getConvertedPrice(course.groupPrice)}
                           </div>
                         )}
                       </div>
                       <Link 
                         to={`/course/${course.id}`}
-                        className={`${isMobile ? 'text-xs' : 'text-base'} text-[#081748] hover:text-blue-800 font-semibold inline-block`}
+                        className={`${isMobile ? 'text-lg' : 'text-lg'} text-[#081748] hover:text-blue-800 font-extrabold inline-block`}
                       >
-                        Read More →
+                        READ MORE →
                       </Link>
                     </div>
                   </div>
@@ -602,26 +604,26 @@ const Training = () => {
       {/* Contact Section */}
       <section id="contact" className="py-12 md:py-20 bg-blue-100 text-black">
         <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center space-y-4 md:space-y-8">
-            <div className={`${isMobile ? 'w-14 h-14' : 'w-20 h-20'} rounded-full bg-blue-100 flex items-center justify-center mx-auto shadow-lg`}>
-              <Award className={`${isMobile ? 'w-7 h-7' : 'w-10 h-10'} text-black`} />
+          <div className="max-w-3xl mx-auto text-left space-y-6 md:space-y-10">
+            <div className={`${isMobile ? 'w-16 h-16' : 'w-24 h-24'} rounded-full bg-blue-100 flex items-center justify-center shadow-xl`}>
+              <Award className={`${isMobile ? 'w-9 h-9' : 'w-12 h-12'} text-black`} />
             </div>
-            <h2 className={`${isMobile ? 'text-2xl' : 'text-4xl'} font-bold`}>
-              Certificate Inquiry
+            <h2 className={`${isMobile ? 'text-3xl' : 'text-5xl'} font-extrabold leading-tight`}>
+              CERTIFICATE INQUIRY
             </h2>
-            <p className={`${isMobile ? 'text-sm' : 'text-xl'} text-black`}>
+            <p className={`${isMobile ? 'text-xl' : 'text-2xl'} text-black font-bold`}>
               Consult us for your certified training needs. Get in touch to learn more.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4">
               <Button 
-                size={isMobile ? "sm" : "lg"}
-                className="bg-blue-100 text-black hover:bg-blue-900 hover:text-[#081748] font-semibold px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-300"
+                size={isMobile ? "lg" : "lg"}
+                className="bg-blue-100 text-black hover:bg-blue-900 hover:text-[#081748] font-extrabold px-8 py-6 text-lg shadow-xl hover:shadow-2xl transition-all duration-300"
                 onClick={() => navigate("/contact")}
               >
-                Contact Us
+                CONTACT US
               </Button>
             </div>
-            <p className="text-black text-xs md:text-sm mt-2">
+            <p className="text-black text-base md:text-lg font-bold mt-4">
               Need immediate assistance? Call us at +234 706 370 8703
             </p>
           </div>

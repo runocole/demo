@@ -54,7 +54,7 @@ const NIGERIAN_STATES = [
 
 type PaymentMethod = "paystack" | "whatsapp";
 type CheckoutStep = "form" | "method" | "review";
-type ViewMode = "checkout" | "details-only"; // NEW: Add view mode type
+type ViewMode = "checkout" | "details-only";
 
 interface CheckoutModalProps {
   open: boolean;
@@ -87,8 +87,8 @@ export const CheckoutModal = ({
   const [showSearch, setShowSearch] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<PaymentMethod | null>(null);
   const [isMobile, setIsMobile] = useState(false);
-  const [viewMode, setViewMode] = useState<ViewMode>("checkout"); // NEW: Track view mode
-  const [showViewDetails, setShowViewDetails] = useState(false); // NEW: Control view details modal
+  const [viewMode, setViewMode] = useState<ViewMode>("checkout");
+  const [showViewDetails, setShowViewDetails] = useState(false);
 
   // Check if mobile
   useState(() => {
@@ -111,6 +111,36 @@ export const CheckoutModal = ({
     return getConvertedPrice(amount);
   };
 
+  // Calculate totals based on current currency
+  const calculateTotal = () => {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+
+  const calculateSubtotal = () => {
+    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  };
+
+  const calculateTax = () => {
+    const subtotal = calculateSubtotal();
+    return subtotal * 0.08;
+  };
+
+  // Get the actual amount in the selected currency
+  const getAmountInSelectedCurrency = () => {
+    const subtotal = calculateSubtotal();
+    const tax = subtotal * 0.08;
+    return subtotal + tax;
+  };
+
+  // Convert to Naira for Paystack
+  const convertToNaira = (amount: number, currency: string): number => {
+    if (currency === 'NGN') {
+      return amount; // Already in Naira
+    }
+    // Convert from current currency to Naira
+    return amount * exchangeRate;
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -123,7 +153,6 @@ export const CheckoutModal = ({
       return;
     }
 
-    // If country is Nigeria, state is required
     if (formData.country === "Nigeria" && !formData.state) {
       toast({
         title: "Missing Information",
@@ -159,55 +188,29 @@ export const CheckoutModal = ({
   const handlePaystackPayment = async () => {
     setIsLoading(true);
     
-    // Get the total amount in NGN (Paystack only accepts NGN)
-    let amountForPayment: number;
-    let amountInNGN: number;
+    // Calculate total in selected currency
+    const totalInSelectedCurrency = getAmountInSelectedCurrency();
     
-    if (currentCurrency === 'USD') {
-      // Convert USD to NGN using the exchange rate from context
-      // Calculate total in USD
-      const totalUSD = calculateTotal() + calculateTax();
-      
-      console.log('Total in USD:', totalUSD);
-      console.log('Exchange rate:', exchangeRate);
-      
-      // Convert to NGN for Paystack
-      amountInNGN = totalUSD * exchangeRate;
-      
-      console.log('Amount in NGN:', amountInNGN);
-      
-      // Paystack expects amount in kobo (smallest NGN unit)
-      // Check if amount is within Paystack limits
-      if (amountInNGN > 25000000) { // If more than ₦25 million
-        toast({
-          title: "Amount Too Large",
-          description: "This amount exceeds Paystack's transaction limit. Please contact us for alternative payment methods.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      amountForPayment = Math.round(amountInNGN * 100); // Convert to kobo
-    } else {
-      // Already in NGN
-      amountInNGN = calculateTotal() + calculateTax();
-      
-      console.log('Amount in NGN:', amountInNGN);
-      
-      // Check if within Paystack limits
-      if (amountInNGN > 25000000) { // If more than ₦25 million
-        toast({
-          title: "Amount Too Large",
-          description: "This amount exceeds Paystack's transaction limit. Please contact us for alternative payment methods.",
-          variant: "destructive"
-        });
-        setIsLoading(false);
-        return;
-      }
-      
-      amountForPayment = Math.round(amountInNGN * 100); // Convert to kobo
+    console.log('Total in selected currency:', totalInSelectedCurrency, currentCurrency);
+    console.log('Exchange rate:', exchangeRate);
+    
+    // Convert to Naira for Paystack
+    const amountInNGN = convertToNaira(totalInSelectedCurrency, currentCurrency);
+    console.log('Amount in NGN:', amountInNGN);
+    
+    // Paystack expects amount in kobo (smallest NGN unit)
+    // Check if amount is within Paystack limits
+    if (amountInNGN > 25000000) { // If more than ₦25 million
+      toast({
+        title: "Amount Too Large",
+        description: "This amount exceeds Paystack's transaction limit. Please contact us for alternative payment methods.",
+        variant: "destructive"
+      });
+      setIsLoading(false);
+      return;
     }
+    
+    const amountForPayment = Math.round(amountInNGN * 100); // Convert to kobo
     
     console.log('Amount being sent to Paystack (kobo):', amountForPayment);
     console.log('Amount in NGN:', amountForPayment / 100);
@@ -226,13 +229,14 @@ export const CheckoutModal = ({
             customer_country: formData.country,
             customer_state: formData.state,
             original_currency: currentCurrency,
-            original_amount: calculateTotal() + calculateTax(),
-            exchange_rate: currentCurrency === 'USD' ? exchangeRate : 1,
+            original_amount: totalInSelectedCurrency,
+            exchange_rate: currentCurrency === 'NGN' ? 1 : exchangeRate,
             cart_items: cart.map(item => ({
               id: item.id,
               name: item.name,
               quantity: item.quantity,
               price: item.price,
+              price_currency: currentCurrency,
               category: item.category
             }))
           }
@@ -249,6 +253,7 @@ export const CheckoutModal = ({
       }
       
     } catch (error) {
+      console.error('Payment error:', error);
       toast({
         title: "Payment Error",
         description: "Failed to initialize payment. Please try again.",
@@ -260,65 +265,65 @@ export const CheckoutModal = ({
   };
 
   const handleWhatsAppCheckout = () => {
-    const customerState = formData.state || "Not specified";
+  const customerState = formData.state || "Not specified";
+  
+  // Format cart items - we need prices in the current currency
+  // Since we're not sure if item.price changes, let's calculate it properly
+  const formattedCartItems = cart.map(item => {
+    // Get the displayed price as a string
+    const priceString = formatPrice(item.price); // e.g., "$299.00" or "₦468,234"
     
-    // Format cart items for WhatsApp - Use correct structure
-    const formattedCartItems = cart.map(item => ({
-      firstName: item.name,  // Using item.name as firstName
-      lastName: "",          // Empty string for lastName
-      quantity: item.quantity,
-      price: item.price,
-    }));
-
-    // Customer info with correct structure
-    const customerInfo = {
-      firstName: formData.firstName,
-      lastName: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      country: formData.country,
-      state: customerState
-    };
-
-    // Generate WhatsApp URL
-    const whatsappUrl = generateWhatsAppUrl(
-      formattedCartItems,
-      customerInfo,
-      generatedOrderNumber
+    // Convert back to number by removing currency symbols and commas
+    // This handles both "$299.00" and "₦468,234" formats
+    const numericPrice = parseFloat(
+      priceString
+        .replace(/[^\d.-]/g, '') // Remove all non-numeric except dots and minus
+        .replace(/,/g, '') // Remove commas
     );
-
-    // Complete checkout and redirect to WhatsApp
-    onComplete(formData, generatedOrderNumber);
     
-    // Open WhatsApp in new tab
-    window.open(whatsappUrl, '_blank');
-    
-    // Show success message
-    toast({
-      title: "WhatsApp Order Created",
-      description: "Your order has been sent via WhatsApp. Please complete your payment with the business.",
-      variant: "default",
-    });
-    
-    // Close modal after a delay
-    setTimeout(() => {
-      handleClose();
-    }, 2000);
+    return {
+      firstName: item.name,
+      lastName: "",
+      quantity: item.quantity,
+      price: numericPrice || item.price, // Fallback to original price if parsing fails
+    };
+  });
+
+  const customerInfo = {
+    firstName: formData.firstName,
+    lastName: formData.lastName,
+    email: formData.email,
+    phone: formData.phone,
+    country: formData.country,
+    state: customerState
   };
 
-  const calculateTotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
+  // Generate WhatsApp URL with correct currency
+  const whatsappUrl = generateWhatsAppUrl(
+    formattedCartItems,
+    customerInfo,
+    generatedOrderNumber,
+    currentCurrency as 'NGN' | 'USD' // This is crucial!
+  );
 
-  const calculateSubtotal = () => {
-    return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  };
-
-  const calculateTax = () => {
-    const subtotal = calculateSubtotal();
-    return subtotal * 0.08; // 8% tax
-  };
-
+  // Complete checkout and redirect to WhatsApp
+  onComplete(formData, generatedOrderNumber);
+  
+  // Open WhatsApp in new tab
+  window.open(whatsappUrl, '_blank');
+  
+  // Show success message
+  toast({
+    title: "WhatsApp Order Created",
+    description: "Your order has been sent via WhatsApp. Please complete your payment with the business.",
+    variant: "default",
+  });
+  
+  // Close modal after a delay
+  setTimeout(() => {
+    handleClose();
+  }, 2000);
+};
   const handleClose = () => {
     onClose();
     setStep("form");
@@ -333,15 +338,15 @@ export const CheckoutModal = ({
     setSearchQuery("");
     setShowSearch(false);
     setSelectedPaymentMethod(null);
-    setViewMode("checkout"); // NEW: Reset view mode
-    setShowViewDetails(false); // NEW: Reset view details
+    setViewMode("checkout");
+    setShowViewDetails(false);
   };
 
   const handleCountryChange = (country: string) => {
     setFormData({ 
       ...formData, 
       country, 
-      state: "" // Reset state when country changes
+      state: ""
     });
     setShowSearch(false);
     setSearchQuery("");
@@ -351,19 +356,16 @@ export const CheckoutModal = ({
     handleCountryChange(country);
   };
 
-  // NEW: Function to open view details in details-only mode
   const handleViewDetails = () => {
     setViewMode("details-only");
     setShowViewDetails(true);
   };
 
-  // NEW: Function to close view details and return to form
   const handleCloseViewDetails = () => {
     setViewMode("checkout");
     setShowViewDetails(false);
   };
 
-  // Update the dialog title based on step and view mode
   const getDialogTitle = () => {
     if (viewMode === "details-only") {
       return "Order Details";
@@ -383,7 +385,6 @@ export const CheckoutModal = ({
     }
   };
 
-  // Mobile-friendly country selector
   const CountrySelector = () => {
     if (isMobile) {
       return (
@@ -499,7 +500,6 @@ export const CheckoutModal = ({
     );
   };
 
-  // Mobile step indicator
   const MobileStepIndicator = () => (
     <div className="flex items-center justify-between mb-6">
       {["form", "method", "review"].map((s, index) => (
@@ -524,9 +524,9 @@ export const CheckoutModal = ({
     </div>
   );
 
-  // NEW: Reusable Review/Details Component
   const ReviewDetails = ({ isViewDetailsMode = false }: { isViewDetailsMode?: boolean }) => {
     const isReviewStep = step === "review" && !isViewDetailsMode;
+    const totalAmount = getAmountInSelectedCurrency();
     
     return (
       <div className="space-y-6 pb-4">
@@ -579,10 +579,18 @@ export const CheckoutModal = ({
                 </span>
               </div>
             )}
+            {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN' && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-400">Currency Conversion</span>
+                <span className="font-semibold text-white text-xs">
+                  {currentCurrency} → NGN @ {exchangeRate.toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Customer Info - Only show in review step or if form is filled */}
+        {/* Customer Info */}
         {(isReviewStep || formData.firstName) && (
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <h3 className="font-semibold mb-3 text-white text-base">Customer Details</h3>
@@ -625,7 +633,7 @@ export const CheckoutModal = ({
           </div>
         )}
 
-        {/* Order Items - Mobile Collapsed View */}
+        {/* Order Items */}
         {isMobile ? (
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="flex justify-between items-center mb-3">
@@ -663,7 +671,6 @@ export const CheckoutModal = ({
             </div>
           </div>
         ) : (
-          /* Order Items - Desktop View */
           <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-semibold text-white text-base">Order Items</h3>
@@ -714,13 +721,38 @@ export const CheckoutModal = ({
                 </span>
               </div>
             </div>
+            
+            {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN' && (
+              <div className="border-t border-gray-700 pt-2 mt-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Converted to NGN</span>
+                  <div className="text-right">
+                    <span className="font-semibold text-yellow-400">
+                      ₦{convertToNaira(totalAmount, currentCurrency).toLocaleString('en-NG', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      })}
+                    </span>
+                    <p className="text-xs text-gray-400">
+                      (Exchange rate: {exchangeRate.toFixed(2)})
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div className="border-t border-gray-700 pt-2 mt-2">
               <div className="flex justify-between text-lg font-bold">
                 <span className="text-white">Total</span>
                 <div className="text-right">
                   <span className="text-blue-400">
-                    {formatPrice(calculateTotal() + calculateTax())}
+                    {formatPrice(totalAmount)}
                   </span>
+                  {isReviewStep && selectedPaymentMethod === "paystack" && currentCurrency !== 'NGN' && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Will charge: ₦{convertToNaira(totalAmount, currentCurrency).toLocaleString('en-NG')}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -788,7 +820,9 @@ export const CheckoutModal = ({
         {isReviewStep && (
           <p className="text-center text-sm text-gray-400 px-2">
             {selectedPaymentMethod === "paystack"
-              ? "You'll be redirected to Paystack for secure payment."
+              ? currentCurrency === 'NGN' 
+                ? "You'll be redirected to Paystack for secure payment."
+                : `Amount will be converted from ${currentCurrency} to NGN and charged in Naira.`
               : "You'll be redirected to WhatsApp to send your order."}
           </p>
         )}
@@ -798,7 +832,6 @@ export const CheckoutModal = ({
 
   return (
     <>
-      {/* Main Checkout Modal */}
       <Dialog open={open && !showViewDetails} onOpenChange={handleClose}>
         <DialogContent className={`
           ${isMobile ? 'w-[95vw] max-w-[95vw] h-[90vh]' : 'max-w-2xl max-h-[90vh]'} 
@@ -834,18 +867,16 @@ export const CheckoutModal = ({
             </p>
           </DialogHeader>
 
-          {/* Main Content */}
           <div className="flex-1 overflow-y-auto px-1 sm:px-0">
             {step === "form" ? (
               <>
-                {/* Order Summary - Mobile Collapsed */}
                 {isMobile && (
                   <div className="mb-4 p-3 bg-gray-800 rounded-lg">
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="text-sm text-gray-400">Order Total</p>
                         <p className="text-xl font-bold text-white">
-                          {formatPrice(calculateTotal() + calculateTax())}
+                          {formatPrice(getAmountInSelectedCurrency())}
                         </p>
                       </div>
                       <div className="text-right">
@@ -861,7 +892,6 @@ export const CheckoutModal = ({
                   </div>
                 )}
 
-                {/* Order Summary - Desktop */}
                 {!isMobile && (
                   <div className="mb-6 p-4 bg-gray-800 rounded-lg border border-gray-700">
                     <div className="flex justify-between items-center mb-3">
@@ -888,7 +918,7 @@ export const CheckoutModal = ({
                       <span className="text-white">Total:</span>
                       <div className="text-right">
                         <span className="text-blue-400">
-                          {formatPrice(calculateTotal())}
+                          {formatPrice(getAmountInSelectedCurrency())}
                         </span>
                       </div>
                     </div>
@@ -907,7 +937,6 @@ export const CheckoutModal = ({
 
                 <form onSubmit={handleFormSubmit} className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* First Name */}
                     <div className="space-y-2">
                       <Label htmlFor="firstName" className="text-white text-sm sm:text-base">
                         First Name <span className="text-red-500">*</span>
@@ -926,7 +955,6 @@ export const CheckoutModal = ({
                       </div>
                     </div>
 
-                    {/* Last Name */}
                     <div className="space-y-2">
                       <Label htmlFor="lastName" className="text-white text-sm sm:text-base">
                         Last Name <span className="text-red-500">*</span>
@@ -945,7 +973,6 @@ export const CheckoutModal = ({
                       </div>
                     </div>
 
-                    {/* Email */}
                     <div className="space-y-2">
                       <Label htmlFor="email" className="text-white text-sm sm:text-base">
                         Email <span className="text-red-500">*</span>
@@ -965,7 +992,6 @@ export const CheckoutModal = ({
                       </div>
                     </div>
 
-                    {/* Phone Number */}
                     <div className="space-y-2">
                       <Label htmlFor="phone" className="text-white text-sm sm:text-base">
                         Phone Number <span className="text-red-500">*</span>
@@ -989,10 +1015,8 @@ export const CheckoutModal = ({
                     </div>
                   </div>
 
-                  {/* Country */}
                   <CountrySelector />
 
-                  {/* State - Only show if country is Nigeria */}
                   {formData.country === "Nigeria" && (
                     <div className="space-y-2">
                       <Label htmlFor="state" className="text-white text-sm sm:text-base">
@@ -1020,7 +1044,6 @@ export const CheckoutModal = ({
                     </div>
                   )}
 
-                  {/* Payment Notice */}
                   {!isMobile && (
                     <div className="p-4 bg-blue-900/20 border border-blue-800 rounded-lg">
                       <div className="flex items-start gap-3">
@@ -1031,6 +1054,9 @@ export const CheckoutModal = ({
                             <li>• Fill in your details above</li>
                             <li>• Choose payment method (Paystack or WhatsApp)</li>
                             <li>• Review your order details</li>
+                            {currentCurrency === 'USD' && (
+                              <li>• USD amounts will be converted to NGN for Paystack payment</li>
+                            )}
                             <li>• Complete payment securely</li>
                             <li>• Receive order confirmation</li>
                           </ul>
@@ -1039,7 +1065,6 @@ export const CheckoutModal = ({
                     </div>
                   )}
 
-                  {/* Mobile Notice */}
                   {isMobile && (
                     <div className="p-3 bg-blue-900/20 border border-blue-800 rounded-lg">
                       <p className="text-sm text-blue-300">
@@ -1076,7 +1101,6 @@ export const CheckoutModal = ({
                 </form>
               </>
             ) : step === "method" ? (
-              // PAYMENT METHOD SELECTION STEP
               <div className="space-y-6">
                 <div className="text-center mb-6">
                   <h3 className="text-lg font-semibold text-white mb-2">Choose Payment Method</h3>
@@ -1084,7 +1108,6 @@ export const CheckoutModal = ({
                 </div>
 
                 <div className="space-y-4">
-                  {/* Paystack Option */}
                   <div 
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
                       selectedPaymentMethod === "paystack" 
@@ -1111,10 +1134,12 @@ export const CheckoutModal = ({
                             <CheckCircle className="w-4 h-4 text-green-500" />
                             <span className="text-gray-300">Secure & encrypted</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-green-500" />
-                            <span className="text-gray-300">Multiple payment options</span>
-                          </div>
+                          {currentCurrency !== 'NGN' && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span className="text-gray-300">Converts {currentCurrency} to NGN automatically</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                       {selectedPaymentMethod === "paystack" && (
@@ -1123,7 +1148,6 @@ export const CheckoutModal = ({
                     </div>
                   </div>
 
-                  {/* WhatsApp Option */}
                   <div 
                     className={`p-4 border rounded-lg cursor-pointer transition-all ${
                       selectedPaymentMethod === "whatsapp" 
@@ -1172,11 +1196,21 @@ export const CheckoutModal = ({
                         <p className="text-xs text-gray-400 truncate max-w-[150px]">
                           Order: {generatedOrderNumber}
                         </p>
+                        {currentCurrency !== 'NGN' && (
+                          <p className="text-xs text-yellow-400 mt-1">
+                            Will be converted from {currentCurrency} to NGN for Paystack
+                          </p>
+                        )}
                       </div>
                       <div className="text-right">
                         <p className="text-lg font-bold text-blue-400">
-                          {formatPrice(calculateTotal() + calculateTax())}
+                          {formatPrice(getAmountInSelectedCurrency())}
                         </p>
+                        {currentCurrency !== 'NGN' && (
+                          <p className="text-xs text-gray-400">
+                            ≈ ₦{convertToNaira(getAmountInSelectedCurrency(), currentCurrency).toLocaleString('en-NG')}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1203,14 +1237,12 @@ export const CheckoutModal = ({
                 </div>
               </div>
             ) : (
-              // REVIEW STEP - Uses the ReviewDetails component
               <ReviewDetails />
             )}
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* View Details Modal - Only shows when viewing details from step 1 */}
       <Dialog open={showViewDetails} onOpenChange={handleCloseViewDetails}>
         <DialogContent className={`
           ${isMobile ? 'w-[95vw] max-w-[95vw] h-[90vh]' : 'max-w-2xl max-h-[90vh]'} 

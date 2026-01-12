@@ -7,9 +7,11 @@ import { useState, useEffect } from 'react';
 
 interface BlogHeroProps {
   featuredPost?: BlogPost | null;
+  scrollToArticles: () => void;
+  loading?: boolean; // Add loading prop
 }
 
-export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
+export const BlogHero = ({ featuredPost, scrollToArticles, loading = false }: BlogHeroProps) => {
   const [isMobile, setIsMobile] = useState(false);
 
   // Check if mobile
@@ -23,19 +25,32 @@ export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  if (!featuredPost) {
+  // Show loading skeleton if loading
+  if (loading) {
     return (
       <section className="container mx-auto px-4 py-8 md:py-12 lg:py-20">
-        <div className="text-center">
-          <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-5xl lg:text-6xl'} font-bold mb-4 md:mb-6`}>
-            Welcome to Our Blog
-          </h1>
-          <p className={`${isMobile ? 'text-base' : 'text-xl'} text-blue-300 mb-6 md:mb-8 max-w-3xl mx-auto`}>
-            Discover insights, tutorials, and stories from our team.
-          </p>
+        <div className="space-y-6">
+          {/* Loading skeleton for featured post */}
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="space-y-6">
+              <div className="h-8 w-32 bg-blue-900/50 rounded-lg animate-pulse"></div>
+              <div className="h-16 md:h-20 bg-blue-900/50 rounded-lg animate-pulse"></div>
+              <div className="h-6 bg-blue-900/50 rounded-lg animate-pulse"></div>
+              <div className="flex gap-4">
+                <div className="h-10 w-32 bg-blue-900/50 rounded-lg animate-pulse"></div>
+                <div className="h-10 w-40 bg-blue-900/50 rounded-lg animate-pulse"></div>
+              </div>
+            </div>
+            <div className="aspect-[4/3] bg-blue-900/50 rounded-2xl animate-pulse"></div>
+          </div>
         </div>
       </section>
     );
+  }
+
+  // Don't show anything if no featured post
+  if (!featuredPost) {
+    return null;
   }
 
   const readTime = Math.ceil(featuredPost.content.trim().split(/\s+/).length / 200);
@@ -50,15 +65,15 @@ export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
             <span className="inline-block px-3 py-1 text-xs md:text-sm font-medium rounded-full bg-blue-800 text-blue-200">
               Featured
             </span>
-            <Link 
-              to="/blog" 
+            <button 
+              onClick={scrollToArticles}
               className="text-blue-400 text-sm flex items-center gap-1 hover:text-blue-300"
             >
               View All <ChevronRight className="w-3 h-3" />
-            </Link>
+            </button>
           </div>
           
-          {/* Mobile Image - Top on mobile */}
+          {/* Mobile Image */}
           <div className="relative">
             <div className="aspect-[16/9] rounded-xl md:rounded-2xl overflow-hidden border border-blue-800">
               <img
@@ -80,7 +95,7 @@ export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
               {featuredPost.excerpt}
             </p>
             
-            {/* Mobile Metadata - Compact */}
+            {/* Mobile Metadata */}
             <div className="flex flex-wrap items-center gap-3 text-xs text-blue-400">
               <div className="flex items-center gap-1">
                 <User className="w-3 h-3" />
@@ -113,11 +128,9 @@ export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
               <Button 
                 variant="outline" 
                 className="w-full border-blue-700 text-blue-300 hover:bg-blue-800 py-3"
-                asChild
+                onClick={scrollToArticles}
               >
-                <Link to="/blog">
-                  View All Articles
-                </Link>
+                View All Articles
               </Button>
             </div>
           </div>
@@ -166,10 +179,12 @@ export const BlogHero = ({ featuredPost }: BlogHeroProps) => {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Button variant="outline" className="border-blue-700 text-blue-300 hover:bg-blue-800" asChild>
-                <Link to="/blog">
-                  View All Articles
-                </Link>
+              <Button 
+                variant="outline" 
+                className="border-blue-700 text-blue-300 hover:bg-blue-800"
+                onClick={scrollToArticles}
+              >
+                View All Articles
               </Button>
             </div>
           </div>

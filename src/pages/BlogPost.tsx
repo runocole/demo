@@ -30,6 +30,7 @@ export default function BlogPost() {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [retryCount, setRetryCount] = useState(0);
   const [hasTrackedView, setHasTrackedView] = useState(false);
+  const [userLiked, setUserLiked] = useState(false);
 
   // Monitor online/offline status
   useEffect(() => {
@@ -49,6 +50,14 @@ export default function BlogPost() {
       window.removeEventListener('offline', handleOffline);
     };
   }, [error, slug]);
+
+  // Check if user already liked this post
+  useEffect(() => {
+    if (post) {
+      const likedPosts = JSON.parse(localStorage.getItem('liked_posts') || '[]');
+      setUserLiked(likedPosts.includes(post.id));
+    }
+  }, [post]);
 
   // Track view when post is loaded
   useEffect(() => {
@@ -70,7 +79,7 @@ export default function BlogPost() {
         }
       };
 
-      // Track view after a short delay (to ensure user is actually reading)
+      // Track view after a short delay
       const timer = setTimeout(() => {
         trackView();
       }, 1500);
@@ -106,7 +115,6 @@ export default function BlogPost() {
         setTimeout(() => navigate('/blog'), 3000);
       } else {
         setPost(data);
-        toast.success('Post loaded successfully');
         
         // Cache the post for offline viewing
         localStorage.setItem(`blog_post_${slug}`, JSON.stringify(data));
@@ -187,8 +195,15 @@ export default function BlogPost() {
   };
 
   const handleLike = async () => {
-    if (!post || offline) {
+    if (!post) return;
+
+    if (offline) {
       toast.error('Cannot like while offline');
+      return;
+    }
+
+    if (userLiked) {
+      toast.info('You already liked this post');
       return;
     }
 
@@ -201,6 +216,12 @@ export default function BlogPost() {
         likes: (prev.likes || 0) + 1
       } : null);
       
+      // Mark as liked in localStorage
+      const likedPosts = JSON.parse(localStorage.getItem('liked_posts') || '[]');
+      likedPosts.push(post.id);
+      localStorage.setItem('liked_posts', JSON.stringify(likedPosts));
+      setUserLiked(true);
+      
       toast.success('Post liked!');
     } catch (error) {
       console.error('Error liking post:', error);
@@ -209,6 +230,7 @@ export default function BlogPost() {
   };
 
   const calculateReadTime = (content: string) => {
+    if (!content) return 0;
     const words = content.trim().split(/\s+/).length;
     return Math.ceil(words / 200);
   };
@@ -421,7 +443,7 @@ export default function BlogPost() {
               </div>
               
               <div className="flex items-center gap-2">
-                <Heart className="h-4 w-4" />
+                <Heart className={`h-4 w-4 ${userLiked ? 'text-red-500 fill-red-500' : ''}`} />
                 <span>{post.likes?.toLocaleString() || 0} likes</span>
               </div>
             </div>
@@ -473,11 +495,11 @@ export default function BlogPost() {
                 <Button
                   variant="outline"
                   onClick={handleLike}
-                  disabled={offline}
-                  className="border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white"
+                  disabled={offline || userLiked}
+                  className={`border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white ${userLiked ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <Heart className="mr-2 h-4 w-4" />
-                  Like ({post.likes || 0})
+                  <Heart className={`mr-2 h-4 w-4 ${userLiked ? 'text-red-500 fill-red-500' : ''}`} />
+                  {userLiked ? 'Liked' : 'Like'} ({post.likes || 0})
                 </Button>
               </div>
               

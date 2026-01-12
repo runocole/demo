@@ -120,7 +120,7 @@ interface SoldSerialInfo {
   invoice_number?: string;
 }
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://otic-backend-production.up.railway.app/api";
 
 const TOOL_CATEGORIES = [
   "Receiver",

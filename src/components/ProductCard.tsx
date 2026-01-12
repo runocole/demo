@@ -12,7 +12,7 @@ interface ProductCardProps {
   product: Product;
   onAddToCart: (product: Product) => void;
   className?: string;
-  variant?: "default" | "split" | "compact"; // Add compact variant for mobile
+  variant?: "default" | "split" | "compact";
   showQuickView?: boolean;
 }
 
@@ -39,20 +39,34 @@ export const ProductCard = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Hook into the context to get the converter function
   const { getConvertedPrice } = useCurrency();
 
   const handleProductClick = (e: React.MouseEvent) => {
-    // Only navigate if the click wasn't on interactive elements
     const target = e.target as HTMLElement;
     if (!target.closest('button') && !target.closest('a')) {
       navigate(`/product/${product.id}`);
     }
   };
 
+  // FIXED: More explicit click handler
   const handleAddToCartClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click
-    onAddToCart(product);
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log("🛒 ADD TO CART CLICKED:", product.name);
+    console.log("📦 Product inStock:", product.inStock);
+    console.log("🔧 onAddToCart function exists:", !!onAddToCart);
+    
+    // Force call the function
+    if (onAddToCart && typeof onAddToCart === 'function') {
+      onAddToCart(product);
+      // Optional: Show immediate feedback
+      if (isMobile) {
+        alert(`✓ Added ${product.name} to cart!`);
+      }
+    } else {
+      console.error("❌ onAddToCart is not a function:", onAddToCart);
+    }
   };
 
   const handleQuickViewClick = (e: React.MouseEvent) => {
@@ -64,21 +78,20 @@ export const ProductCard = ({
   const isSplitVariant = variant === "split";
   const isCompactVariant = variant === "compact" || isMobile;
   
-  // UPDATED: Using #081748 for button and price colors
   const cardBgColor = isSplitVariant ? "" : "bg-white";
   const contentBgColor = isSplitVariant ? "bg-[#081748]" : "bg-transparent";
   const titleColor = isSplitVariant ? "text-white" : "text-gray-900";
   const descriptionColor = isSplitVariant ? "text-gray-300" : "text-gray-600";
   const specColor = isSplitVariant ? "text-gray-400" : "text-gray-500";
-  const priceColor = isSplitVariant ? "text-white" : "text-[#081748]"; // CHANGED to #081748
+  const priceColor = isSplitVariant ? "text-white" : "text-[#081748]";
   const stockColorClass = product.inStock 
     ? (isSplitVariant ? "text-green-400" : "text-green-600") 
     : (isSplitVariant ? "text-red-400" : "text-red-600");
   const badgeVariant = isSplitVariant ? "secondary" : "outline";
-  const badgeClass = isSplitVariant ? "bg-gray-700 text-white" : "bg-[#081748]/10 text-[#081748]"; // CHANGED
+  const badgeClass = isSplitVariant ? "bg-gray-700 text-white" : "bg-[#081748]/10 text-[#081748]";
   const buttonClass = isSplitVariant 
     ? "bg-white text-[#081748] hover:bg-gray-100 active:scale-95" 
-    : "bg-[#081748] hover:bg-[#0a1f5a] text-white active:scale-95"; // CHANGED to #081748
+    : "bg-[#081748] hover:bg-[#0a1f5a] text-white active:scale-95";
   const borderColor = isSplitVariant ? "border-gray-700" : "border-gray-200";
   
   // Mobile-specific styles
@@ -89,7 +102,7 @@ export const ProductCard = ({
   const mobileButtonSize = isMobile ? "px-2 py-1 text-xs h-8" : "px-4 py-2 text-sm h-9";
   const mobileImageHeight = isMobile ? "h-48" : "h-56";
 
-  // Compact variant adjustments
+  // Compact variant
   if (isCompactVariant) {
     return (
       <Card 
@@ -116,12 +129,11 @@ export const ProductCard = ({
                 className="w-auto h-auto max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
                 loading="lazy"
               />
-              {/* Quick view overlay - Desktop only */}
               {!isMobile && isHovered && (
                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                   <Button
                     size="sm"
-                    className="bg-white text-gray-900 hover:bg-gray-100"
+                    className="bg-white text-gray-900 hover:bg-gray-100 z-20"
                     onClick={handleQuickViewClick}
                   >
                     <Eye className="w-4 h-4 mr-2" />
@@ -139,7 +151,7 @@ export const ProductCard = ({
           {/* Stock badge */}
           <Badge 
             className={cn(
-              "absolute top-2 left-2 text-xs px-2 py-0.5",
+              "absolute top-2 left-2 text-xs px-2 py-0.5 z-10",
               product.inStock 
                 ? "bg-green-100 text-green-800 border-green-200" 
                 : "bg-red-100 text-red-800 border-red-200"
@@ -151,7 +163,7 @@ export const ProductCard = ({
           {/* Category badge */}
           <Badge 
             variant="secondary"
-            className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-[#081748] text-white border-0" // CHANGED
+            className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-[#081748] text-white border-0 z-10"
           >
             {product.category.length > 12 ? `${product.category.substring(0, 12)}...` : product.category}
           </Badge>
@@ -181,18 +193,20 @@ export const ProductCard = ({
               )}
             </div>
 
+            {/* FIXED: Button with explicit click handling */}
             <Button
               onClick={handleAddToCartClick}
               disabled={!product.inStock}
               size={isMobile ? "icon" : "default"}
               className={cn(
-                "gap-1 transition-all hover:bg-[#0a1f5a]", // CHANGED hover color
+                "gap-1 transition-all hover:bg-[#0a1f5a] z-20 relative",
                 buttonClass,
                 mobileButtonSize,
                 isMobile && "rounded-full",
-                !product.inStock && "bg-gray-400 hover:bg-gray-500" // Added disabled state
+                !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               )}
               title={isMobile ? "Add to cart" : undefined}
+              type="button" // Explicit button type
             >
               {isMobile ? (
                 <ShoppingCart className="w-4 h-4" />
@@ -210,8 +224,9 @@ export const ProductCard = ({
             <Button
               variant="ghost"
               size="sm"
-              className="w-full text-xs text-[#081748] hover:text-[#0a1f5a] hover:bg-[#081748]/10" // CHANGED
+              className="w-full text-xs text-[#081748] hover:text-[#0a1f5a] hover:bg-[#081748]/10 z-20 relative"
               onClick={handleQuickViewClick}
+              type="button"
             >
               <Info className="w-3 h-3 mr-1" />
               View Details
@@ -250,11 +265,12 @@ export const ProductCard = ({
             />
             {/* Quick view overlay */}
             {isHovered && (
-              <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 <Button
                   size="sm"
-                  className="bg-white text-gray-900 hover:bg-gray-100"
+                  className="bg-white text-gray-900 hover:bg-gray-100 z-20 relative"
                   onClick={handleQuickViewClick}
+                  type="button"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   Quick View
@@ -275,7 +291,7 @@ export const ProductCard = ({
         {isHovered && (
           <Badge 
             className={cn(
-              "absolute top-3 left-3 text-xs px-2 py-1",
+              "absolute top-3 left-3 text-xs px-2 py-1 z-10",
               product.inStock 
                 ? "bg-green-100 text-green-800 border-green-200" 
                 : "bg-red-100 text-red-800 border-red-200"
@@ -291,7 +307,7 @@ export const ProductCard = ({
         <div className="space-y-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className={cn(
-              "font-semibold leading-tight group-hover:text-[#081748] transition-colors line-clamp-1", // CHANGED hover color
+              "font-semibold leading-tight group-hover:text-[#081748] transition-colors line-clamp-1",
               mobileTitleSize,
               titleColor
             )}>
@@ -299,7 +315,7 @@ export const ProductCard = ({
             </h3>
             <Badge 
               variant={badgeVariant} 
-              className={cn("shrink-0 text-[10px] px-2 py-0.5", badgeClass)}
+              className={cn("shrink-0 text-[10px] px-2 py-0.5 z-10", badgeClass)}
             >
               {product.category.length > 15 ? `${product.category.substring(0, 15)}...` : product.category}
             </Badge>
@@ -316,7 +332,7 @@ export const ProductCard = ({
             <ul className={cn("text-xs space-y-1", specColor)}>
               {product.specifications.slice(0, 2).map((spec, idx) => (
                 <li key={idx} className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#081748] shrink-0"></span> {/* CHANGED */}
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#081748] shrink-0"></span>
                   <span className="truncate">{spec.length > 50 ? `${spec.substring(0, 50)}...` : spec}</span>
                 </li>
               ))}
@@ -339,24 +355,27 @@ export const ProductCard = ({
               <Button
                 variant="outline"
                 size="sm"
-                className="hidden sm:inline-flex text-xs border-gray-300 text-[#081748] hover:bg-[#081748]/10 hover:text-[#0a1f5a]" // CHANGED
+                className="hidden sm:inline-flex text-xs border-gray-300 text-[#081748] hover:bg-[#081748]/10 hover:text-[#0a1f5a] z-10"
                 onClick={handleQuickViewClick}
+                type="button"
               >
                 <Info className="w-3 h-3 mr-1" />
                 Details
               </Button>
             )}
+            {/* FIXED: Main Add to Cart Button */}
             <Button
               onClick={handleAddToCartClick}
               disabled={!product.inStock}
               size={isMobile ? "icon" : "sm"}
               className={cn(
-                "gap-2 transition-all hover:bg-[#0a1f5a]", // CHANGED hover color
+                "gap-2 transition-all hover:bg-[#0a1f5a] z-20 relative",
                 buttonClass,
                 mobileButtonSize,
-                !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed" // Added disabled state
+                !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               )}
               title={isMobile ? "Add to cart" : undefined}
+              type="button" // Explicit button type
             >
               <ShoppingCart className="w-4 h-4" />
               {!isMobile && (product.inStock ? "Add to Cart" : "Out of Stock")}

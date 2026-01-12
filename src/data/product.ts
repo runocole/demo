@@ -3,7 +3,7 @@ export const ABOUT_CONTENT = {
   title: "Precision from the Ground Up and the Sky Down",
   mobileTitle: "Precision Survey Solutions",
   description: [
-    "Geossotech is a trusted provider of advanced geospatial technology, supporting professionals across geospatial and surveying, engineering and construction, agriculture and aggrotech, oil and gas / energy, real estate and infrastructure, government agencies, surveying institutions, and hydrographic operations.",
+    "OTIC GeoSystems is a trusted provider of advanced geospatial technology, supporting professionals across geospatial and surveying, engineering and construction, agriculture and aggrotech, oil and gas / energy, real estate and infrastructure, government agencies, surveying institutions, and hydrographic operations.",
     "We deliver a complete geospatial ecosystem, supplying high-performance GNSS receivers, total stations, 3D laser scanners, professional drones, side scan sonars, echo sounders, autosteering systems, CORS network services, and a wide range of supporting accessories and GIS software's.",
     "We go beyond equipment supply. We calibrate and repair equipment, provide professional training, offer equipment rental, and deliver advanced services including aerial surveying, mapping, inspection, agricultural monitoring, hydrographic data acquisition, and 3D scanning, ensuring reliable data capture across land, water, and air.",
     "From equipping field crews, institutions, and agencies to supporting large-scale infrastructure, energy, agricultural, and marine projects, we stand as a single, dependable source for end-to-end geospatial solutions. We are the ecosystem.",

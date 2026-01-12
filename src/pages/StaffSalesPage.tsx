@@ -29,7 +29,7 @@ interface Sale {
   staff_id?: string;
 }
 
-const API_URL = "http://localhost:8000/api";
+const API_URL = "https://otic-backend-production.up.railway.app/api";
 
 export default function StaffSalesPage() {
   const { staffId } = useParams<{ staffId: string }>();

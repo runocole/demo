@@ -246,13 +246,13 @@ const About: React.FC = () => {
       </h2>
       <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
         <p>
-         GeossoTech provides reliable geospatial equipment, services, and support for surveyors and professionals across surveying, engineering, construction, agriculture, energy, infrastructure, hydrographic operations, and government projects.
+         OTIC GeoSystems provides reliable geospatial equipment, services, and support for surveyors and professionals across surveying, engineering, construction, agriculture, energy, infrastructure, hydrographic operations, and government projects.
         </p>
         <p>
           We supply and support GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software. Beyond supply, we calibrate and repair equipment, offer training, equipment rental, scanning services, and project support.
         </p>
         <p>
-          GeossoTech works as a technology partner—helping clients choose the right tools, deploy them correctly, and keep them working in the field.
+          OTIC GeoSystems works as a technology partner—helping clients choose the right tools, deploy them correctly, and keep them working in the field.
         </p>
       </div>
     </motion.div>
@@ -267,10 +267,10 @@ const About: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
     >
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-30">
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-20">
         To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
       </h2>
-      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-5">
+      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
         <p>
         As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software.  From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
         </p>
@@ -280,7 +280,7 @@ const About: React.FC = () => {
         Geospatial Services for Professional Practice
       </h3>
       <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-       GeossoTech works as a technology partner, helping clients choose the right tools, deploy them correctly, and keep them working in the field.
+       OTIC GeoSystems works as a technology partner, helping clients choose the right tools, deploy them correctly, and keep them working in the field.
       </p>
       <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
         Our Mission
@@ -426,11 +426,11 @@ const About: React.FC = () => {
               Why choose GeossoTech?
             </h2>
             <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-  GeossoTech is a trusted geospatial solutions provider and technology partner built to support professionals, organizations, and institutions across surveying, mapping, engineering, and allied fields. We offer a complete ecosystem of geospatial solutions, equipment sales and rentals, certified training, technical consulting, and after-sales support, delivered under one roof for efficiency and reliability.
+  OTIC GeoSystems  is a trusted geospatial solutions provider and technology partner built to support professionals, organizations, and institutions across surveying, mapping, engineering, and allied fields. We offer a complete ecosystem of geospatial solutions, equipment sales and rentals, certified training, technical consulting, and after-sales support, delivered under one roof for efficiency and reliability.
   <br /><br />
   Our strength lies in deep technical expertise, hands-on industry experience, and a clear understanding of real project demands. We work closely with our clients to recommend practical, proven technologies that align with their operational goals, budgets, and environments. Beyond supplying equipment, we ensure users are properly trained, supported, and confident in deploying solutions effectively.
   <br /><br />
-  At GeossoTech, service quality is driven by a culture of accountability, continuous improvement, and client-focused delivery. This approach has positioned us as a dependable long-term partner, trusted for accurate guidance, responsive support, and consistent value. Choosing GeossoTech means choosing a partner committed to helping you work smarter, deliver better results, and grow sustainably.
+  At GeossoTech, service quality is driven by a culture of accountability, continuous improvement, and client-focused delivery. This approach has positioned us as a dependable long-term partner, trusted for accurate guidance, responsive support, and consistent value. Choosing OTIC GeoSystems  means choosing a partner committed to helping you work smarter, deliver better results, and grow sustainably.
 </p>
                  
           {/* HORIZONTAL DIVIDER LINE */}

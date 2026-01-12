@@ -14,9 +14,11 @@ import heroImage4 from "../assets/dronemapping.jpg";
 import safetyImage from "../assets/safety-training.jpg";
 import bathImage from "../assets/bath.jpg";
 import dronemapping from "../assets/dronemapping.jpg";
+import gistraining from "../assets/gis-training.jpg";
 import threed from "../assets/3d.png"
 import engineering from "../assets/engineering.jpg"
 import totalstation from "../assets/total-training.jpg";
+import lidar from "../assets/lidar.jpg";
 import { Testimonials } from "../components/Testimonials";
 import { useCurrency } from "../context/CurrencyContext";
 
@@ -25,7 +27,7 @@ const heroSlides = [
   {
     id: 1,
     image: heroImage1,
-    title: "GeossoTech Academy",
+    title: "OTIC GeoSystems Academy",
     description: "We train professionals worldwide to safely and efficiently operate in their field with comprehensive training programs",
     position: "left"
   },
@@ -82,7 +84,7 @@ const courses: Course[] = [
   {
     id: "3dlaserscanning",
     title: "3D Laser Scanning Course",
-    description: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Cyclone, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
+    description: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Revit, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
     image:threed,
     price: 520,
     groupPrice: 348
@@ -107,7 +109,7 @@ const courses: Course[] = [
     id: "gis",
     title: "GIS Training",
     description: "A practical GIS training course teaching spatial data analysis, map creation, and geospatial workflows for surveying, environmental, and urban planning projects.",
-    image: safetyImage,
+    image: gistraining,
     price: 210,
     groupPrice: 175
   },
@@ -123,7 +125,7 @@ const courses: Course[] = [
     id: "lidar-drone",
     title: "LIDAR Drone Course (Advanced)",
     description: "Advanced LIDAR drone surveying and data processing for high-precision topographic mapping and volumetric analysis.",
-    image: dronemapping,
+    image: lidar,
     price: 520,
     groupPrice: 348
   }

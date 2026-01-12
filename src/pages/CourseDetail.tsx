@@ -1,7 +1,7 @@
 // src/components/CourseDetail.tsx
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Star, Clock, Users, Calendar, CheckCircle2, ArrowLeft } from "lucide-react";
+import { Star, Clock, Users, Calendar, CheckCircle2, ArrowLeft,Scroll } from "lucide-react";
 import { Button } from "../components/ui/button";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
@@ -11,8 +11,11 @@ import { useCurrency } from "../context/CurrencyContext";
 import safetyImage from "../assets/safety-training.jpg";
 import fieldImage from "../assets/field-practice.jpg";
 import dronemapping from "../assets/dronemapping.jpg";
-import missionImage from "../assets/mission-planning.jpg";
-
+import bathImage from "../assets/bath.jpg";
+import totalstation from "../assets/total-training.jpg";
+import gistraining from "../assets/gis-training1.jpg";
+import threedlaser from "../assets/t3dlaser.jpg";
+import lidar from "../assets/lidar.jpg"
 interface Course {
   id: string;
   title: string;
@@ -23,9 +26,10 @@ interface Course {
   reviews: number;
   duration: string;
   students: number;
+  certifications: string;
   format: string[];
-  price: number; // Changed to number
-  groupPrice?: number; // Added optional group price
+  price: number; 
+  groupPrice?: number; 
   features: string[];
 }
 
@@ -39,6 +43,7 @@ const courses: Course[] = [
     rating: 4.9,
     reviews: 127,
     duration: "4 weeks",
+    certifications: "Certificate of Completion",
     students: 300,
     format: ["Online", "In-Person"],
     price: 175, // 250k NGN = ~$172 USD + $3 = $175
@@ -57,12 +62,13 @@ const courses: Course[] = [
     title: "Bathymetric Survey Course",
     description: "Master underwater surveying with echosounders and GNSS integration",
     longDescription: "This course focuses on bathymetric surveying, including operation of echosounders, transducers, and GNSS-integrated systems. Learners practice depth measurement, data acquisition, calibration, tide correction, and noise filtering, and perform post-processing using HYSURVEY, AutoCAD, Global Mapper, and Surfer. Exercises enable creation of contour maps, 3D surfaces, and precise navigation-ready datasets for marine, engineering, and environmental applications.",
-    image: missionImage,
+    image: bathImage,
     rating: 4.8,
     reviews: 89,
     duration: "6 weeks",
     students: 150,
     format: ["In-Person", "Hybrid"],
+    certifications: "Certificate of Completion",
     price: 348, // 500k NGN = ~$345 USD + $3 = $348
     groupPrice: 244, // 350k NGN = ~$241 USD + $3 = $244
     features: [
@@ -85,6 +91,7 @@ const courses: Course[] = [
     duration: "3 weeks",
     students: 220,
     format: ["Online", "In-Person"],
+    certifications: "Certificate of Completion",
     price: 279, // 400k NGN = ~$276 USD + $3 = $279
     groupPrice: 175, // 250k NGN = ~$172 USD + $3 = $175
     features: [
@@ -101,12 +108,13 @@ const courses: Course[] = [
     title: "Total Station Surveying Course",
     description: "Precision measurement, traversing, and topographic surveys",
     longDescription: "A complete course on Total Station surveying for precision measurement, site setup, traversing, topographic surveys, and construction layout. Learners practice workflows with Leica, FOIF and COMNAV Total Stations, focusing on accurate field data capture, error reduction, and generating professional deliverables for Cadastral, Engineering, and Construction projects.",
-    image: fieldImage,
+    image: totalstation,
     rating: 4.9,
     reviews: 156,
     duration: "5 weeks",
     students: 180,
     format: ["In-Person"],
+    certifications: "Certificate of Completion",
     price: 244, // 350k NGN = ~$241 USD + $3 = $244
     groupPrice: 175, // 250k NGN = ~$172 USD + $3 = $175
     features: [
@@ -123,12 +131,13 @@ const courses: Course[] = [
     title: "GIS Training Course",
     description: "Spatial data analysis, map creation, and geospatial workflows",
     longDescription: "A practical GIS training course teaching spatial data analysis, map creation, and geospatial workflows for surveying, environmental, and urban planning projects.",
-    image: safetyImage,
+    image: gistraining,
     rating: 4.6,
     reviews: 203,
     duration: "8 weeks",
     students: 450,
     format: ["Online"],
+    certifications: "Certificate of Completion",
     price: 210, // 300k NGN = ~$207 USD + $3 = $210
     groupPrice: 175, // 250k NGN = ~$172 USD + $3 = $175
     features: [
@@ -144,13 +153,14 @@ const courses: Course[] = [
     id: "3dlaserscanning",
     title: "3D Laser Scanning Course",
     description: "Point cloud capture, processing for survey and BIM applications",
-    longDescription: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Cyclone, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
-    image: missionImage,
+    longDescription: "An advanced course covering 3D laser scanning techniques for survey, engineering, and BIM applications. Participants learn point cloud capture, scanner setup, scanning strategies, and post-processing using Revit, ReCap, and CloudCompare. Practical exercises focus on creating accurate 3D models, topographic maps, and as-built documentation for construction, infrastructure, and heritage projects.",
+    image: threedlaser,
     rating: 4.8,
     reviews: 118,
     duration: "7 weeks",
     students: 190,
     format: ["Online", "Hybrid"],
+    certifications: "Certificate of Completion",
     price: 520, // 750k NGN = ~$517 USD + $3 = $520
     groupPrice: 348, // 500k NGN = ~$345 USD + $3 = $348
     features: [
@@ -173,6 +183,7 @@ const courses: Course[] = [
     duration: "6 weeks",
     students: 120,
     format: ["Online"],
+    certifications: "Certificate of Completion",
     price: 175, // 250k NGN = ~$172 USD + $3 = $175
     groupPrice: 127, // 180k NGN = ~$124 USD + $3 = $127
     features: [
@@ -195,6 +206,7 @@ const courses: Course[] = [
     duration: "5 weeks",
     students: 160,
     format: ["Online", "In-Person"],
+    certifications: "Certificate of Completion",
     price: 313, // 450k NGN = ~$310 USD + $3 = $313
     groupPrice: 244, // 350k NGN = ~$241 USD + $3 = $244
     features: [
@@ -211,12 +223,13 @@ const courses: Course[] = [
     title: "LIDAR Drone Course (Advanced)",
     description: "Advanced LIDAR drone surveying and data processing",
     longDescription: "An advanced course focusing on LIDAR drone technology for high-precision surveying. Learn to operate LIDAR-equipped drones, capture accurate point cloud data, and process results for topographic mapping, volumetric analysis, and infrastructure monitoring.",
-    image: dronemapping,
+    image: lidar,
     rating: 4.9,
     reviews: 65,
     duration: "4 weeks",
     students: 90,
     format: ["In-Person", "Hybrid"],
+    certifications: "Certificate of Completion",
     price: 520, // 750k NGN = ~$517 USD + $3 = $520 (fixed from 750000)
     groupPrice: 348, // 500k NGN = ~$345 USD + $3 = $348 (fixed from 500000)
     features: [
@@ -295,6 +308,10 @@ const CourseDetail = () => {
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-muted-foreground" />
                   <span className="text-sm text-muted-foreground">{course.students} students</span>
+                </div>
+                 <div className="flex items-center gap-2">
+                  <Scroll className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-sm text-muted-foreground">{course.certifications}</span>
                 </div>
               </div>
 

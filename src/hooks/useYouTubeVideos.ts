@@ -24,7 +24,7 @@ export const useYouTubeVideos = () => {
   const fallbackVideos: YouTubeVideo[] = [
     {
       id: "t2ZC7ReBJ5c",
-      title: "GeoSSOTech Survey Solutions",
+      title: "OTIC GeoSystems Survey Solutions",
       thumbnail: "https://i.ytimg.com/vi/t2ZC7ReBJ5c/maxresdefault.jpg",
       url: "https://www.youtube.com/watch?v=t2ZC7ReBJ5c",
       channelTitle: "GeoSSOTech",

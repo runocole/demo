@@ -1,13 +1,6 @@
 import dotenv from 'dotenv';
-dotenv.config(); 
-
-console.log('🚀 Starting server...');
-console.log('   Mode:', process.env.NODE_ENV);
-console.log('   Frontend URL:', process.env.FRONTEND_URL);
-
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -17,6 +10,10 @@ const __dirname = path.dirname(__filename);
 const envPath = path.resolve(__dirname, '..', '.env');
 console.log('Loading .env from:', envPath);
 dotenv.config({ path: envPath });
+
+console.log('🚀 Starting server...');
+console.log('   Mode:', process.env.NODE_ENV);
+console.log('   Frontend URL:', process.env.FRONTEND_URL);
 
 // Debug
 console.log('========== ENVIRONMENT CHECK ==========');

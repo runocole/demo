@@ -13,7 +13,7 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 
 export function CurrencyProvider({ children }: { children: ReactNode }) {
   const [currentCurrency, setCurrency] = useState("USD");
-  const exchangeRate = 1450; 
+  const exchangeRate = 1550; 
 
   // Centralized math logic
   const getConvertedPrice = (usdPrice: number): string => {

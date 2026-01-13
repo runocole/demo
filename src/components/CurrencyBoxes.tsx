@@ -18,7 +18,7 @@ const CurrencyBoxes: React.FC = () => {
 
   const currencyButtonStyle: React.CSSProperties = {
     padding: '8px 15px',
-    border: '1px solid #081748', // Fixed: removed the bracket after "solid"
+    border: '1px solid#081748  ', // Fixed: removed the bracket after "solid"
     background: 'white',
     cursor: 'pointer',
     fontSize: '0.9em',

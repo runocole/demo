@@ -159,7 +159,7 @@ export const CarouselSection = ({
         {/* CTA */}
         <div className="text-center mt-8 sm:mt-12">
           <button
-            className="bg-[#081748] hover:bg-[#0a1f5a] text-white font-bold px-6 sm:px-8 py-3 sm:py-4 rounded-lg shadow-lg transition-colors duration-300 w-full sm:w-auto" // CHANGED to #081748
+            className="bg-[#081748] hover:bg-[#0a1f5a] text-white font-bold px-6 sm:px-8 py-3 sm:py-4 rounded-lg shadow-lg transition-colors duration-300 w-full sm:w-auto" // CHANGED to#081748  
             onClick={() => navigate(buttonLink)}
           >
             {buttonText}

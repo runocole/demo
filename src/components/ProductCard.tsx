@@ -7,6 +7,7 @@ import { Badge } from "../components/ui/badge";
 import { ShoppingCart, ImageOff, Info, Eye } from "lucide-react";
 import { cn } from "../lib/utils"; 
 import { useCurrency } from "../context/CurrencyContext"; 
+import { useToast } from "../hooks/use-toast";
 
 interface ProductCardProps {
   product: Product;
@@ -24,6 +25,7 @@ export const ProductCard = ({
   showQuickView = false
 }: ProductCardProps) => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -48,24 +50,59 @@ export const ProductCard = ({
     }
   };
 
-  // FIXED: More explicit click handler
   const handleAddToCartClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("🛒 ADD TO CART CLICKED:", product.name);
-    console.log("📦 Product inStock:", product.inStock);
-    console.log("🔧 onAddToCart function exists:", !!onAddToCart);
+    console.log("🛒 ProductCard: Add to cart clicked");
+    console.log("🛒 Product object:", product);
+    console.log("🛒 Product ID:", product.id);
+    console.log("🛒 Product name:", product.name);
+    console.log("🛒 Product price:", product.price);
     
-    // Force call the function
+    // Validate the product object
+    if (!product || !product.id || !product.name || product.price === undefined) {
+      console.error("❌ Invalid product object:", product);
+      toast({
+        title: "Error",
+        description: "Cannot add item to cart - invalid product data",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Ensure we have a valid product structure - using only properties from Product type
+    const validatedProduct: Product = {
+      id: product.id,
+      name: product.name,
+      description: product.description || "",
+      price: Number(product.price),
+      category: product.category || "Other",
+      image: product.image || "/placeholder-image.jpg",
+      inStock: product.inStock !== undefined ? product.inStock : true,
+      specifications: product.specifications || []
+      // Only include properties that exist in your Product type
+    };
+    
+    console.log("🛒 Validated product:", validatedProduct);
+    
     if (onAddToCart && typeof onAddToCart === 'function') {
-      onAddToCart(product);
-      // Optional: Show immediate feedback
-      if (isMobile) {
-        alert(`✓ Added ${product.name} to cart!`);
-      }
+      console.log("🛒 Calling onAddToCart...");
+      onAddToCart(validatedProduct);
+      
+      // Show immediate feedback
+      toast({
+        title: "Added to cart!",
+        description: `${validatedProduct.name} has been added to your cart.`,
+        className: "bg-white dark:bg-gray-900",
+      });
     } else {
       console.error("❌ onAddToCart is not a function:", onAddToCart);
+      toast({
+        title: "Error",
+        description: "Cannot add item to cart",
+        variant: "destructive",
+      });
     }
   };
 
@@ -94,7 +131,7 @@ export const ProductCard = ({
     : "bg-[#081748] hover:bg-[#0a1f5a] text-white active:scale-95";
   const borderColor = isSplitVariant ? "border-gray-700" : "border-gray-200";
   
-  // Mobile-specific styles
+  // Responsive styles
   const mobileCardClass = isMobile ? "shadow-sm hover:shadow-md" : "shadow-md hover:shadow-lg";
   const mobilePadding = isMobile ? "p-3" : "p-5";
   const mobileTitleSize = isMobile ? "text-base" : "text-lg";
@@ -193,7 +230,6 @@ export const ProductCard = ({
               )}
             </div>
 
-            {/* FIXED: Button with explicit click handling */}
             <Button
               onClick={handleAddToCartClick}
               disabled={!product.inStock}
@@ -206,7 +242,7 @@ export const ProductCard = ({
                 !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               )}
               title={isMobile ? "Add to cart" : undefined}
-              type="button" // Explicit button type
+              type="button"
             >
               {isMobile ? (
                 <ShoppingCart className="w-4 h-4" />
@@ -363,7 +399,6 @@ export const ProductCard = ({
                 Details
               </Button>
             )}
-            {/* FIXED: Main Add to Cart Button */}
             <Button
               onClick={handleAddToCartClick}
               disabled={!product.inStock}
@@ -375,10 +410,10 @@ export const ProductCard = ({
                 !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
               )}
               title={isMobile ? "Add to cart" : undefined}
-              type="button" // Explicit button type
+              type="button"
             >
               <ShoppingCart className="w-4 h-4" />
-              {!isMobile && (product.inStock ? "Add to Cart" : "Out of Stock")}
+              {!isMobile && (product.inStock ? "Add" : "Out of Stock")}
             </Button>
           </div>
         </div>

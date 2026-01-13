@@ -3,7 +3,7 @@ import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 
 import Dashboard from "./pages/StaffDashboard"; // Staff dashboard
 import Tools from "./pages/Tools";
@@ -34,6 +34,7 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import { CartProvider } from './context/CartContext'; 
 import ProductDetailPage from "./pages/ProductDetailPage";
 import MobileNavigation from "./components/MobileNavigation"; 
+import Header from "./components/Header"; // Import the main Header component
 
 const queryClient = new QueryClient();
 
@@ -67,148 +68,173 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   return element;
 };
 
+// Component to conditionally show Header and MobileNavigation
+const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/dashboard') || 
+                       location.pathname.startsWith('/admin') || 
+                       location.pathname.startsWith('/staff') ||
+                       location.pathname.startsWith('/tools') ||
+                       location.pathname.startsWith('/payments') ||
+                       location.pathname.startsWith('/settings') ||
+                       location.pathname.startsWith('/sales') ||
+                       location.pathname.startsWith('/customers');
+  
+  return (
+    <>
+      {/* Show main Header only on public website pages */}
+      {!isAdminRoute && <Header />}
+      
+      {children}
+      
+      {/* Show MobileNavigation only on public website pages */}
+      {!isAdminRoute && <MobileNavigation />}
+    </>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <CurrencyProvider>
-      <CartProvider> {/* Wrap with CartProvider */}
+      <CartProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Routes>
-              {/* --- Public Routes --- */}
-              <Route path="/" element={<LandingPage />} />
-              <Route path="/login" element={<Login />} />
+            <AppLayout>
+              <Routes>
+                {/* --- Public Routes --- */}
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
 
-              {/* --- Staff Routes --- */}
-              <Route
-                path="/staff/dashboard"
-                element={
-                  <PrivateRoute
-                    element={<Dashboard />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/tools"
-                element={
-                  <PrivateRoute
-                    element={<Tools />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/payments"
-                element={
-                  <PrivateRoute
-                    element={<Payments />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/tools-summary"
-                element={
-                  <PrivateRoute
-                    element={<ToolsSummary />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/staff"
-                element={
-                  <PrivateRoute
-                    element={<StaffPage />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/customers"
-                element={
-                  <PrivateRoute
-                    element={<CustomersPage />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/sales"
-                element={
-                  <PrivateRoute
-                    element={<SalesPage />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/settings"
-                element={
-                  <PrivateRoute
-                    element={<Settings />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/customer/owing"
-                element={
-                  <PrivateRoute
-                    element={<CustomerOwing />}
-                    allowedRoles={["staff", "admin"]}
-                  />
-                }
-              />
+                {/* --- Staff Routes --- */}
+                <Route
+                  path="/staff/dashboard"
+                  element={
+                    <PrivateRoute
+                      element={<Dashboard />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/tools"
+                  element={
+                    <PrivateRoute
+                      element={<Tools />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/payments"
+                  element={
+                    <PrivateRoute
+                      element={<Payments />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/tools-summary"
+                  element={
+                    <PrivateRoute
+                      element={<ToolsSummary />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/staff"
+                  element={
+                    <PrivateRoute
+                      element={<StaffPage />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/customers"
+                  element={
+                    <PrivateRoute
+                      element={<CustomersPage />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/sales"
+                  element={
+                    <PrivateRoute
+                      element={<SalesPage />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/settings"
+                  element={
+                    <PrivateRoute
+                      element={<Settings />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/customer/owing"
+                  element={
+                    <PrivateRoute
+                      element={<CustomerOwing />}
+                      allowedRoles={["staff", "admin"]}
+                    />
+                  }
+                />
 
-              {/* --- Admin Routes --- */}
-              <Route
-                path="/dashboard"
-                element={
-                  <PrivateRoute
-                    element={<AdminDashboard />}
-                    allowedRoles={["admin"]}
-                  />
-                }
-              />
-              <Route
-                path="/admin/sales"
-                element={ 
-                  <PrivateRoute
-                    element={<AdminSalesPage />}
-                    allowedRoles={["admin"]}
-                  />
-                }
-              />
-              
-              {/* --- Public Website Routes --- */}
-              <Route path="/about" element={<About />} />
-              <Route path="/training" element={<Training />} />
-              <Route path="/corsnetwork" element={<CorsNetwork />} />
-              <Route path="/buynow" element={<BuyNow />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/blog/:slug" element={<BlogPost />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/admin/login" element={<AdminLogin />} />
-              <Route path="/product/:id" element={<ProductDetailPage />} />
-              {/* --- Public Course Route --- */}
-              <Route path="/course/:courseId" element={<CourseDetail />} />
-              
-              {/* --- Staff Sales Route --- */}
-              <Route path="/sales/staff/:staffId" element={<StaffSalesPage />} />
+                {/* --- Admin Routes --- */}
+                <Route
+                  path="/dashboard"
+                  element={
+                    <PrivateRoute
+                      element={<AdminDashboard />}
+                      allowedRoles={["admin"]}
+                    />
+                  }
+                />
+                <Route
+                  path="/admin/sales"
+                  element={ 
+                    <PrivateRoute
+                      element={<AdminSalesPage />}
+                      allowedRoles={["admin"]}
+                    />
+                  }
+                />
+                
+                {/* --- Public Website Routes --- */}
+                <Route path="/about" element={<About />} />
+                <Route path="/training" element={<Training />} />
+                <Route path="/corsnetwork" element={<CorsNetwork />} />
+                <Route path="/buynow" element={<BuyNow />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/login" element={<AdminLogin />} />
+                <Route path="/product/:id" element={<ProductDetailPage />} />
+                {/* --- Public Course Route --- */}
+                <Route path="/course/:courseId" element={<CourseDetail />} />
+                
+                {/* --- Staff Sales Route --- */}
+                <Route path="/sales/staff/:staffId" element={<StaffSalesPage />} />
 
-              {/* --- Fallback redirect --- */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-            {/* Mobile Navigation - Shows on mobile only */}
-            <MobileNavigation />
+                {/* --- Fallback redirect --- */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            </AppLayout>
           </BrowserRouter>
         </TooltipProvider>
-      </CartProvider> {/* Close CartProvider */}
+      </CartProvider>
     </CurrencyProvider>
   </QueryClientProvider>
 );

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, ShoppingCart, Info, BookOpen, Phone, X, Mail, Globe, FileText } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import oticLogo from "../assets/otic-logo.png"; // Import your logo
 
 const MobileNavigation = () => {
   const navigate = useNavigate();
@@ -80,34 +81,49 @@ const MobileNavigation = () => {
 
   return (
     <>
-      {/* Mobile Menu Buttons - Hamburger and Cart side by side */}
-      <div className="fixed top-6 right-4 z-50 lg:hidden flex items-center gap-2">
-        {/* Cart Button */}
-        <button
-          onClick={() => navigate("/cart")}
-          className="p-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 relative"
-          aria-label="Open cart"
+      {/* Mobile Header with Logo and Menu Buttons */}
+      <div className="fixed top-0 left-0 right-0 z-50 bg-white lg:hidden flex items-center justify-between px-4 py-3 shadow-sm">
+        {/* Logo at extreme left */}
+        <div 
+          className="flex items-center cursor-pointer"
+          onClick={() => navigate("/")}
         >
-          <ShoppingCart className="w-5 h-5 text-black" />
-          {itemCount > 0 && (
-            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-              {itemCount}
-            </span>
-          )}
-        </button>
+          <img
+            src={oticLogo}
+            alt="Otic logo" 
+            className="w-16 h-16 object-contain" // Adjust size for mobile
+          />
+        </div>
         
-        {/* Hamburger Menu Button */}
-        <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="p-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20"
-          aria-label="Open menu"
-        >
-          <div className="flex flex-col gap-1">
-            <div className="w-6 h-0.5 bg-black"></div>
-            <div className="w-6 h-0.5 bg-black"></div>
-            <div className="w-6 h-0.5 bg-black"></div>
-          </div>
-        </button>
+        {/* Menu Buttons at right */}
+        <div className="flex items-center gap-2">
+          {/* Cart Button */}
+          <button
+            onClick={() => navigate("/cart")}
+            className="p-3 bg-gray-100 rounded-lg relative"
+            aria-label="Open cart"
+          >
+            <ShoppingCart className="w-5 h-5 text-black" />
+            {itemCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {itemCount}
+              </span>
+            )}
+          </button>
+          
+          {/* Hamburger Menu Button */}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="p-3 bg-gray-100 rounded-lg"
+            aria-label="Open menu"
+          >
+            <div className="flex flex-col gap-1">
+              <div className="w-6 h-0.5 bg-black"></div>
+              <div className="w-6 h-0.5 bg-black"></div>
+              <div className="w-6 h-0.5 bg-black"></div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Slide-in Sidebar from LEFT */}

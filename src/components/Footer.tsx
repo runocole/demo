@@ -329,7 +329,7 @@ const Footer: React.FC = () => {
                 className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
               />
               <p className="text-sm font-medium text-white">
-                © {new Date().getFullYear()} Geosso Technologies Ltd. All rights reserved.
+                © {new Date().getFullYear()} OTIC GeoSystems. All rights reserved.
               </p>
             </div>
 

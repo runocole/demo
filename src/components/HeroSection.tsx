@@ -16,7 +16,7 @@ interface HeroSectionProps {
 
 const useAutoSlide = (slides: any[], interval = 5000) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const timerRef = useRef<number | null>(null);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isPaused, setIsPaused] = useState(false);
 
   const clearTimer = useCallback(() => {

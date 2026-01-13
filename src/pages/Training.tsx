@@ -10,10 +10,10 @@ import Header from "../components/Header";
 import Footer from "../components/Footer";
 import heroImage1 from "../assets/hero-training.jpg";
 import heroImage2 from "../assets/hero-training-2.jpg";
-import heroImage4 from "../assets/dronemapping.jpg";
 import safetyImage from "../assets/safety-training.jpg";
 import bathImage from "../assets/bath.jpg";
 import dronemapping from "../assets/dronemapping.jpg";
+import heroImage3 from "../assets/hero-training3.jpg";
 import gistraining from "../assets/gis-training.jpg";
 import threed from "../assets/3d.png"
 import engineering from "../assets/engineering.jpg"
@@ -40,7 +40,7 @@ const heroSlides = [
   },
   {
     id: 3,
-    image: heroImage4,
+    image: heroImage3,
     title: "Certified Programs",
     description: "Get industry-recognized certifications to advance your career",
     position: "left"
@@ -421,16 +421,16 @@ const Training = () => {
                     <p className="text-sm text-gray-600 mb-3 line-clamp-2">
                       {format.description}
                     </p>
-                    <Button 
-                      size="sm"
-                      className="w-full text-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openMobileFormatModal(format.id);
-                      }}
-                    >
-                      Read More
-                    </Button>
+                 <Button 
+  size="sm"
+  className="w-full text-sm font-semibold"
+  onClick={(e) => {
+    e.stopPropagation();
+    openMobileFormatModal(format.id);
+  }}
+>
+  Read More
+</Button>
                   </div>
                 ))}
               </div>
@@ -586,11 +586,11 @@ const Training = () => {
                         )}
                       </div>
                       <Link 
-                        to={`/course/${course.id}`}
-                        className={`${isMobile ? 'text-sm' : 'text-base'} text-[#081748] hover:text-blue-800 inline-block`}
-                      >
-                        Read More →
-                      </Link>
+  to={`/course/${course.id}`}
+  className={`${isMobile ? 'text-sm font-semibold' : 'text-base font-bold'} text-[#081748] hover:text-blue-800 inline-block transition-colors`}
+>
+  Read More →
+</Link>
                     </div>
                   </div>
                 </div>

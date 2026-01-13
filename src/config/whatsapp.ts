@@ -206,8 +206,8 @@ export const generateWhatsAppContactUrl = (
   
   // For mobile, use simpler message format
   const finalMessage = mobileMode 
-    ? `${message}\n\n(Sent from Geosso Technologies Website)`
-    : `${message}\n\n---\n*Inquiry from Geosso Technologies Website*\n${new Date().toLocaleString()}`;
+    ? `${message}\n\n(Sent from OTIC GeoSystems Website)`
+    : `${message}\n\n---\n*Inquiry from OTIC GeoSystems Website*\n${new Date().toLocaleString()}`;
   
   const formattedNumber = formatWhatsAppNumber(WHATSAPP_CONFIG.businessNumber);
   const encodedMessage = encodeURIComponent(finalMessage);

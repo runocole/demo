@@ -62,7 +62,7 @@ export const ReceiptModal = ({
                 body { font-family: Arial, sans-serif; padding: 20px; }
                 .receipt { max-width: 800px; margin: 0 auto; }
                 .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #000; padding-bottom: 20px; }
-                .header h1 { color: #081748; margin: 0; }
+                .header h1 { color:#081748  ; margin: 0; }
                 .order-info { margin: 20px 0; }
                 .order-info table { width: 100%; border-collapse: collapse; }
                 .order-info td { padding: 8px 0; border-bottom: 1px solid #ddd; }
@@ -83,7 +83,7 @@ export const ReceiptModal = ({
               ${printContent.innerHTML}
               <div class="footer">
                 <p>Thank you for your purchase!</p>
-                <p>Geosso Technologies Limited</p>
+                <p>OTIC GeoSystems</p>
                 <p>Generated on ${new Date().toLocaleString()}</p>
               </div>
             </body>

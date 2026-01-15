@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Mail, ArrowUp, MessageCircle, ShoppingCart, Menu, X, Home, Info, BookOpen, Globe, FileText, ChevronDown } from "lucide-react";
+import { Mail, ArrowUp, MessageCircle, ShoppingCart, Home, Info, BookOpen, Globe, FileText, ChevronDown } from "lucide-react";
 import oticLogo from "../assets/otic-logo.png";
 import { useCart } from "../context/CartContext";
 
@@ -47,8 +47,8 @@ const Header: React.FC<HeaderProps> = ({ onCartClick }) => {
 
   // Define screen categories with better breakpoints
   const isMobile = screenSize.width < 768;
-  const isTablet = screenSize.width >= 768 && screenSize.width < 1324;
-  const isDesktop = screenSize.width >= 1024;
+  const isTablet = screenSize.width >= 768 && screenSize.width < 1645;
+  const isDesktop = screenSize.width >= 1645;
   const isLargeDesktop = screenSize.width >= 1280;
 
   // Navigation items with dropdowns

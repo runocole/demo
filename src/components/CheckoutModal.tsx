@@ -998,7 +998,6 @@ const handleWhatsAppCheckout = () => {
                           className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
                           required
                           disabled={isLoading}
-                          placeholder="John"
                         />
                       </div>
                     </div>
@@ -1016,7 +1015,6 @@ const handleWhatsAppCheckout = () => {
                           className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
                           required
                           disabled={isLoading}
-                          placeholder="Doe"
                         />
                       </div>
                     </div>
@@ -1035,7 +1033,6 @@ const handleWhatsAppCheckout = () => {
                           className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
                           required
                           disabled={isLoading}
-                          placeholder="john@example.com"
                         />
                       </div>
                     </div>
@@ -1052,7 +1049,7 @@ const handleWhatsAppCheckout = () => {
                           value={formData.phone}
                           onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                           className="pl-10 bg-gray-800 text-white border-gray-700 placeholder-gray-400 h-12"
-                          placeholder="2348012345678"
+
                           required
                           disabled={isLoading}
                         />

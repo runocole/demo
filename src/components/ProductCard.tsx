@@ -4,14 +4,14 @@ import type { Product } from "../types/product";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { ShoppingCart, ImageOff, Info, Eye } from "lucide-react";
+import { ImageOff, Info, Eye, ShoppingCart } from "lucide-react";
 import { cn } from "../lib/utils"; 
 import { useCurrency } from "../context/CurrencyContext"; 
 import { useToast } from "../hooks/use-toast";
 
 interface ProductCardProps {
   product: Product;
-  onAddToCart: (product: Product) => void;
+  onAddToCart?: (product: Product) => void;
   className?: string;
   variant?: "default" | "split" | "compact";
   showQuickView?: boolean;
@@ -19,7 +19,6 @@ interface ProductCardProps {
 
 export const ProductCard = ({ 
   product, 
-  onAddToCart, 
   className,
   variant = "default",
   showQuickView = false
@@ -27,19 +26,32 @@ export const ProductCard = ({
   const navigate = useNavigate();
   const { toast } = useToast();
   const [imageError, setImageError] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [screenSize, setScreenSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
   
-  // Check if mobile
+  // Track screen size for responsive behavior
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
+    const handleResize = () => {
+      setScreenSize({ 
+        width: window.innerWidth, 
+        height: window.innerHeight 
+      });
     };
     
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Define screen categories based on Header component
+  const isMobile = screenSize.width < 768;
+  const isTablet = screenSize.width >= 768 && screenSize.width < 1024;
+  const isCompactDesktop = screenSize.width >= 1024 && screenSize.width < 1280;
+  const isDesktop = screenSize.width >= 1280 && screenSize.width < 1645;
+  const isLargeDesktop = screenSize.width >= 1645;
 
   const { getConvertedPrice } = useCurrency();
 
@@ -54,56 +66,13 @@ export const ProductCard = ({
     e.preventDefault();
     e.stopPropagation();
     
-    console.log("🛒 ProductCard: Add to cart clicked");
-    console.log("🛒 Product object:", product);
-    console.log("🛒 Product ID:", product.id);
-    console.log("🛒 Product name:", product.name);
-    console.log("🛒 Product price:", product.price);
+    navigate(`/product/${product.id}`);
     
-    // Validate the product object
-    if (!product || !product.id || !product.name || product.price === undefined) {
-      console.error("❌ Invalid product object:", product);
-      toast({
-        title: "Error",
-        description: "Cannot add item to cart - invalid product data",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Ensure we have a valid product structure - using only properties from Product type
-    const validatedProduct: Product = {
-      id: product.id,
-      name: product.name,
-      description: product.description || "",
-      price: Number(product.price),
-      category: product.category || "Other",
-      image: product.image || "/placeholder-image.jpg",
-      inStock: product.inStock !== undefined ? product.inStock : true,
-      specifications: product.specifications || []
-      // Only include properties that exist in your Product type
-    };
-    
-    console.log("🛒 Validated product:", validatedProduct);
-    
-    if (onAddToCart && typeof onAddToCart === 'function') {
-      console.log("🛒 Calling onAddToCart...");
-      onAddToCart(validatedProduct);
-      
-      // Show immediate feedback
-      toast({
-        title: "Added to cart!",
-        description: `${validatedProduct.name} has been added to your cart.`,
-        className: "bg-white dark:bg-gray-900",
-      });
-    } else {
-      console.error("❌ onAddToCart is not a function:", onAddToCart);
-      toast({
-        title: "Error",
-        description: "Cannot add item to cart",
-        variant: "destructive",
-      });
-    }
+    toast({
+      title: "View Product Details",
+      description: `You're viewing ${product.name} details`,
+      className: "bg-white dark:bg-gray-900",
+    });
   };
 
   const handleQuickViewClick = (e: React.MouseEvent) => {
@@ -111,204 +80,188 @@ export const ProductCard = ({
     navigate(`/product/${product.id}`);
   };
 
-  // Determine styles based on variant
+  // Determine styles based on variant and screen size
   const isSplitVariant = variant === "split";
-  const isCompactVariant = variant === "compact" || isMobile;
   
+  // Get products per row based on screen size (IMPORTANT FOR SPACING)
+  const getProductsPerRow = () => {
+    if (isMobile) return 1; // 1 product per row on mobile
+    if (isTablet) return 2; // 2 products per row on tablet
+    if (isCompactDesktop) return 3; // 3 products per row on compact desktop
+    if (isDesktop) return 4; // 4 products per row on desktop
+    return 5; // 5 products per row on large desktop
+  };
+
+  // Responsive dimensions based on screen size with perfect spacing
+  const getResponsiveStyles = () => {
+    const productsPerRow = getProductsPerRow();
+    
+    switch (productsPerRow) {
+      case 1: // Mobile
+        return {
+          card: "shadow-md hover:shadow-lg w-full",
+          padding: "p-4",
+          titleSize: "text-base font-semibold",
+          priceSize: "text-lg font-bold",
+          buttonSize: "h-10 px-4 text-sm",
+          imageHeight: "h-52",
+          descriptionLines: 2,
+          showSpecs: false,
+          buttonText: true,
+          iconSize: "w-4 h-4",
+          gap: "gap-4",
+          showCategoryBadge: false,
+          showStockAlways: true,
+          buttonFullWidth: true
+        };
+      
+      case 2: // Tablet
+        return {
+          card: "shadow-lg hover:shadow-xl w-full",
+          padding: "p-4",
+          titleSize: "text-base font-semibold",
+          priceSize: "text-xl font-bold",
+          buttonSize: "h-10 px-4 text-sm",
+          imageHeight: "h-56",
+          descriptionLines: 2,
+          showSpecs: false,
+          buttonText: true,
+          iconSize: "w-4 h-4",
+          gap: "gap-4",
+          showCategoryBadge: true,
+          showStockAlways: true,
+          buttonFullWidth: false
+        };
+      
+      case 3: // Compact Desktop
+        return {
+          card: "shadow-lg hover:shadow-xl w-full",
+          padding: "p-4",
+          titleSize: "text-sm font-semibold",
+          priceSize: "text-lg font-bold",
+          buttonSize: "h-9 px-3 text-sm",
+          imageHeight: "h-48",
+          descriptionLines: 2,
+          showSpecs: true,
+          buttonText: false,
+          iconSize: "w-3.5 h-3.5",
+          gap: "gap-3",
+          showCategoryBadge: true,
+          showStockAlways: true,
+          buttonFullWidth: false
+        };
+      
+      case 4: // Desktop
+        return {
+          card: "shadow-lg hover:shadow-2xl w-full",
+          padding: "p-5",
+          titleSize: "text-base font-semibold",
+          priceSize: "text-xl font-bold",
+          buttonSize: "h-10 px-4 text-sm",
+          imageHeight: "h-52",
+          descriptionLines: 3,
+          showSpecs: true,
+          buttonText: true,
+          iconSize: "w-4 h-4",
+          gap: "gap-4",
+          showCategoryBadge: true,
+          showStockAlways: false,
+          buttonFullWidth: false
+        };
+      
+      case 5: // Large Desktop
+        return {
+          card: "shadow-xl hover:shadow-2xl w-full",
+          padding: "p-6",
+          titleSize: "text-lg font-semibold",
+          priceSize: "text-2xl font-bold",
+          buttonSize: "h-11 px-5 text-base",
+          imageHeight: "h-60",
+          descriptionLines: 3,
+          showSpecs: true,
+          buttonText: true,
+          iconSize: "w-5 h-5",
+          gap: "gap-5",
+          showCategoryBadge: true,
+          showStockAlways: false,
+          buttonFullWidth: false
+        };
+      
+      default:
+        return {
+          card: "shadow-lg hover:shadow-xl w-full",
+          padding: "p-4",
+          titleSize: "text-base font-semibold",
+          priceSize: "text-xl font-bold",
+          buttonSize: "h-10 px-4 text-sm",
+          imageHeight: "h-56",
+          descriptionLines: 2,
+          showSpecs: true,
+          buttonText: true,
+          iconSize: "w-4 h-4",
+          gap: "gap-4",
+          showCategoryBadge: true,
+          showStockAlways: false,
+          buttonFullWidth: false
+        };
+    }
+  };
+
+  const styles = getResponsiveStyles();
+
+  // Theme colors based on variant
   const cardBgColor = isSplitVariant ? "" : "bg-white";
   const contentBgColor = isSplitVariant ? "bg-[#081748]" : "bg-transparent";
   const titleColor = isSplitVariant ? "text-white" : "text-gray-900";
   const descriptionColor = isSplitVariant ? "text-gray-300" : "text-gray-600";
   const specColor = isSplitVariant ? "text-gray-400" : "text-gray-500";
   const priceColor = isSplitVariant ? "text-white" : "text-[#081748]";
-  const stockColorClass = product.inStock 
-    ? (isSplitVariant ? "text-green-400" : "text-green-600") 
-    : (isSplitVariant ? "text-red-400" : "text-red-600");
-  const badgeVariant = isSplitVariant ? "secondary" : "outline";
-  const badgeClass = isSplitVariant ? "bg-gray-700 text-white" : "bg-[#081748]/10 text-[#081748]";
+  const borderColor = isSplitVariant ? "border-gray-700" : "border-gray-200";
+  
   const buttonClass = isSplitVariant 
     ? "bg-white text-[#081748] hover:bg-gray-100 active:scale-95" 
     : "bg-[#081748] hover:bg-[#0a1f5a] text-white active:scale-95";
-  const borderColor = isSplitVariant ? "border-gray-700" : "border-gray-200";
   
-  // Responsive styles
-  const mobileCardClass = isMobile ? "shadow-sm hover:shadow-md" : "shadow-md hover:shadow-lg";
-  const mobilePadding = isMobile ? "p-3" : "p-5";
-  const mobileTitleSize = isMobile ? "text-base" : "text-lg";
-  const mobilePriceSize = isMobile ? "text-xl" : "text-2xl";
-  const mobileButtonSize = isMobile ? "px-2 py-1 text-xs h-8" : "px-4 py-2 text-sm h-9";
-  const mobileImageHeight = isMobile ? "h-48" : "h-56";
+  const badgeClass = isSplitVariant 
+    ? "bg-gray-700 text-white" 
+    : "bg-[#081748]/10 text-[#081748]";
 
-  // Compact variant
-  if (isCompactVariant) {
-    return (
-      <Card 
-        onClick={handleProductClick}
-        className={cn(
-          "group overflow-hidden border transition-all duration-300 cursor-pointer",
-          cardBgColor,
-          borderColor,
-          mobileCardClass,
-          "relative",
-          className
-        )}
-        onMouseEnter={() => !isMobile && setIsHovered(true)}
-        onMouseLeave={() => !isMobile && setIsHovered(false)}
-      >
-        {/* Image section */}
-        <div className={`relative ${mobileImageHeight} overflow-hidden bg-gray-50 flex items-center justify-center p-3`}>
-          {!imageError ? (
-            <>
-              <img
-                src={product.image}
-                alt={product.name}
-                onError={() => setImageError(true)}
-                className="w-auto h-auto max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-105"
-                loading="lazy"
-              />
-              {!isMobile && isHovered && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <Button
-                    size="sm"
-                    className="bg-white text-gray-900 hover:bg-gray-100 z-20"
-                    onClick={handleQuickViewClick}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Quick View
-                  </Button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-gray-100 text-gray-400">
-              <ImageOff className="h-8 w-8 opacity-50" />
-            </div>
-          )}
-          
-          {/* Stock badge */}
-          <Badge 
-            className={cn(
-              "absolute top-2 left-2 text-xs px-2 py-0.5 z-10",
-              product.inStock 
-                ? "bg-green-100 text-green-800 border-green-200" 
-                : "bg-red-100 text-red-800 border-red-200"
-            )}
-          >
-            {product.inStock ? "In Stock" : "Out"}
-          </Badge>
-          
-          {/* Category badge */}
-          <Badge 
-            variant="secondary"
-            className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-[#081748] text-white border-0 z-10"
-          >
-            {product.category.length > 12 ? `${product.category.substring(0, 12)}...` : product.category}
-          </Badge>
-        </div>
-
-        {/* Content section */}
-        <div className={cn("p-3 space-y-2", contentBgColor)}>
-          {/* Title */}
-          <h3 className={cn(
-            "font-semibold leading-tight line-clamp-2 h-10",
-            mobileTitleSize,
-            titleColor
-          )}>
-            {product.name}
-          </h3>
-
-          {/* Price and action */}
-          <div className="flex items-center justify-between pt-1">
-            <div>
-              <p className={cn("font-bold", mobilePriceSize, priceColor)}>
-                {getConvertedPrice(product.price)}
-              </p>
-              {!isMobile && (
-                <p className="text-xs text-gray-500">
-                  {product.inStock ? "✓ Available" : "✗ Unavailable"}
-                </p>
-              )}
-            </div>
-
-            <Button
-              onClick={handleAddToCartClick}
-              disabled={!product.inStock}
-              size={isMobile ? "icon" : "default"}
-              className={cn(
-                "gap-1 transition-all hover:bg-[#0a1f5a] z-20 relative",
-                buttonClass,
-                mobileButtonSize,
-                isMobile && "rounded-full",
-                !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
-              )}
-              title={isMobile ? "Add to cart" : undefined}
-              type="button"
-            >
-              {isMobile ? (
-                <ShoppingCart className="w-4 h-4" />
-              ) : (
-                <>
-                  <ShoppingCart className="w-4 h-4" />
-                  Add 
-                </>
-              )}
-            </Button>
-          </div>
-          
-          {/* Quick view button - Mobile only */}
-          {isMobile && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full text-xs text-[#081748] hover:text-[#0a1f5a] hover:bg-[#081748]/10 z-20 relative"
-              onClick={handleQuickViewClick}
-              type="button"
-            >
-              <Info className="w-3 h-3 mr-1" />
-              View Details
-            </Button>
-          )}
-        </div>
-      </Card>
-    );
-  }
-
-  // Default/Split variant (for desktop)
+  // Main render function with consistent layout
   return (
     <Card 
       onClick={handleProductClick}
       className={cn(
-        "group overflow-hidden border transition-all duration-300 cursor-pointer",
+        "group overflow-hidden border transition-all duration-300 cursor-pointer flex flex-col",
         cardBgColor,
         borderColor,
-        "hover:border-blue-300 hover:shadow-xl",
-        mobileCardClass,
+        styles.card,
+        "hover:border-blue-300 hover:transform hover:-translate-y-1",
         className
       )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseEnter={() => !isMobile && setIsHovered(true)}
+      onMouseLeave={() => !isMobile && setIsHovered(false)}
     >
-      {/* Image section */}
-      <div className={`aspect-video overflow-hidden bg-gray-50 relative flex items-center justify-center p-4 ${mobileImageHeight}`}>
+      {/* Image section - Fixed aspect ratio */}
+      <div className={`relative aspect-square overflow-hidden bg-gray-50 flex items-center justify-center`}>
         {!imageError ? (
           <>
             <img
               src={product.image}
               alt={product.name}
               onError={() => setImageError(true)}
-              className="w-auto h-auto max-w-full max-h-full object-contain transition-transform duration-500 group-hover:scale-110"
+              className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
               loading="lazy"
             />
             {/* Quick view overlay */}
-            {isHovered && (
+            {isHovered && !isMobile && (
               <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
                 <Button
                   size="sm"
-                  className="bg-white text-gray-900 hover:bg-gray-100 z-20 relative"
+                  className="bg-white text-gray-900 hover:bg-gray-100 z-20"
                   onClick={handleQuickViewClick}
                   type="button"
                 >
-                  <Eye className="w-4 h-4 mr-2" />
+                  <Eye className={`${styles.iconSize} mr-2`} />
                   Quick View
                 </Button>
               </div>
@@ -316,104 +269,158 @@ export const ProductCard = ({
           </>
         ) : (
           <div className={cn(
-            "flex h-full w-full items-center justify-center text-muted-foreground",
+            "flex h-full w-full items-center justify-center text-muted-foreground p-4",
             isSplitVariant ? "bg-gray-800" : "bg-gray-100"
           )}>
-            <ImageOff className="h-10 w-10 opacity-50" />
+            <ImageOff className="h-12 w-12 opacity-50" />
           </div>
         )}
         
-        {/* Stock badge */}
-        {isHovered && (
+        {/* Stock badge - Always visible */}
+        <Badge 
+          className={cn(
+            "absolute top-2 left-2 text-xs px-2 py-1 z-10",
+            product.inStock 
+              ? "bg-green-100 text-green-800 border-green-200" 
+              : "bg-red-100 text-red-800 border-red-200"
+          )}
+        >
+          {product.inStock ? "In Stock" : "Out"}
+        </Badge>
+        
+        {/* Category badge - Conditional */}
+        {styles.showCategoryBadge && (
           <Badge 
-            className={cn(
-              "absolute top-3 left-3 text-xs px-2 py-1 z-10",
-              product.inStock 
-                ? "bg-green-100 text-green-800 border-green-200" 
-                : "bg-red-100 text-red-800 border-red-200"
-            )}
+            variant="secondary"
+            className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-[#081748] text-white border-0 z-10"
           >
-            {product.inStock ? "In Stock" : "Out of Stock"}
+            {product.category.length > 12 ? `${product.category.substring(0, 12)}...` : product.category}
           </Badge>
         )}
       </div>
 
-      {/* Content section */}
-      <div className={cn(mobilePadding, "space-y-4", contentBgColor)}>
+      {/* Content section with perfect spacing */}
+      <div className={cn(
+        styles.padding, 
+        "flex flex-col flex-1", 
+        contentBgColor,
+        styles.gap
+      )}>
+        {/* Title and Price Row */}
         <div className="space-y-2">
-          <div className="flex items-start justify-between gap-2">
-            <h3 className={cn(
-              "font-semibold leading-tight group-hover:text-[#081748] transition-colors line-clamp-1",
-              mobileTitleSize,
-              titleColor
-            )}>
-              {product.name}
-            </h3>
-            <Badge 
-              variant={badgeVariant} 
-              className={cn("shrink-0 text-[10px] px-2 py-0.5 z-10", badgeClass)}
-            >
-              {product.category.length > 15 ? `${product.category.substring(0, 15)}...` : product.category}
-            </Badge>
-          </div>
+          <h3 className={cn(
+            "leading-tight line-clamp-2 min-h-[2.5rem]",
+            styles.titleSize,
+            titleColor
+          )}>
+            {product.name}
+          </h3>
           
-          <p className={cn("text-sm line-clamp-2 h-10", descriptionColor)}>
+          {/* Price - ALWAYS VISIBLE */}
+          <div className="flex items-center justify-between">
+            <p className={cn(styles.priceSize, priceColor)}>
+              {getConvertedPrice(product.price)}
+            </p>
+            
+            {/* Stock status - Conditional */}
+            {styles.showStockAlways && (
+              <span className={cn(
+                "text-xs font-medium",
+                product.inStock 
+                  ? (isSplitVariant ? "text-green-400" : "text-green-600") 
+                  : (isSplitVariant ? "text-red-400" : "text-red-600")
+              )}>
+                {product.inStock ? "✓ Available" : "✗ Unavailable"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Description - With proper line clamping */}
+        <div className="flex-1">
+          <p className={cn(
+            "line-clamp-2 text-sm",
+            descriptionColor
+          )}>
             {product.description}
           </p>
         </div>
 
-        {/* Specifications section */}
-        {!isMobile && product.specifications && Array.isArray(product.specifications) && (
-          <div className="min-h-[3rem]"> 
+        {/* Specifications - Only for larger screens */}
+        {styles.showSpecs && product.specifications && Array.isArray(product.specifications) && product.specifications.length > 0 && (
+          <div className="space-y-1">
             <ul className={cn("text-xs space-y-1", specColor)}>
               {product.specifications.slice(0, 2).map((spec, idx) => (
-                <li key={idx} className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#081748] shrink-0"></span>
-                  <span className="truncate">{spec.length > 50 ? `${spec.substring(0, 50)}...` : spec}</span>
+                <li key={idx} className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#081748] shrink-0 mt-1"></span>
+                  <span className="line-clamp-1">
+                    {spec}
+                  </span>
                 </li>
               ))}
             </ul>
           </div>
         )}
 
-        <div className={cn("flex items-center justify-between pt-3 border-t", borderColor)}>
-          <div>
-            <p className={cn("font-bold", mobilePriceSize, priceColor)}>
-              {getConvertedPrice(product.price)}
-            </p>
-            <p className={cn("text-xs font-medium", stockColorClass)}>
-              {product.inStock ? "✓ In Stock" : "✗ Unavailable"}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {showQuickView && (
+        {/* Action Buttons */}
+        <div className={cn(
+          "pt-2 border-t",
+          borderColor,
+          styles.buttonFullWidth ? "space-y-2" : ""
+        )}>
+          {/* Quick view button for mobile */}
+          {isMobile && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-sm text-[#081748] hover:text-[#0a1f5a] hover:bg-[#081748]/10 border-gray-300"
+              onClick={handleQuickViewClick}
+              type="button"
+            >
+              <Info className={`${styles.iconSize} mr-2`} />
+              View Details
+            </Button>
+          )}
+          
+          {/* Main Action Button */}
+          <div className={cn(
+            "flex items-center gap-2",
+            styles.buttonFullWidth ? "flex-col" : "justify-between"
+          )}>
+            {/* Quick view button for desktop */}
+            {showQuickView && !isMobile && !isTablet && (
               <Button
                 variant="outline"
                 size="sm"
-                className="hidden sm:inline-flex text-xs border-gray-300 text-[#081748] hover:bg-[#081748]/10 hover:text-[#0a1f5a] z-10"
+                className={cn(
+                  "border-gray-300 text-[#081748] hover:bg-[#081748]/10 hover:text-[#0a1f5a]",
+                  styles.buttonFullWidth ? "w-full" : ""
+                )}
                 onClick={handleQuickViewClick}
                 type="button"
               >
-                <Info className="w-3 h-3 mr-1" />
-                Details
+                <Eye className={`${styles.iconSize} mr-1`} />
+                Quick View
               </Button>
             )}
+            
+            {/* Main View/Add to Cart Button */}
             <Button
               onClick={handleAddToCartClick}
               disabled={!product.inStock}
-              size={isMobile ? "icon" : "sm"}
+              size={styles.buttonFullWidth ? "default" : "sm"}
               className={cn(
-                "gap-2 transition-all hover:bg-[#0a1f5a] z-20 relative",
+                "gap-2 transition-all hover:bg-[#0a1f5a]",
                 buttonClass,
-                mobileButtonSize,
-                !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed"
+                styles.buttonSize,
+                styles.buttonFullWidth ? "w-full" : "",
+                !product.inStock && "bg-gray-400 hover:bg-gray-500 cursor-not-allowed opacity-75"
               )}
-              title={isMobile ? "Add to cart" : undefined}
+              title="View Product Details"
               type="button"
             >
-              <ShoppingCart className="w-4 h-4" />
-              {!isMobile && (product.inStock ? "Add" : "Out of Stock")}
+              <Info className={styles.iconSize} />
+              {styles.buttonText ? "View Details" : "View"}
             </Button>
           </div>
         </div>

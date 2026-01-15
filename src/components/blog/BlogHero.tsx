@@ -4,7 +4,7 @@ import { Calendar, Clock, User, ArrowRight, ChevronRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import type { BlogPost } from '../../types/blog';
 import { useState, useEffect } from 'react';
-
+import Footer from '../Footer';
 interface BlogHeroProps {
   featuredPost?: BlogPost | null;
   scrollToArticles: () => void;
@@ -201,7 +201,9 @@ export const BlogHero = ({ featuredPost, scrollToArticles, loading = false }: Bl
             <div className="absolute -top-4 -left-4 w-16 h-16 bg-blue-400 rounded-full opacity-10"></div>
           </div>
         </div>
+        
       )}
     </section>
   );
 };
+ 

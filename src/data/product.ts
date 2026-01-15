@@ -80,7 +80,7 @@ import tripod from "../assets/tripod.jpg";
 import rangingpole from "../assets/rangingpole.jpg";
 import steeltape from "../assets/steeltape.jpg";
 import longwhip from "../assets/longwhip.jpg";
-import tribach from "../assets/tribach.jpg";
+import tribrach from "../assets/tribrach.jpg";
 import zenmuse from "../assets/zenmuse.jpg";
 import externalradio from "../assets/externalradio.jpg";
 import ingco from "../assets/ingco.jpg";
@@ -876,6 +876,7 @@ export const MOBILE_FEATURED_EQUIPMENT: CarouselItem[] = FEATURED_EQUIPMENT
   });
 
 // Accessories → "Accessory"
+// Accessories → "Accessory"
 export const ACCESSORIES: CarouselItem[] = [
   // Support Equipment
   {
@@ -885,7 +886,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: tripod,
     description: "Heavy-duty aluminum tripod for surveying instruments",
     mobileDescription: "Professional survey tripod",
-    price: 299,
+    price: 84, // 130,000 NGN ÷ 1550 = 83.87 → ROUNDED UP
     inStock: true,
     popularOnMobile: true,
     specifications: [
@@ -900,12 +901,12 @@ export const ACCESSORIES: CarouselItem[] = [
   },
   {
     id: 5,
-    name: "Tribach",
+    name: "Tribrach",
     category: "Accessory",
-    image: tribach,
+    image: tribrach,
     description: "Universal tribrach with optical plummet for instrument leveling",
-    mobileDescription: "Survey tribach",
-    price: 599,
+    mobileDescription: "Survey tribrach",
+    price: 49, // 75,000 NGN ÷ 1550 = 48.39 → ROUNDED UP
     inStock: true,
     specifications: [
       "Type: Forced centering tribrach",
@@ -926,7 +927,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: rangingpole,
     description: "Telescopic ranging pole with bubble level for GNSS receivers",
     mobileDescription: "Ranging pole",
-    price: 149,
+    price: 26, // 40,000 NGN ÷ 1550 = 25.81 → ROUNDED UP
     inStock: true,
     popularOnMobile: true,
     specifications: [
@@ -941,22 +942,41 @@ export const ACCESSORIES: CarouselItem[] = [
   },
   {
     id: 3,
-    name: "Steel Tape",
+    name: "Steel Tape 100m",
     category: "Accessory",
     image: steeltape,
-    description: "30m steel measuring tape for distance measurement",
-    mobileDescription: "Steel measuring tape",
-    price: 89,
+    description: "100m steel measuring tape for distance measurement",
+    mobileDescription: "100m steel tape",
+    price: 46, // 70,000 NGN ÷ 1550 = 45.16 → ROUNDED UP
     inStock: true,
     popularOnMobile: true,
     specifications: [
-      "Length: 30 meters",
+      "Length: 100 meters",
       "Width: 13mm",
       "Material: Steel blade with nylon coating",
       "Case: ABS plastic with rubber grip",
       "Accuracy: Class II (±2.3mm at 10m)",
       "Features: Locking mechanism, belt clip",
-      "Applications: Construction, surveying, DIY"
+      "Applications: Construction, surveying, long-distance measurement"
+    ]
+  },
+  {
+    id: 31, // New ID for 50m version
+    name: "Steel Tape 50m",
+    category: "Accessory",
+    image: steeltape,
+    description: "50m steel measuring tape for distance measurement",
+    mobileDescription: "50m steel tape",
+    price: 39, // 60,000 NGN ÷ 1550 = 38.71 → ROUNDED UP
+    inStock: true,
+    specifications: [
+      "Length: 50 meters",
+      "Width: 13mm",
+      "Material: Steel blade with nylon coating",
+      "Case: ABS plastic with rubber grip",
+      "Accuracy: Class II (±2.3mm at 10m)",
+      "Features: Locking mechanism, belt clip",
+      "Applications: Construction, surveying, medium-distance measurement"
     ]
   },
   {
@@ -966,7 +986,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: levelingstaff,
     description: "Aluminum leveling staff with metric graduations",
     mobileDescription: "Leveling staff",
-    price: 79,
+    price: 46, // 70,000 NGN ÷ 1550 = 45.16 → ROUNDED UP
     inStock: true,
     specifications: [
       "Material: Aluminum alloy",
@@ -985,7 +1005,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: spindle,
     description: "Survey spindle for precise point marking and centering",
     mobileDescription: "Survey spindle",
-    price: 79,
+    price: 49, // 75,000 NGN ÷ 1550 = 48.39 → ROUNDED UP
     inStock: true,
     specifications: [
       "Material: Stainless steel with hardened tip",
@@ -1004,7 +1024,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: ingco,
     description: "Digital measuring wheel for accurate distance measurement",
     mobileDescription: "Measuring wheel",
-    price: 159,
+    price: 78, // 120,000 NGN ÷ 1550 = 77.42 → ROUNDED UP
     inStock: true,
     specifications: [
       "Measurement range: 0-9999.9m",
@@ -1025,7 +1045,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: longwhip,
     description: "Extended range UHF antenna for RTK radio communication",
     mobileDescription: "Long whip antenna",
-    price: 199,
+    price: 57, // 88,000 NGN ÷ 1550 = 56.77 → ROUNDED UP
     inStock: true,
     specifications: [
       "Frequency range: 410-470MHz",
@@ -1038,13 +1058,32 @@ export const ACCESSORIES: CarouselItem[] = [
     ]
   },
   {
+    id: 32, // New ID for Short Whip Antenna
+    name: "Short Whip Antenna",
+    category: "Accessory",
+    image: longwhip, // Using same image temporarily
+    description: "Compact UHF antenna for RTK radio communication",
+    mobileDescription: "Short whip antenna",
+    price: 51, // 78,000 NGN ÷ 1550 = 50.32 → ROUNDED UP
+    inStock: true,
+    specifications: [
+      "Frequency range: 410-470MHz",
+      "Gain: 2dBi",
+      "Length: 0.3m",
+      "Connector: SMA male",
+      "Cable: RG-174 with 1m length",
+      "VSWR: <1.8:1",
+      "Applications: Mobile RTK rover, portable applications"
+    ]
+  },
+  {
     id: 7,
     name: "External Radio",
     category: "Accessory",
     image: externalradio,
     description: "UHF radio modem for long-range RTK corrections",
     mobileDescription: "External radio",
-    price: 249,
+    price: 581, // 900,000 NGN ÷ 1550 = 580.65 → ROUNDED UP
     inStock: true,
     specifications: [
       "Frequency: 410-470MHz (programmable)",
@@ -1063,7 +1102,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: gnsscables,
     description: "Complete set of cables for GNSS receiver connections",
     mobileDescription: "GNSS cables",
-    price: 79,
+    price: 36, // 55,000 NGN ÷ 1550 = 35.48 → ROUNDED UP
     inStock: true,
     specifications: [
       "Included: Power cable, data cable, radio cable",
@@ -1084,7 +1123,7 @@ export const ACCESSORIES: CarouselItem[] = [
     image: controllerbracket,
     description: "Adjustable bracket for mounting tablets or controllers on survey equipment",
     mobileDescription: "Controller bracket",
-    price: 79,
+    price: 46, // 70,000 NGN ÷ 1550 = 45.16 → ROUNDED UP
     inStock: true,
     specifications: [
       "Material: Aluminum alloy with plastic padding",

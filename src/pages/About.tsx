@@ -28,10 +28,8 @@ import csr2 from "../assets/csr2.jpg";
 import csr3 from "../assets/csr3.jpg";
 import csr4 from "../assets/csr4.jpg";
 
-
 const About: React.FC = () => {
   const navigate = useNavigate();
-
 
   const features = [
     {
@@ -65,105 +63,103 @@ const About: React.FC = () => {
       description: "Access real-time GNSS correction services via our nationwide CORS network — enabling high-accuracy positioning across Nigeria.",
     },
   ];
-
-  const HeroSlider: React.FC = () => {
-    const [currentSlide, setCurrentSlide] = useState<number>(0);
-    
- const slides = [
-  {
-    image: csr1,
-    title: "Pad-A-Girl Initiative in collaboration with JCI",
-    description: "Empowering girls through education and menstrual health advocacy."
-  },
-  {
-    image: csr2,
-    title: "Educational Outreach",
-    description: "Protecting ecosystems with community-led reforestation efforts."
-  },
-  {
-    image: csr3,
-    title: "Orphanage Visit",
-    description: "Bringing joy and support to orphaned children through visitation."
-  },
- {
-        image: csr4, 
-        title: "Community Support",
-        description: "Water is Life Project in Collaboration with JCI"
-      },
-    ];
-    
-   
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setCurrentSlide((prev) => (prev + 1) % slides.length);
-      }, 5000);
-      
-      return () => clearInterval(interval);
-    }, [slides.length]);
-    
-    const nextSlide = (): void => {
+const HeroSlider: React.FC = () => {
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
+  
+  const slides = [
+    {
+      image: csr1,
+      title: "Pad-A-Girl Initiative in collaboration with JCI",
+      description: "Empowering girls through education and menstrual health advocacy."
+    },
+    {
+      image: csr2,
+      title: "Educational Outreach",
+      description: "Protecting ecosystems with community-led reforestation efforts."
+    },
+    {
+      image: csr3,
+      title: "Orphanage Visit",
+      description: "Bringing joy and support to orphaned children through visitation."
+    },
+    {
+      image: csr4, 
+      title: "Community Support",
+      description: "Water is Life Project in Collaboration with JCI"
+    },
+  ];
+  
+  useEffect(() => {
+    const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
-    };
+    }, 5000);
     
-    const prevSlide = (): void => {
-      setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    };
-    
-    return (
-      <>
-        <div className="w-full h-[400px] relative">
-          <img
-            src={slides[currentSlide].image}
-            alt={slides[currentSlide].title}
-            className="w-full h-full object-cover transition-opacity duration-500"
-          />
-          
-          {/* Slider Navigation Dots */}
-          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
-            {slides.map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all ${currentSlide === index ? 'bg-white w-6' : 'bg-white/50'}`}
-                aria-label={`Go to slide ${index + 1}`}
-              />
-            ))}
-          </div>
-          
-          {/* Image Caption */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
-            <h3 className="text-white text-xl font-bold mb-2">
-              {slides[currentSlide].title}
-            </h3>
-            <p className="text-white/90 text-sm">
-              {slides[currentSlide].description}
-            </p>
-          </div>
-        </div>
-        
-        {/* Navigation Buttons */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
-          aria-label="Previous slide"
-        >
-          <ChevronRight className="w-6 h-6 text-white rotate-180" />
-        </button>
-        <button
-          onClick={nextSlide}
-          className="absolute right-4 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white/30 transition-all"
-          aria-label="Next slide"
-        >
-          <ChevronRight className="w-6 h-6 text-white" />
-        </button>
-        
-        {/* Slide Counter */}
-        <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
-          {currentSlide + 1} / {slides.length}
-        </div>
-      </>
-    );
+    return () => clearInterval(interval);
+  }, [slides.length]);
+  
+  const nextSlide = (): void => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
   };
+  
+  const prevSlide = (): void => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+  
+  return (
+    <div className="relative w-full">
+      <div className="w-full h-[400px] relative overflow-hidden">
+        <img
+          src={slides[currentSlide].image}
+          alt={slides[currentSlide].title}
+          className="w-full h-full object-cover transition-opacity duration-500"
+        />
+        
+        {/* Slider Navigation Dots */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+          {slides.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setCurrentSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all ${currentSlide === index ? 'bg-white w-6' : 'bg-white/50'}`}
+              aria-label={`Go to slide ${index + 1}`}
+            />
+          ))}
+        </div>
+        
+        {/* Image Caption */}
+        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-6">
+          <h3 className="text-white text-xl font-bold mb-2">
+            {slides[currentSlide].title}
+          </h3>
+          <p className="text-white/90 text-sm">
+            {slides[currentSlide].description}
+          </p>
+        </div>
+      </div>
+      
+      {/* Navigation Buttons - COMPLETELY hidden on mobile */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-2 md:left-4 top-1/2 transform -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 bg-white/20 backdrop-blur-sm rounded-full items-center justify-center hover:bg-white/30 transition-all hidden sm:hidden md:flex"
+        aria-label="Previous slide"
+      >
+        <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white rotate-180" />
+      </button>
+      <button
+        onClick={nextSlide}
+        className="absolute right-2 md:right-4 top-1/2 transform -translate-y-1/2 w-8 h-8 md:w-10 md:h-10 bg-white/20 backdrop-blur-sm rounded-full items-center justify-center hover:bg-white/30 transition-all hidden sm:hidden md:flex"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
+      </button>
+      
+      {/* Slide Counter */}
+      <div className="absolute top-4 right-4 bg-black/50 text-white text-sm px-3 py-1 rounded-full backdrop-blur-sm">
+        {currentSlide + 1} / {slides.length}
+      </div>
+    </div>
+  );
+};
 
   return (
     <div className="min-h-screen bg-blue-100">
@@ -171,16 +167,15 @@ const About: React.FC = () => {
       <Header />
 
       {/* HERO SECTION WITH BACKGROUND PHOTO - FIXED VERSION */}
-   <section className="relative w-full h-[50vh] flex items-center justify-center overflow-hidden">
-  {/* Background image container */}
-  <div className="absolute inset-0 flex items-center justify-center">
-    <img
-      src={aboutHero}
-      alt=""
-      className="w-auto h-auto min-w-full min-h-full object-contain"
-    />
-  </div>
-  
+      <section className="relative w-full h-[50vh] flex items-center justify-center overflow-hidden">
+        {/* Background image container */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img
+            src={aboutHero}
+            alt=""
+            className="w-auto h-auto min-w-full min-h-full object-contain"
+          />
+        </div>
 
         {/* HERO CONTENT - LEFT ALIGNED */}
         <div className="relative z-10 w-full h-full flex items-center">
@@ -192,11 +187,7 @@ const About: React.FC = () => {
             >
               <h1 className="text-4xl md:text-5xl font-bold text-black leading-tight mt-45">
                 About
-              </h1>
-              <p className="text-lg md:text-xl text-black/95 font-medium leading-relaxed">
-                Leave us a little info, and we'll be in touch.
-              </p>
-
+              </h1>         
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Button
                   onClick={() => navigate("/contact")}
@@ -233,74 +224,74 @@ const About: React.FC = () => {
         </div>
       </section>
 
-{/* MAIN HEADING SECTION */}
-<section className="py-16 bg-blue-100">
-  <div className="container mx-auto px-6">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.2 }}
-    >
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-        Geospatial Solutions Provider & Technology Partner
-      </h2>
-      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
-        <p>
-         OTIC GeoSystems provides reliable geospatial equipment, services, and support for surveyors and professionals across surveying, engineering, construction, agriculture, energy, infrastructure, hydrographic operations, and government projects.
-        </p>
-        <p>
-          We supply and support GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software. Beyond supply, we calibrate and repair equipment, offer training, equipment rental, scanning services, and project support.
-        </p>
-        <p>
-          OTIC GeoSystems works as a technology partner—helping clients choose the right tools, deploy them correctly, and keep them working in the field.
-        </p>
-      </div>
-    </motion.div>
-  </div>
-</section>
+      {/* MAIN HEADING SECTION */}
+      <section className="py-16 bg-blue-100">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
+              Geospatial Solutions Provider & Technology Partner
+            </h2>
+            <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
+              <p>
+                OTIC GeoSystems provides reliable geospatial equipment, services, and support for surveyors and professionals across surveying, engineering, construction, agriculture, energy, infrastructure, hydrographic operations, and government projects.
+              </p>
+              <p>
+                We supply and support GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software. Beyond supply, we calibrate and repair equipment, offer training, equipment rental, scanning services, and project support.
+              </p>
+              <p>
+                OTIC GeoSystems works as a technology partner—helping clients choose the right tools, deploy them correctly, and keep them working in the field.
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </section>
 
-{/* MISSION STATEMENT */}
-<section className="py-16 bg-blue-100">
-  <div className="container mx-auto px-6">
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.3 }}
-    >
-      <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-20">
-        To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
-      </h2>
-      <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
-        <p>
-        As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software.  From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
-        </p>
-      </div>
+      {/* MISSION STATEMENT */}
+      <section className="py-16 bg-blue-100">
+        <div className="container mx-auto px-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 -mt-20">
+              To be the Leading Geospatial Technology Company – Revolutionizing Surveying Solutions
+            </h2>
+            <div className="space-y-4 text-base md:text-lg text-gray-700 leading-relaxed -mt-0">
+              <p>
+                As a leading geospatial technology company, we pride ourselves on delivering exceptional value to surveying professionals and organizations. Explore our curated selection of the latest surveying equipment from renowned manufacturers, GNSS receivers, total stations, 3D laser scanners, professional drones, echo sounders, side scan sonars, autosteering systems, CORS network services, and geospatial software.  From entry-level instruments to high-precision survey systems, we offer a comprehensive range that caters to every project requirement and expertise level. Our solutions are designed to enhance accuracy, efficiency, and productivity in geospatial data collection and analysis.
+              </p>
+            </div>
 
-      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-5 mb-4">
-        Geospatial Services for Professional Practice
-      </h3>
-      <p className="text-base md:text-lg text-gray-700 leading-relaxed">
-       OTIC GeoSystems works as a technology partner, helping clients choose the right tools, deploy them correctly, and keep them working in the field.
-      </p>
-      <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
-        Our Mission
-      </h3>
-      <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-        To solve our customers' everyday challenges by being reliable, knowledgeable, and consistent in the solutions and support we provide.
-      </p>
-    </motion.div>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-5 mb-4">
+              Geospatial Services for Professional Practice
+            </h3>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed">
+              OTIC GeoSystems works as a technology partner, helping clients choose the right tools, deploy them correctly, and keep them working in the field.
+            </p>
+            <h3 className="text-xl md:text-2xl font-bold text-gray-900 mt-12 mb-4">
+              Our Mission
+            </h3>
+            <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
+              To solve our customers' everyday challenges by being reliable, knowledgeable, and consistent in the solutions and support we provide.
+            </p>
+          </motion.div>
 
-    {/* IMAGE CAROUSEL */}
-    <motion.div
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.4 }}
-      className="mt-16"
-    >
-      <ImageCarousel />
-    </motion.div>
-  </div>
-</section>
+          {/* IMAGE CAROUSEL */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-16"
+          >
+            <ImageCarousel />
+          </motion.div>
+        </div>
+      </section>
 
       {/* CSR HIGHLIGHT SECTION WITH HERO SLIDER */}
       <section className="py-16 bg-gradient-to-r from-blue-100 to-blue-100">
@@ -352,64 +343,64 @@ const About: React.FC = () => {
               </div>
             </motion.div>
             
-           {/* Right side - CSR Highlight Card */}
-<motion.div
-  initial={{ opacity: 0, x: 50 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ delay: 0.6, duration: 0.8 }}
-  className="lg:w-2/5"
->
-  <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
-    <CardContent className="p-8">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-          <Heart className="w-6 h-6 text-blue-600" />
-        </div>
-        <div>
-          <h3 className="text-2xl font-bold text-black">Community Impact</h3>
-          <p className="text-blue-600">Creating value beyond business</p>
-        </div>
-      </div>
+            {/* Right side - CSR Highlight Card */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.6, duration: 0.8 }}
+              className="lg:w-2/5"
+            >
+              <Card className="bg-blue-100/80 backdrop-blur-sm border-2 border-blue-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105">
+                <CardContent className="p-8">
+                  {/* Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Heart className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-black">Community Impact</h3>
+                      <p className="text-blue-600">Creating value beyond business</p>
+                    </div>
+                  </div>
 
-      {/* CSR Items */}
-      <div className="space-y-5">
-        {/* Education & Training */}
-        <div className="flex items-start gap-3">
-          <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-          <div>
-            <h4 className="font-semibold text-gray-900">Education & Training</h4>
-            <p className="text-gray-700 text-sm">
-              Supporting future professionals through scholarships, mentorship, and hands-on technical training.
-            </p>
-          </div>
-        </div>
+                  {/* CSR Items */}
+                  <div className="space-y-5">
+                    {/* Education & Training */}
+                    <div className="flex items-start gap-3">
+                      <GraduationCap className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Education & Training</h4>
+                        <p className="text-gray-700 text-sm">
+                          Supporting future professionals through scholarships, mentorship, and hands-on technical training.
+                        </p>
+                      </div>
+                    </div>
 
-        {/* Community Development */}
-        <div className="flex items-start gap-3">
-          <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-          <div>
-            <h4 className="font-semibold text-gray-900">Community Development</h4>
-            <p className="text-gray-700 text-sm">
-              Sponsoring community events and initiatives that promote growth, collaboration, and local development.
-            </p>
-          </div>
-        </div>
+                    {/* Community Development */}
+                    <div className="flex items-start gap-3">
+                      <Users className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Community Development</h4>
+                        <p className="text-gray-700 text-sm">
+                          Sponsoring community events and initiatives that promote growth, collaboration, and local development.
+                        </p>
+                      </div>
+                    </div>
 
-        {/* Environmental Care */}
-        <div className="flex items-start gap-3">
-          <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
-          <div>
-            <h4 className="font-semibold text-gray-900">Environmental Care</h4>
-            <p className="text-gray-700 text-sm">
-              Supporting environmental sustainability through eco-friendly practices and community-driven initiatives.
-            </p>
-          </div>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-</motion.div>
+                    {/* Environmental Care */}
+                    <div className="flex items-start gap-3">
+                      <TreePine className="w-5 h-5 text-blue-600 mt-1 flex-shrink-0" />
+                      <div>
+                        <h4 className="font-semibold text-gray-900">Environmental Care</h4>
+                        <p className="text-gray-700 text-sm">
+                          Supporting environmental sustainability through eco-friendly practices and community-driven initiatives.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -426,19 +417,19 @@ const About: React.FC = () => {
               Why choose GeossoTech?
             </h2>
             <p className="text-base md:text-lg text-gray-700 leading-relaxed mb-12">
-  OTIC GeoSystems  is a trusted geospatial solutions provider and technology partner built to support professionals, organizations, and institutions across surveying, mapping, engineering, and allied fields. We offer a complete ecosystem of geospatial solutions, equipment sales and rentals, certified training, technical consulting, and after-sales support, delivered under one roof for efficiency and reliability.
-  <br /><br />
-  Our strength lies in deep technical expertise, hands-on industry experience, and a clear understanding of real project demands. We work closely with our clients to recommend practical, proven technologies that align with their operational goals, budgets, and environments. Beyond supplying equipment, we ensure users are properly trained, supported, and confident in deploying solutions effectively.
-  <br /><br />
-  At GeossoTech, service quality is driven by a culture of accountability, continuous improvement, and client-focused delivery. This approach has positioned us as a dependable long-term partner, trusted for accurate guidance, responsive support, and consistent value. Choosing OTIC GeoSystems  means choosing a partner committed to helping you work smarter, deliver better results, and grow sustainably.
-</p>
-                 
-          {/* HORIZONTAL DIVIDER LINE */}
+              OTIC GeoSystems  is a trusted geospatial solutions provider and technology partner built to support professionals, organizations, and institutions across surveying, mapping, engineering, and allied fields. We offer a complete ecosystem of geospatial solutions, equipment sales and rentals, certified training, technical consulting, and after-sales support, delivered under one roof for efficiency and reliability.
+              <br /><br />
+              Our strength lies in deep technical expertise, hands-on industry experience, and a clear understanding of real project demands. We work closely with our clients to recommend practical, proven technologies that align with their operational goals, budgets, and environments. Beyond supplying equipment, we ensure users are properly trained, supported, and confident in deploying solutions effectively.
+              <br /><br />
+              At GeossoTech, service quality is driven by a culture of accountability, continuous improvement, and client-focused delivery. This approach has positioned us as a dependable long-term partner, trusted for accurate guidance, responsive support, and consistent value. Choosing OTIC GeoSystems  means choosing a partner committed to helping you work smarter, deliver better results, and grow sustainably.
+            </p>
+                     
+            {/* HORIZONTAL DIVIDER LINE */}
             <div className="container mx-auto px-6">
               <div className="h-0.5 bg-gray-400 my-16 w-full"></div>
             </div>
 
-  {/* FEATURE CARDS GRID - Updated for mobile */}
+            {/* FEATURE CARDS GRID - Updated for mobile */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mt-8 md:mt-12">
               {features.map((feature, index) => {
                 const Icon = feature.icon;

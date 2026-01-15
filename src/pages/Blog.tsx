@@ -6,12 +6,11 @@ import type { BlogPost } from '../types/blog';
 import { BlogHero } from '../components/blog/BlogHero';
 import { BlogGrid } from '../components/blog/BlogGrid';
 import { BlogSkeleton } from '../components/blog/BlogSkeleton';
+import Footer from '../components/Footer';
 import { 
   Search, 
   Filter, 
   Calendar, 
-  Clock,
-  Eye,
   FileText,
   Home,
   ArrowLeft,
@@ -366,8 +365,10 @@ export default function Blog() {
               </div>
             </div>
           </div>
+          
         </div>
       </main>
+      <Footer />
     </>
   );
 }

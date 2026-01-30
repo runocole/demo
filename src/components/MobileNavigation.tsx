@@ -231,7 +231,7 @@ const MobileNavigation = () => {
                     navigate("/buynow");
                     setIsMenuOpen(false);
                   }}
-                  className="flex items-center justify-center w-full p-3 bg-[#081748] text-white rounded-lg font-semibold hover:bg-blue-900 transition"
+                  className="flex items-center justify-center w-full p-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-900 transition"
                 >
                   <Mail className="w-5 h-5 mr-2" />
                   Buy Now

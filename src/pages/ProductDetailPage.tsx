@@ -5,12 +5,10 @@ import {
   Plus, 
   Minus, 
   Share2, 
-  Heart,
   Check,
   Truck,
   Shield,
   RotateCcw,
-  Star,
   ArrowLeft,
   ChevronRight,
   Home
@@ -39,7 +37,6 @@ const ProductDetailPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
 
@@ -135,13 +132,18 @@ const ProductDetailPage = () => {
     );
   }
 
-  // Mock additional images for demonstration
-  const productImages = product.images || [
-    product.image,
-    "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w-800&auto=format&fit=crop",
-    "https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800&auto=format&fit=crop",
-  ];
+  // FIXED: Use the product.images array if it exists and has items
+  const productImages = product.images && product.images.length > 0 
+    ? product.images 
+    : [product.image];
+
+  console.log('Debug - Product Images Array:', productImages);
+  console.log('Debug - Product:', {
+    id: product.id,
+    name: product.name,
+    images: product.images,
+    image: product.image
+  });
 
   // Mobile optimized breadcrumb
   const MobileBreadcrumb = () => (
@@ -169,14 +171,6 @@ const ProductDetailPage = () => {
             </span>
           </nav>
         </div>
-        
-        <button
-          onClick={() => setIsFavorite(!isFavorite)}
-          className="p-2 rounded-lg hover:bg-gray-100"
-          aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-600'}`} />
-        </button>
       </div>
     </div>
   );
@@ -234,53 +228,67 @@ const ProductDetailPage = () => {
                 src={productImages[selectedImage]}
                 alt={product.name}
                 className="w-full h-full object-contain p-4 md:p-8"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "https://via.placeholder.com/800x800?text=Image+Not+Available";
+                }}
               />
             </div>
 
-            {/* Thumbnail Images */}
-            <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-4 gap-2 sm:gap-3">
-              {productImages.slice(0, isMobile ? 4 : productImages.length).map((img, index) => (
-                <button
-                  key={index}
-                  onClick={() => setSelectedImage(index)}
-                  className={`aspect-square rounded-lg overflow-hidden border-2 ${
-                    selectedImage === index 
-                      ? 'border-blue-600' 
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <img
-                    src={img}
-                    alt={`${product.name} view ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </button>
-              ))}
-            </div>
+            {/* Thumbnail Images - Always show if we have multiple images */}
+            {productImages.length > 1 && (
+              <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-4 gap-2 sm:gap-3">
+                {productImages.slice(0, isMobile ? 4 : productImages.length).map((img, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setSelectedImage(index)}
+                    className={`aspect-square rounded-lg overflow-hidden border-2 ${
+                      selectedImage === index 
+                        ? 'border-blue-600' 
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`${product.name} view ${index + 1}`}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = "https://via.placeholder.com/200x200?text=Image+Not+Available";
+                      }}
+                    />
+                  </button>
+                ))}
+                {/* Show "more images" indicator if there are more images */}
+                {productImages.length > (isMobile ? 4 : productImages.length) && (
+                  <div className="aspect-square rounded-lg border-2 border-gray-200 bg-gray-100 flex items-center justify-center">
+                    <span className="text-gray-500 text-sm">
+                      +{productImages.length - (isMobile ? 4 : productImages.length)} more
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right Column - Product Info */}
           <div className="space-y-6">
             <div>
               <Badge className="mb-3 text-xs sm:text-sm">{product.category}</Badge>
+              {product.subcategory && (
+                <Badge variant="outline" className="ml-2 text-xs sm:text-sm">
+                  {product.subcategory}
+                </Badge>
+              )}
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
                 {product.name}
               </h1>
               <div className="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-4 mb-4">
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`w-4 h-4 sm:w-5 sm:h-5 ${
-                        i < 4 ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
-                      }`}
-                    />
-                  ))}
-                  <span className="ml-2 text-sm text-gray-600">4.2 (12 reviews)</span>
-                </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <Check className="w-4 h-4 text-green-500 mr-1 flex-shrink-0" />
-                  <span>In Stock • SKU: {product.id}</span>
+                  <span>In Stock </span>
                 </div>
               </div>
             </div>
@@ -291,14 +299,18 @@ const ProductDetailPage = () => {
                 <span className="text-3xl sm:text-4xl font-bold text-blue-600">
                   {getConvertedPrice(product.price)}
                 </span>
-                <span className="text-base sm:text-lg text-gray-500 line-through">
-                  {getConvertedPrice(product.price * 1.2)}
-                </span>
-                <Badge className="bg-red-100 text-red-600 text-xs sm:text-sm">
-                  Save 20%
-                </Badge>
+                {product.price > 100 && (
+                  <>
+                    <span className="text-base sm:text-lg text-gray-500 line-through">
+                      {getConvertedPrice(product.price * 1.2)}
+                    </span>
+                    <Badge className="bg-red-100 text-red-600 text-xs sm:text-sm">
+                      Save 20%
+                    </Badge>
+                  </>
+                )}
               </div>
-              <p className="text-gray-600 text-sm sm:text-base">Including VAT</p>
+              <p className="text-gray-600 text-sm sm:text-base">Excluding VAT</p>
             </div>
 
             {/* Quantity Selector */}
@@ -340,7 +352,7 @@ const ProductDetailPage = () => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
-                  className="flex-1 bg-[#081748] hover:bg-blue-700 text-white"
+                  className="flex-1 bg-blue-900 hover:bg-blue-700 text-white"
                   onClick={handleAddToCart}
                   disabled={!product.inStock}
                 >
@@ -355,15 +367,6 @@ const ProductDetailPage = () => {
                   disabled={!product.inStock}
                 >
                   Buy Now
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="border border-gray-300"
-                  aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-                >
-                  <Heart className={`w-5 h-5 ${isFavorite ? 'fill-red-500 text-red-500' : ''}`} />
                 </Button>
                 <Button
                   size="icon"
@@ -394,7 +397,7 @@ const ProductDetailPage = () => {
                 </div>
                 <div>
                   <h4 className="font-semibold text-sm sm:text-base">30-Day Returns</h4>
-                  <p className="text-xs sm:text-sm text-gray-600">No questions asked</p>
+                  <p className="text-xs sm:text-sm text-gray-600">Terms and Conditions apply</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
@@ -402,8 +405,8 @@ const ProductDetailPage = () => {
                   <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm sm:text-base">2-Year Warranty</h4>
-                  <p className="text-xs sm:text-sm text-gray-600">Full coverage</p>
+                  <h4 className="font-semibold text-sm sm:text-base">Warranty</h4>
+                  <p className="text-xs sm:text-sm text-gray-600">{product.warranty || "Full coverage"}</p>
                 </div>
               </div>
             </div>
@@ -411,7 +414,7 @@ const ProductDetailPage = () => {
             {/* Product Description Preview */}
             <div className="pt-6 border-t">
               <h3 className="font-semibold text-gray-900 mb-3 text-lg">Overview</h3>
-              <p className="text-gray-700 leading-relaxed line-clamp-3">
+              <p className="text-gray-700 font-normal line-clamp-3">
                 {product.description}
               </p>
             </div>
@@ -433,11 +436,11 @@ const ProductDetailPage = () => {
             <TabsContent value="description" className="space-y-4">
               <h3 className="text-xl font-bold mb-4">Product Description</h3>
               <div className="bg-white rounded-xl p-6">
-                <p className="text-gray-700 leading-relaxed mb-6 text-lg">{product.description}</p>
+                <p className="text-gray-700 font-normal mb-6 text-lg">{product.description}</p>
                 
                 {/* Brand and Model Info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                  {product.brand && (
+                  {product.brand && product.brand !== "Generic" && (
                     <div className="bg-gray-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-gray-900 mb-2">Brand Information</h4>
                       <p className="text-gray-700">Brand: {product.brand}</p>
@@ -449,23 +452,25 @@ const ProductDetailPage = () => {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <h4 className="font-semibold text-gray-900 mb-2">Product Details</h4>
                     <p className="text-gray-700">Category: {product.category}</p>
-                    <p className="text-gray-700">SKU: {product.id}</p>
+                    {product.subcategory && <p className="text-gray-700">Subcategory: {product.subcategory}</p>}
                     <p className="text-gray-700">Availability: {product.inStock ? 'In Stock' : 'Out of Stock'}</p>
                   </div>
                 </div>
                 
                 {/* Key Features Section */}
-                <div className="mb-6">
-                  <h4 className="text-lg font-semibold mb-4">Key Features</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {product.specifications.slice(0, 6).map((spec, index) => (
-                      <div key={index} className="flex items-start">
-                        <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700">{spec}</span>
-                      </div>
-                    ))}
+                {product.specifications && product.specifications.length > 0 && (
+                  <div className="mb-6">
+                    <h4 className="text-lg font-semibold mb-4">Key Features</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {product.specifications.slice(0, 8).map((spec, index) => (
+                        <div key={index} className="flex items-start">
+                          <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
+                          <span className="text-gray-700">{spec}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </TabsContent>
             
@@ -477,7 +482,7 @@ const ProductDetailPage = () => {
                     {product.specifications.map((spec, index) => (
                       <div key={index} className="flex items-start py-3 border-b border-gray-200 last:border-0">
                         <Check className="w-5 h-5 text-green-500 mr-3 mt-0.5 flex-shrink-0" />
-                        <span className="text-gray-700 leading-relaxed">{spec}</span>
+                        <span className="text-gray-700 font-normal">{spec}</span>
                       </div>
                     ))}
                   </div>
@@ -508,7 +513,7 @@ const ProductDetailPage = () => {
                     </div>
                     <Button 
                       size="lg" 
-                      className="bg-[#081748] hover:bg-blue-700 text-white"
+                      className="bg-blue-900 hover:bg-blue-700 text-white"
                       onClick={() => setMobileActionsOpen(true)}
                     >
                       Add to Cart

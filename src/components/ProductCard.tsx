@@ -4,7 +4,7 @@ import type { Product } from "../types/product";
 import { Button } from "../components/ui/button";
 import { Card } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
-import { ImageOff, Info, Eye, ShoppingCart } from "lucide-react";
+import { ImageOff, Info, Eye, Tag } from "lucide-react";
 import { cn } from "../lib/utils"; 
 import { useCurrency } from "../context/CurrencyContext"; 
 import { useToast } from "../hooks/use-toast";
@@ -111,6 +111,7 @@ export const ProductCard = ({
           iconSize: "w-4 h-4",
           gap: "gap-4",
           showCategoryBadge: false,
+          showSubcategoryBadge: false,
           showStockAlways: true,
           buttonFullWidth: true
         };
@@ -129,6 +130,7 @@ export const ProductCard = ({
           iconSize: "w-4 h-4",
           gap: "gap-4",
           showCategoryBadge: true,
+          showSubcategoryBadge: product.category === "Accessory" && product.subcategory,
           showStockAlways: true,
           buttonFullWidth: false
         };
@@ -147,6 +149,7 @@ export const ProductCard = ({
           iconSize: "w-3.5 h-3.5",
           gap: "gap-3",
           showCategoryBadge: true,
+          showSubcategoryBadge: product.category === "Accessory" && product.subcategory,
           showStockAlways: true,
           buttonFullWidth: false
         };
@@ -165,6 +168,7 @@ export const ProductCard = ({
           iconSize: "w-4 h-4",
           gap: "gap-4",
           showCategoryBadge: true,
+          showSubcategoryBadge: product.category === "Accessory" && product.subcategory,
           showStockAlways: false,
           buttonFullWidth: false
         };
@@ -183,6 +187,7 @@ export const ProductCard = ({
           iconSize: "w-5 h-5",
           gap: "gap-5",
           showCategoryBadge: true,
+          showSubcategoryBadge: product.category === "Accessory" && product.subcategory,
           showStockAlways: false,
           buttonFullWidth: false
         };
@@ -201,6 +206,7 @@ export const ProductCard = ({
           iconSize: "w-4 h-4",
           gap: "gap-4",
           showCategoryBadge: true,
+          showSubcategoryBadge: product.category === "Accessory" && product.subcategory,
           showStockAlways: false,
           buttonFullWidth: false
         };
@@ -211,7 +217,7 @@ export const ProductCard = ({
 
   // Theme colors based on variant
   const cardBgColor = isSplitVariant ? "" : "bg-white";
-  const contentBgColor = isSplitVariant ? "bg-[#081748]" : "bg-transparent";
+  const contentBgColor = isSplitVariant ? "bg-blue-900" : "bg-transparent";
   const titleColor = isSplitVariant ? "text-white" : "text-gray-900";
   const descriptionColor = isSplitVariant ? "text-gray-300" : "text-gray-600";
   const specColor = isSplitVariant ? "text-gray-400" : "text-gray-500";
@@ -220,12 +226,8 @@ export const ProductCard = ({
   
   const buttonClass = isSplitVariant 
     ? "bg-white text-[#081748] hover:bg-gray-100 active:scale-95" 
-    : "bg-[#081748] hover:bg-[#0a1f5a] text-white active:scale-95";
+    : "bg-blue-900 hover:bg-[#0a1f5a] text-white active:scale-95";
   
-  const badgeClass = isSplitVariant 
-    ? "bg-gray-700 text-white" 
-    : "bg-[#081748]/10 text-[#081748]";
-
   // Main render function with consistent layout
   return (
     <Card 
@@ -292,9 +294,20 @@ export const ProductCard = ({
         {styles.showCategoryBadge && (
           <Badge 
             variant="secondary"
-            className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-[#081748] text-white border-0 z-10"
+            className="absolute top-2 right-2 text-[10px] px-2 py-0.5 bg-blue-900 text-white border-0 z-10"
           >
             {product.category.length > 12 ? `${product.category.substring(0, 12)}...` : product.category}
+          </Badge>
+        )}
+        
+        {/* Subcategory badge for accessories - Conditional */}
+        {styles.showSubcategoryBadge && product.subcategory && (
+          <Badge 
+            variant="outline"
+            className="absolute bottom-2 left-2 text-[10px] px-2 py-0.5 bg-white/90 text-gray-700 border-gray-300 z-10"
+          >
+            <Tag className="w-3 h-3 mr-1" />
+            {product.subcategory.length > 15 ? `${product.subcategory.substring(0, 15)}...` : product.subcategory}
           </Badge>
         )}
       </div>
@@ -352,7 +365,7 @@ export const ProductCard = ({
             <ul className={cn("text-xs space-y-1", specColor)}>
               {product.specifications.slice(0, 2).map((spec, idx) => (
                 <li key={idx} className="flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#081748] shrink-0 mt-1"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-900 shrink-0 mt-1"></span>
                   <span className="line-clamp-1">
                     {spec}
                   </span>
@@ -373,7 +386,7 @@ export const ProductCard = ({
             <Button
               variant="outline"
               size="sm"
-              className="w-full text-sm text-[#081748] hover:text-[#0a1f5a] hover:bg-[#081748]/10 border-gray-300"
+              className="w-full text-sm text-[#081748] hover:text-[#0a1f5a] hover:bg-blue-900/10 border-gray-300"
               onClick={handleQuickViewClick}
               type="button"
             >
@@ -393,7 +406,7 @@ export const ProductCard = ({
                 variant="outline"
                 size="sm"
                 className={cn(
-                  "border-gray-300 text-[#081748] hover:bg-[#081748]/10 hover:text-[#0a1f5a]",
+                  "border-gray-300 text-[#081748] hover:bg-blue-900/10 hover:text-[#0a1f5a]",
                   styles.buttonFullWidth ? "w-full" : ""
                 )}
                 onClick={handleQuickViewClick}

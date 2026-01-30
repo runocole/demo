@@ -59,7 +59,7 @@ export const VideoSection = ({
   };
 
   const handleFullscreenToggle = () => {
-    const iframe = document.querySelector('iframe');
+    const iframe = document.querySelector('.video-section iframe');
     if (!iframe) return;
 
     if (!document.fullscreenElement) {
@@ -82,24 +82,71 @@ export const VideoSection = ({
 
   // Construct YouTube embed URL with parameters
   const constructYouTubeUrl = () => {
-    const url = new URL(videoUrl);
-    
-    // Add parameters
-    url.searchParams.set('autoplay', isPlaying ? '1' : '0');
-    url.searchParams.set('mute', isMuted ? '1' : '0');
-    url.searchParams.set('loop', loop ? '1' : '0');
-    url.searchParams.set('playsinline', '1'); // For iOS
-    url.searchParams.set('rel', '0'); // Don't show related videos
-    url.searchParams.set('modestbranding', '1'); // Minimal YouTube branding
-    url.searchParams.set('showinfo', '0'); // Hide video info
-    
-    if (showControls) {
-      url.searchParams.set('controls', '1');
-    } else {
-      url.searchParams.set('controls', '0');
+    if (!videoUrl) {
+      setHasError(true);
+      return '';
     }
 
-    return url.toString();
+    let videoId = '';
+    
+    // Extract video ID from different YouTube URL formats
+    if (videoUrl.includes('youtu.be/')) {
+      // Short URL format: https://youtu.be/t2ZC7ReBJ5c
+      videoId = videoUrl.split('youtu.be/')[1]?.split('?')[0] || '';
+    } else if (videoUrl.includes('youtube.com/watch?v=')) {
+      // Standard URL format: https://youtube.com/watch?v=t2ZC7ReBJ5c
+      try {
+        const url = new URL(videoUrl);
+        videoId = url.searchParams.get('v') || '';
+      } catch {
+        // If URL parsing fails, try manual extraction
+        const match = videoUrl.match(/v=([^&]+)/);
+        videoId = match ? match[1] : '';
+      }
+    } else if (videoUrl.includes('youtube.com/embed/')) {
+      // Already an embed URL: https://youtube.com/embed/t2ZC7ReBJ5c
+      videoId = videoUrl.split('embed/')[1]?.split('?')[0] || '';
+    } else if (videoUrl.includes('si=')) {
+      // Handle the format with si parameter
+      const match = videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|watch\?v=))([^?&]+)/);
+      videoId = match ? match[1] : videoUrl;
+    } else {
+      // Assume it's already a video ID or try to extract it
+      videoId = videoUrl;
+    }
+
+    // Clean up video ID (remove any query parameters)
+    videoId = videoId.split('?')[0].split('&')[0];
+    
+    if (!videoId) {
+      setHasError(true);
+      return '';
+    }
+
+    // Build embed URL
+    const embedUrl = new URL(`https://www.youtube.com/embed/${videoId}`);
+    
+    // Add parameters
+    embedUrl.searchParams.set('autoplay', isPlaying ? '1' : '0');
+    embedUrl.searchParams.set('mute', isMuted ? '1' : '0');
+    embedUrl.searchParams.set('loop', loop ? '1' : '0');
+    embedUrl.searchParams.set('playsinline', '1'); // For iOS
+    embedUrl.searchParams.set('rel', '0'); // Don't show related videos
+    embedUrl.searchParams.set('modestbranding', '1'); // Minimal YouTube branding
+    embedUrl.searchParams.set('showinfo', '0'); // Hide video info
+    
+    if (showControls) {
+      embedUrl.searchParams.set('controls', '1');
+    } else {
+      embedUrl.searchParams.set('controls', '0');
+    }
+
+    // Add playlist parameter for loop functionality
+    if (loop) {
+      embedUrl.searchParams.set('playlist', videoId);
+    }
+
+    return embedUrl.toString();
   };
 
   // Responsive height calculation
@@ -131,7 +178,7 @@ export const VideoSection = ({
           </div>
         )}
 
-        <div className="relative rounded-lg md:rounded-xl overflow-hidden shadow-lg md:shadow-2xl bg-gray-900 group">
+        <div className="video-section relative rounded-lg md:rounded-xl overflow-hidden shadow-lg md:shadow-2xl bg-gray-900 group">
           {/* Loading State */}
           {isLoading && (
             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
@@ -156,7 +203,10 @@ export const VideoSection = ({
                   </p>
                 </div>
                 <Button 
-                  onClick={() => window.location.reload()} 
+                  onClick={() => {
+                    setHasError(false);
+                    setIsLoading(true);
+                  }} 
                   className="bg-blue-600 hover:bg-blue-700 text-white"
                 >
                   Retry
@@ -166,23 +216,25 @@ export const VideoSection = ({
           )}
 
           {/* YouTube Iframe */}
-          <iframe
-            className={cn(
-              "w-full transition-all duration-300",
-              isFullscreen ? "h-screen" : "h-[50vh] sm:h-[56.25vw] max-h-[600px]"
-            )}
-            style={{ height: getVideoHeight() }}
-            src={constructYouTubeUrl()}
-            title={title}
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-            allowFullScreen
-            onLoad={handleLoad}
-            onError={handleError}
-            loading="lazy"
-          />
+          {!hasError && (
+            <iframe
+              className={cn(
+                "w-full transition-all duration-300",
+                isFullscreen ? "h-screen" : "h-[50vh] sm:h-[56.25vw] max-h-[600px]"
+              )}
+              style={{ height: getVideoHeight() }}
+              src={constructYouTubeUrl()}
+              title={title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+              allowFullScreen
+              onLoad={handleLoad}
+              onError={handleError}
+              loading="lazy"
+            />
+          )}
 
           {/* Custom Controls Overlay (Desktop) */}
-          {!isMobile && showControls && !isFullscreen && (
+          {!isMobile && showControls && !isFullscreen && !hasError && (
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -224,7 +276,7 @@ export const VideoSection = ({
           )}
 
           {/* Mobile Controls Info */}
-          {isMobile && !isFullscreen && (
+          {isMobile && !isFullscreen && !hasError && (
             <div className="absolute bottom-4 right-4 bg-black/70 text-white text-xs px-3 py-1.5 rounded-full">
               Tap to play
             </div>
@@ -243,7 +295,7 @@ export const VideoSection = ({
         </div>
 
         {/* Video Info (Desktop only) */}
-        {!isMobile && !isFullscreen && (
+        {!isMobile && !isFullscreen && !hasError && (
           <div className="mt-6 space-y-2">
             <div className="flex items-center justify-between">
               <div>
@@ -262,7 +314,7 @@ export const VideoSection = ({
         )}
 
         {/* Mobile Instructions */}
-        {isMobile && !isFullscreen && (
+        {isMobile && !isFullscreen && !hasError && (
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
               Tap the video to play. Rotate phone for fullscreen.
@@ -271,7 +323,7 @@ export const VideoSection = ({
         )}
 
         {/* Video Actions */}
-        {!isFullscreen && (
+        {!isFullscreen && !hasError && (
           <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
             <Button
               variant="outline"
@@ -282,7 +334,7 @@ export const VideoSection = ({
               Fullscreen View
             </Button>
             <a
-              href={videoUrl.replace('/embed/', '/watch?v=')}
+              href={`https://www.youtube.com/watch?v=${constructYouTubeUrl().split('/embed/')[1]?.split('?')[0] || videoUrl}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"

@@ -59,7 +59,7 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier
-} from "../services/api";
+} from "../services/inventoryAPI";
 import { toast } from "sonner";
 
 // Update interface to include naira_cost

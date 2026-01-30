@@ -1,374 +1,441 @@
-// pages/Blog.tsx
-import { useState, useEffect, useRef } from 'react';
-import { useBlogPosts } from '../hooks/useBlogPosts';
-import { useNavigate } from 'react-router-dom';
-import type { BlogPost } from '../types/blog';
-import { BlogHero } from '../components/blog/BlogHero';
-import { BlogGrid } from '../components/blog/BlogGrid';
-import { BlogSkeleton } from '../components/blog/BlogSkeleton';
-import Footer from '../components/Footer';
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  FileText,
-  Home,
-  ArrowLeft,
-  Loader2
-} from 'lucide-react';
-import { Input } from '../components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { Button } from '../components/ui/button';
-import { Card, CardContent } from '../components/ui/card';
+import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
+import { Loader2, ChevronDown } from "lucide-react";
+import { BlogFooter } from "../components/blog/BlogFooter";
+import { PostCard } from "../components/blog/PostCard";
+import { getBlogPosts, type BlogPost } from "../services/api";
+import blogHero from "../assets/banner.jpg";
+
+// Define Author interface locally
+interface Author {
+  id: number;
+  username: string;
+  email: string;
+  first_name?: string;
+  last_name?: string;
+  is_staff?: boolean;
+  is_superuser?: boolean;
+  avatar_url?: string;
+  full_name?: string;
+}
 
 export default function Blog() {
-  const { posts, loading, hasMore, fetchMore } = useBlogPosts();
-  const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
-  const [featuredPost, setFeaturedPost] = useState<BlogPost | null>(null);
-  const [initialLoading, setInitialLoading] = useState(true);
-  const articlesSectionRef = useRef<HTMLDivElement>(null);
+  const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Categories from admin
-  const categories = [
-    'all',
-    'general',
-    'technology',
-    'design',
-    'business',
-    'lifestyle',
-    'tutorial',
-    'news'
-  ];
+  const fetchPosts = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await getBlogPosts();
+      console.log("API response data:", data); 
+      setPosts(data);
+    } catch (err: any) {
+      console.error("Failed to fetch posts:", err);
+      setError(err.message || "Failed to load posts");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Set initial loading state
   useEffect(() => {
-    if (posts !== undefined) {
-      // Give a small delay for better UX
-      const timer = setTimeout(() => {
-        setInitialLoading(false);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [posts]);
+    fetchPosts();
+  }, []);
 
-  // Scroll to articles section
-  const scrollToArticles = () => {
-    if (articlesSectionRef.current) {
-      const yOffset = -80;
-      const y = articlesSectionRef.current.getBoundingClientRect().top + window.pageYOffset + yOffset;
-      window.scrollTo({ top: y, behavior: 'smooth' });
-    }
+  const publishedPosts = posts.filter((post) => post.status === "published");
+  const featuredPosts = publishedPosts.filter((post) => post.is_featured);
+  const featuredPost = featuredPosts.length > 0 ? featuredPosts[0] : publishedPosts[0];
+  const otherPosts = publishedPosts.filter((post) => post.id !== featuredPost?.id);
+
+  // All styles inline
+  const styles = {
+    page: {
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      backgroundColor: '#f8fafc',
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+    },
+    heroSection: {
+      position: 'relative' as const,
+      overflow: 'hidden',
+      minHeight: '65vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    heroBackground: {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundImage: `url(${blogHero})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
+      backgroundAttachment: 'fixed', // Creates parallax effect
+    },
+    darkOverlay: {
+      position: 'absolute' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.4)', // Faint dark overlay
+      zIndex: 1,
+    },
+    heroContainer: {
+      maxWidth: '1280px',
+      margin: '0 auto',
+      padding: '120px 24px 80px', // Increased top padding to lower content
+      width: '100%',
+      position: 'relative' as const,
+      zIndex: 2,
+      display: 'grid',
+      gridTemplateColumns: '1fr',
+      gap: '32px',
+      alignItems: 'center',
+      textAlign: 'left' as const,
+    },
+    heroContent: {
+      maxWidth: '800px',
+    },
+    heroTitle: {
+      fontFamily: 'Georgia, serif',
+      fontSize: '64px',
+      fontWeight: 400,
+      color: '#ffffff',
+      lineHeight: 1.1,
+      marginBottom: '24px',
+      textShadow: '0 2px 8px rgba(0, 0, 0, 0.5)',
+      letterSpacing: '-0.5px',
+    },
+    heroSubtitle: {
+      fontSize: '20px',
+      color: '#f8f8f8',
+      lineHeight: 1.6,
+      marginBottom: '40px',
+      textShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+      maxWidth: '600px',
+    },
+    heroButton: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '10px',
+      backgroundColor: '#ffffff',
+      color: '#1d009e',
+      padding: '16px 32px',
+      borderRadius: '50px',
+      fontSize: '16px',
+      fontWeight: 600,
+      textDecoration: 'none',
+      border: 'none',
+      cursor: 'pointer',
+      transition: 'all 0.3s ease',
+      boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)',
+    },
+    featuredSection: {
+      maxWidth: '1100px',
+      margin: '-40px auto 0',
+      padding: '0 24px',
+      position: 'relative' as const,
+      zIndex: 10,
+    },
+    latestSection: {
+      maxWidth: '1280px',
+      margin: '0 auto',
+      padding: '80px 24px',
+    },
+    sectionHeader: {
+      marginBottom: '48px',
+      textAlign: 'center' as const,
+    },
+    sectionTitle: {
+      fontFamily: 'Georgia, serif',
+      fontSize: '42px',
+      fontWeight: 700,
+      color: '#1e3a5f',
+      marginBottom: '16px',
+    },
+    sectionSubtitle: {
+      fontSize: '18px',
+      color: '#64748b',
+      maxWidth: '600px',
+      margin: '0 auto',
+    },
+    grid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(3, 1fr)',
+      gap: '32px',
+    },
+    loadingContainer: {
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f8fafc',
+    },
+    loadingContent: {
+      textAlign: 'center' as const,
+    },
+    errorContainer: {
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column' as const,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#f8fafc',
+    },
+    errorTitle: {
+      fontSize: '24px',
+      fontWeight: 600,
+      color: '#dc2626',
+      marginBottom: '12px',
+    },
+    errorText: {
+      color: '#64748b',
+      marginBottom: '24px',
+      fontSize: '16px',
+    },
+    retryButton: {
+      padding: '14px 28px',
+      backgroundColor: '#1e3a5f',
+      color: '#ffffff',
+      borderRadius: '8px',
+      border: 'none',
+      cursor: 'pointer',
+      fontSize: '16px',
+      fontWeight: 500,
+      transition: 'background-color 0.2s',
+    },
   };
 
-  // Find featured post
-  useEffect(() => {
-    if (posts && posts.length > 0) {
-      const featured = posts.find(post => post && post.isFeatured);
-      if (featured) {
-        setFeaturedPost(featured);
-      } else if (posts[0]) {
-        setFeaturedPost(posts[0]);
-      } else {
-        setFeaturedPost(null);
-      }
-    } else {
-      setFeaturedPost(null);
-    }
-  }, [posts]);
-
-  // Filter and sort posts
-  const filteredPosts = (posts || []).filter(post => {
-    if (!post) return false;
-    
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      const titleMatch = post.title?.toLowerCase().includes(searchLower) || false;
-      const excerptMatch = post.excerpt?.toLowerCase().includes(searchLower) || false;
-      const tagMatch = post.tags?.some(tag => tag?.toLowerCase().includes(searchLower)) || false;
-      
-      if (!titleMatch && !excerptMatch && !tagMatch) {
-        return false;
-      }
-    }
-    
-    // Category filter
-    if (categoryFilter !== 'all' && post.category !== categoryFilter) {
-      return false;
-    }
-    
-    return true;
-  }).sort((a, b) => {
-    if (!a || !b) return 0;
-    
-    switch (sortBy) {
-      case 'newest':
-        const dateA = a.publishDate ? new Date(a.publishDate).getTime() : 0;
-        const dateB = b.publishDate ? new Date(b.publishDate).getTime() : 0;
-        return dateB - dateA;
-      case 'oldest':
-        const dateAOld = a.publishDate ? new Date(a.publishDate).getTime() : 0;
-        const dateBOld = b.publishDate ? new Date(b.publishDate).getTime() : 0;
-        return dateAOld - dateBOld;
-      case 'popular':
-        const viewsA = a.views || 0;
-        const viewsB = b.views || 0;
-        return viewsB - viewsA;
-      case 'featured':
-        const featuredA = a.isFeatured ? 1 : 0;
-        const featuredB = b.isFeatured ? 1 : 0;
-        return featuredB - featuredA;
-      default:
-        return 0;
-    }
-  });
-
-  // Calculate reading time
-  const calculateReadTime = (content: string) => {
-    if (!content) return 0;
-    const words = content.trim().split(/\s+/).length;
-    return Math.ceil(words / 200);
-  };
-
-  // Stats
-  const stats = {
-    total: posts?.length || 0,
-    categories: [...new Set((posts || []).map(p => p?.category).filter(Boolean))].length,
-    totalViews: (posts || []).reduce((sum, post) => sum + (post?.views || 0), 0),
-    totalReadTime: (posts || []).reduce((sum, post) => sum + calculateReadTime(post?.content || ''), 0),
-  };
-
-  const handleLoadMore = async () => {
-    await fetchMore();
-  };
-
-  const handleGoHome = () => {
-    navigate('/');
-  };
-
-  const handleGoBack = () => {
-    navigate(-1);
-  };
-
-  // Show full page loader while initial data is loading
-  if (initialLoading || (loading && posts?.length === 0)) {
+  if (loading) {
     return (
-      <main className="min-h-screen bg-blue-950 text-white flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-400 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-blue-300 mb-2">Loading Blog</h2>
-          <p className="text-blue-400">Fetching the latest articles...</p>
+      <div style={styles.loadingContainer}>
+        <div style={styles.loadingContent}>
+          <Loader2 
+            style={{ 
+              width: '40px', 
+              height: '40px', 
+              color: '#1e3a5f',
+              animation: 'spin 1s linear infinite',
+            }} 
+          />
+          <p style={{ marginTop: '16px', color: '#1e3a5f', fontSize: '16px' }}>Loading posts...</p>
         </div>
-      </main>
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={styles.errorContainer}>
+        <div style={{ textAlign: 'center', maxWidth: '500px', padding: '32px' }}>
+          <h2 style={styles.errorTitle}>Error Loading Posts</h2>
+          <p style={styles.errorText}>{error}</p>
+          <button
+            onClick={fetchPosts}
+            style={styles.retryButton}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = '#2d4a6f';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = '#1e3a5f';
+            }}
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (publishedPosts.length === 0) {
+    return (
+      <div style={styles.page}>
+        <section style={styles.heroSection}>
+          <div style={styles.heroBackground} />
+          <div style={styles.darkOverlay} />
+          <div style={styles.heroContainer}>
+            <div style={styles.heroContent}>
+              <h1 style={styles.heroTitle}>
+                Stories, insights, & ideas
+              </h1>
+              <p style={styles.heroSubtitle}>
+                Practical knowledge on geosystems, training, and equipment.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section style={styles.latestSection}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>Latest Articles</h2>
+            <p style={styles.sectionSubtitle}>
+              Fresh perspectives and thought-provoking content
+            </p>
+          </div>
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '60px 0', 
+            color: '#64748b',
+            fontSize: '18px',
+            backgroundColor: '#f8fafc',
+            borderRadius: '12px',
+            border: '1px dashed #cbd5e1'
+          }}>
+            No blog posts published yet. Check back soon!
+          </div>
+        </section>
+
+        <BlogFooter />
+      </div>
     );
   }
 
   return (
-    <>
-      <title>Blog | Fresh Insights & Ideas</title>
-      <meta
-        name="description"
-        content="Explore thoughtful articles on design, technology, and creativity. Updated weekly with fresh perspectives and insights."
-      />
-      <meta property="og:title" content="Blog | Fresh Insights & Ideas" />
-      <meta
-        property="og:description"
-        content="Explore thoughtful articles on design, technology, and creativity."
-      />
-      <meta property="og:type" content="website" />
-
-      <main className="min-h-screen bg-blue-950 text-white">
-        {/* Top Navigation Bar */}
-        <div className="border-b border-blue-800 bg-blue-900/70 backdrop-blur-sm sticky top-0 z-50">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-between py-3">
-              <Button
-                variant="ghost"
-                onClick={handleGoBack}
-                className="text-blue-300 hover:text-white hover:bg-blue-800/50"
-                size="sm"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back
-              </Button>
-              
-              <div className="text-center">
-                <h1 className="text-xl font-bold text-blue-100">Blog</h1>
-                <p className="text-xs text-blue-400">Fresh Insights & Ideas</p>
-              </div>
-              
-              <Button
-                variant="ghost"
-                onClick={handleGoHome}
-                className="text-blue-300 hover:text-white hover:bg-blue-800/50"
-                size="sm"
-              >
-                <Home className="h-4 w-4 mr-2" />
-                Home
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* BlogHero with loading state */}
-        <BlogHero 
-          featuredPost={featuredPost} 
-          scrollToArticles={scrollToArticles}
-          loading={loading && !featuredPost}
-        />
-
-        {/* Show empty state if no posts */}
-        {!loading && (posts?.length === 0) && (
-          <section className="container mx-auto px-4 py-20 text-center">
-            <FileText className="h-24 w-24 text-blue-500 mx-auto mb-6" />
-            <h2 className="text-3xl font-bold text-blue-300 mb-4">No Articles Yet</h2>
-            <p className="text-blue-400 mb-8 max-w-md mx-auto">
-              There are no blog posts available at the moment. Please check back later.
+    <div style={styles.page}>
+      {/* Hero Section with Banner */}
+      <section style={styles.heroSection}>
+        {/* Full-size banner background */}
+        <div style={styles.heroBackground} />
+        
+        {/* Faint dark overlay for better text readability */}
+        <div style={styles.darkOverlay} />
+        
+        {/* Hero content container */}
+        <div style={styles.heroContainer}>
+          <div style={styles.heroContent}>
+            <h1 style={styles.heroTitle}>
+              Stories, insights, & ideas
+            </h1>
+            <p style={styles.heroSubtitle}>
+              Practical knowledge on geosystems, training, and equipment.
             </p>
-            <Button
-              onClick={handleGoHome}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Home className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
-          </section>
-        )}
-
-        {/* Filters Section - Only show if we have posts */}
-        {(posts?.length || 0) > 0 && (
-          <section className="container mx-auto px-4 py-8">
-            <Card className="border-blue-800 bg-blue-900/50">
-              <CardContent className="p-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex-1">
-                    <div className="relative max-w-md">
-                      <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-blue-400" />
-                      <Input
-                        placeholder="Search articles..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-blue-950 border-blue-700 text-white placeholder:text-blue-400"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="flex flex-wrap gap-2">
-                    <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                      <SelectTrigger className="w-[180px] bg-blue-950 border-blue-700">
-                        <Filter className="mr-2 h-4 w-4" />
-                        <SelectValue placeholder="Category" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-blue-950 border-blue-700 text-white">
-                        {categories.map(cat => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat === 'all' ? 'All Categories' : cat.charAt(0).toUpperCase() + cat.slice(1)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    
-                    <Select value={sortBy} onValueChange={setSortBy}>
-                      <SelectTrigger className="w-[180px] bg-blue-950 border-blue-700">
-                        <Calendar className="mr-2 h-4 w-4" />
-                        <SelectValue placeholder="Sort by" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-blue-950 border-blue-700 text-white">
-                        <SelectItem value="newest">Newest First</SelectItem>
-                        <SelectItem value="oldest">Oldest First</SelectItem>
-                        <SelectItem value="popular">Most Popular</SelectItem>
-                        <SelectItem value="featured">Featured First</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {searchTerm && (
-                  <div className="mt-4 flex items-center justify-between">
-                    <p className="text-sm text-blue-300">
-                      Found {filteredPosts.length} article{filteredPosts.length !== 1 ? 's' : ''}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setSearchTerm('')}
-                      className="text-blue-400 hover:text-white"
-                    >
-                      Clear search
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </section>
-        )}
-
-        {/* Blog Posts Grid with ref */}
-        {(posts?.length || 0) > 0 && (
-          <section 
-            ref={articlesSectionRef}
-            className="container mx-auto px-4 pb-16 lg:pb-24"
-            id="articles-section"
-          >
-            <div className="mb-8">
-              <h2 className="text-3xl md:text-4xl font-bold mb-4">Latest Articles</h2>
-              <p className="text-blue-300 text-lg">Browse all our latest posts and updates</p>
-            </div>
-            
-            {loading && (posts || []).length === 0 ? (
-              <BlogSkeleton />
-            ) : (
-              <BlogGrid
-                posts={filteredPosts}
-                loading={loading}
-                hasMore={hasMore}
-                onLoadMore={handleLoadMore}
-                showCategory={true}
-              />
+            {featuredPost && (
+              <Link
+                to={`/blog/${featuredPost.slug}`}
+                style={styles.heroButton}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f0f0f0';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 25px rgba(0, 0, 0, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = '#ffffff';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.2)';
+                }}
+              >
+                Read Latest Article
+                <ChevronDown style={{ 
+                  width: '18px', 
+                  height: '18px',
+                  transition: 'transform 0.3s ease'
+                }} />
+              </Link>
             )}
-          </section>
-        )}
-
-        {/* Bottom Navigation */}
-        <div className="border-t border-blue-800 bg-blue-900/50 py-4">
-          <div className="container mx-auto px-4">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="text-center sm:text-left">
-                <p className="text-sm text-blue-400">
-                  © {new Date().getFullYear()} Blog. All rights reserved.
-                </p>
-              </div>
-              
-              <div className="flex gap-4">
-                {(posts?.length || 0) > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={scrollToArticles}
-                    className="border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white"
-                    size="sm"
-                  >
-                    Browse Articles
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={handleGoHome}
-                  className="border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white"
-                  size="sm"
-                >
-                  <Home className="h-4 w-4 mr-2" />
-                  Back to Home
-                </Button>
-              </div>
-            </div>
           </div>
-          
         </div>
-      </main>
-      <Footer />
-    </>
+      </section>
+
+      {/* Featured Post */}
+      {featuredPost && (
+        <section style={styles.featuredSection}>
+          <PostCard post={featuredPost} featured />
+        </section>
+      )}
+
+      {/* Latest Articles */}
+      <section style={styles.latestSection}>
+        <div style={styles.sectionHeader}>
+          <h2 style={styles.sectionTitle}>Latest Articles</h2>
+          <p style={styles.sectionSubtitle}>
+            Fresh perspectives and thought-provoking content
+          </p>
+        </div>
+        <div style={styles.grid}>
+          {otherPosts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      </section>
+
+      <BlogFooter />
+
+      {/* Inline responsive CSS */}
+      <style>{`
+        @media (max-width: 1024px) {
+          .blog-grid { 
+            grid-template-columns: repeat(2, 1fr) !important; 
+          }
+          .hero-title { 
+            font-size: 48px !important; 
+          }
+          .hero-subtitle { 
+            font-size: 18px !important; 
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .blog-hero-container { 
+            padding: 100px 20px 60px !important; 
+            grid-template-columns: 1fr !important; 
+          }
+          .hero-title { 
+            font-size: 36px !important; 
+            margin-bottom: 16px !important;
+          }
+          .hero-subtitle { 
+            font-size: 16px !important; 
+            margin-bottom: 32px !important;
+          }
+          .blog-grid { 
+            grid-template-columns: 1fr !important; 
+          }
+          .section-title {
+            font-size: 32px !important;
+          }
+          .hero-button {
+            padding: 14px 28px !important;
+            font-size: 15px !important;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .hero-title { 
+            font-size: 28px !important; 
+          }
+          .hero-subtitle { 
+            font-size: 14px !important; 
+          }
+          .hero-button {
+            padding: 12px 24px !important;
+            font-size: 14px !important;
+          }
+        }
+        
+        /* Smooth transitions */
+        .hero-button {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        }
+        
+        /* Banner image fixed background for parallax effect */
+        @media (max-width: 768px) {
+          .hero-background {
+            background-attachment: scroll !important;
+          }
+        }
+      `}</style>
+    </div>
   );
 }

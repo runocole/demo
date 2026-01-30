@@ -1,535 +1,314 @@
-// pages/BlogPost.tsx
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { getBlogPostBySlug, incrementPostViews, incrementPostLikes } from '../services/blogService';
-import type { BlogPost } from '../types/blog';
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  Eye, 
-  Heart, 
-  Share2, 
-  ArrowLeft, 
-  Tag, 
-  BookOpen,
-  AlertCircle,
-  WifiOff,
-  RefreshCw
-} from 'lucide-react';
-import { Button } from '../components/ui/button';
-import { toast } from 'sonner';
-import { Skeleton } from '../components/ui/skeleton';
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import Header from "../components/Header";  
+import { BlogFooter } from "../components/blog/BlogFooter";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
+import { ArrowLeft, Loader2, Clock, Calendar, User } from "lucide-react";
+import { format } from "date-fns";
+import { getBlogPost, type BlogPost } from "../services/api";
+import { useAuth } from "../hooks/useAuth";
 
 export default function BlogPost() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { isStaff } = useAuth();
+  
   const [post, setPost] = useState<BlogPost | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [offline, setOffline] = useState(!navigator.onLine);
-  const [retryCount, setRetryCount] = useState(0);
-  const [hasTrackedView, setHasTrackedView] = useState(false);
-  const [userLiked, setUserLiked] = useState(false);
+  const [relatedPosts, setRelatedPosts] = useState<BlogPost[]>([]);
 
-  // Monitor online/offline status
   useEffect(() => {
-    const handleOnline = () => {
-      setOffline(false);
-      if (error?.includes('offline')) {
-        fetchPost();
-      }
-    };
-    const handleOffline = () => setOffline(true);
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [error, slug]);
-
-  // Check if user already liked this post
-  useEffect(() => {
-    if (post) {
-      const likedPosts = JSON.parse(localStorage.getItem('liked_posts') || '[]');
-      setUserLiked(likedPosts.includes(post.id));
-    }
-  }, [post]);
-
-  // Track view when post is loaded
-  useEffect(() => {
-    if (post && !hasTrackedView && !offline) {
-      const trackView = async () => {
-        try {
-          await incrementPostViews(post.id);
-          setHasTrackedView(true);
-          
-          // Update local state to show incremented view count
-          setPost(prev => prev ? {
-            ...prev,
-            views: (prev.views || 0) + 1
-          } : null);
-          
-          console.log('✅ View tracked for post:', post.id);
-        } catch (error) {
-          console.error('Failed to track view:', error);
-        }
-      };
-
-      // Track view after a short delay
-      const timer = setTimeout(() => {
-        trackView();
-      }, 1500);
-
-      return () => clearTimeout(timer);
-    }
-  }, [post, hasTrackedView, offline]);
-
-  const fetchPost = async () => {
-    if (!slug) {
-      setError('No post specified');
-      setLoading(false);
-      return;
-    }
-
-    if (!navigator.onLine) {
-      setOffline(true);
-      setError('You are offline. Please check your internet connection and try again.');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setHasTrackedView(false);
-    
-    try {
-      const data = await getBlogPostBySlug(slug);
+    const fetchPost = async () => {
+      if (!slug) return;
       
-      if (!data) {
-        setError('Post not found');
-        toast.error('Blog post not found or may have been removed');
-        setTimeout(() => navigate('/blog'), 3000);
-      } else {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getBlogPost(slug);
         setPost(data);
         
-        // Cache the post for offline viewing
-        localStorage.setItem(`blog_post_${slug}`, JSON.stringify(data));
+        // TODO: Fetch related posts based on category/tags
+        setRelatedPosts([]);
+      } catch (err: any) {
+        console.error("Failed to fetch post:", err);
+        setError(err.message || "Failed to load post");
+      } finally {
+        setLoading(false);
       }
-    } catch (error: any) {
-      console.error('Error fetching post:', error);
-      
-      if (error.code === 'failed-precondition' || 
-          error.code === 'unavailable' || 
-          error.message?.includes('offline')) {
-        setOffline(true);
-        setError('Unable to load post while offline. Please check your internet connection.');
-        
-        // Try to load from cache
-        const cachedPost = localStorage.getItem(`blog_post_${slug}`);
-        if (cachedPost) {
-          try {
-            setPost(JSON.parse(cachedPost));
-            toast.info('Showing cached version of this post');
-          } catch (e) {
-            console.error('Error parsing cached post:', e);
-          }
-        }
-      } else if (error.code === 'not-found') {
-        setError('This blog post could not be found.');
-        toast.error('Blog post not found');
-      } else {
-        setError('Failed to load the blog post. Please try again later.');
-        toast.error('Failed to load post');
-      }
-      
-      setRetryCount(prev => prev + 1);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  // Fetch post on component mount or slug change
-  useEffect(() => {
     fetchPost();
   }, [slug]);
 
-  // Auto-retry with exponential backoff
-  useEffect(() => {
-    if (error && retryCount > 0 && retryCount <= 3) {
-      const delay = Math.min(1000 * Math.pow(2, retryCount - 1), 10000);
-      const timer = setTimeout(() => {
-        if (navigator.onLine) {
-          fetchPost();
-        }
-      }, delay);
-      
-      return () => clearTimeout(timer);
+  const handleEdit = () => {
+    if (post && isStaff) {
+      navigate(`/staff/posts/${post.id}/edit`);
     }
-  }, [error, retryCount]);
-
-  const handleRetry = () => {
-    setRetryCount(0);
-    fetchPost();
   };
 
-  const handleShare = async () => {
-    if (navigator.share && post) {
-      try {
-        await navigator.share({
-          title: post.title,
-          text: post.excerpt,
-          url: window.location.href,
-        });
-        toast.success('Post shared successfully');
-      } catch (error) {
-        console.error('Error sharing:', error);
+  // Improved markdown to HTML converter
+  const convertMarkdownToHTML = (content: string) => {
+    // First, handle lists properly
+    let html = content
+      .replace(/^### (.*$)/gm, '<h3 class="text-2xl font-bold text-gray-900 mt-8 mb-4">$1</h3>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-3xl font-bold text-gray-900 mt-10 mb-6">$1</h2>')
+      .replace(/^# (.*$)/gm, '<h1 class="text-4xl font-bold text-gray-900 mt-12 mb-8">$1</h1>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
+      .replace(/^> (.*$)/gm, '<blockquote class="border-l-4 border-blue-900 pl-4 italic text-gray-600 my-6">$1</blockquote>')
+      .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">$1</code>');
+    
+    // Handle unordered lists
+    html = html.replace(/^- (.*$)/gm, '<li class="ml-6 list-disc mb-2">$1</li>');
+    html = html.replace(/(<li class="ml-6 list-disc mb-2">.*<\/li>[\s\S]*?)(?=^[^<]|$)/gm, (match) => {
+      if (match.trim().startsWith('<li')) {
+        return `<ul class="my-6 space-y-2">${match.trim()}</ul>`;
       }
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied to clipboard');
+      return match;
+    });
+    
+    // Handle ordered lists
+    html = html.replace(/^(\d+)\. (.*$)/gm, '<li class="ml-6 list-decimal mb-2">$2</li>');
+    html = html.replace(/(<li class="ml-6 list-decimal mb-2">.*<\/li>[\s\S]*?)(?=^[^<]|$)/gm, (match) => {
+      if (match.trim().startsWith('<li')) {
+        return `<ol class="my-6 space-y-2">${match.trim()}</ol>`;
+      }
+      return match;
+    });
+    
+    // Handle paragraphs
+    const lines = html.split('\n');
+    let result = [];
+    let inList = false;
+    
+    for (let line of lines) {
+      if (line.trim().startsWith('<ul') || line.trim().startsWith('<ol') || line.trim().startsWith('<li')) {
+        inList = true;
+        result.push(line);
+      } else if (line.trim().startsWith('</ul') || line.trim().startsWith('</ol')) {
+        inList = false;
+        result.push(line);
+      } else if (line.trim() && !line.trim().startsWith('<')) {
+        if (!inList) {
+          result.push(`<p class="mb-6 leading-relaxed text-gray-700">${line}</p>`);
+        } else {
+          result.push(line);
+        }
+      } else {
+        result.push(line);
+      }
     }
-  };
-
-  const handleLike = async () => {
-    if (!post) return;
-
-    if (offline) {
-      toast.error('Cannot like while offline');
-      return;
-    }
-
-    if (userLiked) {
-      toast.info('You already liked this post');
-      return;
-    }
-
-    try {
-      await incrementPostLikes(post.id);
-      
-      // Update local state
-      setPost(prev => prev ? {
-        ...prev,
-        likes: (prev.likes || 0) + 1
-      } : null);
-      
-      // Mark as liked in localStorage
-      const likedPosts = JSON.parse(localStorage.getItem('liked_posts') || '[]');
-      likedPosts.push(post.id);
-      localStorage.setItem('liked_posts', JSON.stringify(likedPosts));
-      setUserLiked(true);
-      
-      toast.success('Post liked!');
-    } catch (error) {
-      console.error('Error liking post:', error);
-      toast.error('Failed to like post');
-    }
-  };
-
-  const calculateReadTime = (content: string) => {
-    if (!content) return 0;
-    const words = content.trim().split(/\s+/).length;
-    return Math.ceil(words / 200);
+    
+    return result.join('\n');
   };
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-950 to-black text-white">
-        <div className="container mx-auto px-4 py-16">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/blog')}
-            className="mb-8 text-blue-300 hover:text-white"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Blog
-          </Button>
-          
-          <div className="max-w-4xl mx-auto">
-            <Skeleton className="w-full h-[400px] rounded-xl mb-8 bg-blue-900/50" />
-            <Skeleton className="h-12 w-3/4 mb-4 bg-blue-900/50" />
-            <div className="flex flex-wrap gap-4 mb-8">
-              <Skeleton className="h-6 w-24 bg-blue-900/50" />
-              <Skeleton className="h-6 w-24 bg-blue-900/50" />
-              <Skeleton className="h-6 w-24 bg-blue-900/50" />
-              <Skeleton className="h-6 w-24 bg-blue-900/50" />
-            </div>
-            {[...Array(10)].map((_, i) => (
-              <Skeleton 
-                key={i} 
-                className={`h-4 mb-4 ${i % 3 === 0 ? 'w-full' : i % 3 === 1 ? 'w-4/5' : 'w-3/4'} bg-blue-900/50`}
-              />
-            ))}
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-900 mx-auto" />
+            <p className="mt-3 text-gray-600">Loading post...</p>
           </div>
-        </div>
-      </main>
+        </main>
+        <BlogFooter />
+      </div>
     );
   }
 
   if (error || !post) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-blue-950 to-black text-white">
-        <div className="container mx-auto px-4 py-16">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/blog')}
-            className="mb-8 text-blue-300 hover:text-white"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Blog
-          </Button>
-          
-          <div className="max-w-2xl mx-auto text-center">
-            {offline ? (
-              <>
-                <WifiOff className="h-24 w-24 text-blue-500 mx-auto mb-6" />
-                <h1 className="text-3xl font-bold mb-4">You're Offline</h1>
-                <p className="text-blue-300 mb-6">
-                  Please check your internet connection to view this blog post.
-                </p>
-              </>
-            ) : (
-              <>
-                <AlertCircle className="h-24 w-24 text-red-500 mx-auto mb-6" />
-                <h1 className="text-3xl font-bold mb-4">Unable to Load Post</h1>
-                <p className="text-blue-300 mb-6">
-                  {error || 'The blog post could not be loaded.'}
-                </p>
-              </>
-            )}
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button
-                onClick={handleRetry}
-                disabled={offline}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                {offline ? 'Waiting for Connection...' : 'Try Again'}
-              </Button>
-              
-              <Button
-                variant="outline"
-                onClick={() => navigate('/blog')}
-                className="border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Browse All Posts
-              </Button>
-            </div>
-            
-            {retryCount > 0 && (
-              <p className="mt-6 text-sm text-blue-400">
-                Attempt {retryCount} of 3
-              </p>
-            )}
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="font-serif text-3xl font-semibold text-gray-900 mb-4">
+              {error ? "Error loading post" : "Post not found"}
+            </h1>
+            <p className="text-gray-600 mb-6">
+              {error || "The post you're looking for doesn't exist."}
+            </p>
+            <Link to="/blog">
+              <Button variant="outline">Back to Blog</Button>
+            </Link>
           </div>
-        </div>
-      </main>
+        </main>
+        <BlogFooter />
+      </div>
     );
   }
 
-  const readTime = calculateReadTime(post.content);
+  if (post.status !== "published" && !isStaff) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="font-serif text-3xl font-semibold text-gray-900 mb-4">
+              Post unavailable
+            </h1>
+            <p className="text-gray-600 mb-6">
+              This post is not published yet.
+            </p>
+            <Link to="/blog">
+              <Button variant="outline">Back to Blog</Button>
+            </Link>
+          </div>
+        </main>
+        <BlogFooter />
+      </div>
+    );
+  }
 
   return (
-    <>
-      <title>{post.metaTitle || post.title} | Blog</title>
-      <meta
-        name="description"
-        content={post.metaDescription || post.excerpt}
-      />
-      <meta property="og:title" content={post.metaTitle || post.title} />
-      <meta property="og:description" content={post.metaDescription || post.excerpt} />
-      {post.featuredImage && (
-        <meta property="og:image" content={post.featuredImage} />
-      )}
-      <meta property="og:type" content="article" />
+    <div className="min-h-screen flex flex-col bg-white">
+      <Header />
+      
+      <main className="flex-1">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* 1. Top Breadcrumb */}
+          <nav className="mb-8" aria-label="Breadcrumb">
+            <ol className="flex items-center space-x-2 text-sm text-gray-500">
+              <li>
+                <Link to="/" className="hover:text-gray-700 transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <span className="mx-2">/</span>
+              </li>
+              <li>
+                <Link to="/blog" className="hover:text-gray-700 transition-colors">
+                  Blog
+                </Link>
+              </li>
+              <li>
+                <span className="mx-2">/</span>
+              </li>
+              <li className="text-gray-700 truncate max-w-[200px]">
+                {post.title}
+              </li>
+            </ol>
+          </nav>
 
-      <main className="min-h-screen bg-gradient-to-b from-blue-950 to-black text-white">
-        {offline && (
-          <div className="bg-yellow-900/50 border-b border-yellow-700">
-            <div className="container mx-auto px-4 py-2 flex items-center justify-center">
-              <WifiOff className="h-4 w-4 mr-2 text-yellow-400" />
-              <span className="text-sm text-yellow-300">
-                You are viewing in offline mode. Some features may be limited.
-              </span>
-            </div>
-          </div>
-        )}
-
-        <div className="container mx-auto px-4 py-12">
-          <div className="mb-8">
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/blog')}
-              className="text-blue-300 hover:text-white group"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              Back to Blog
-            </Button>
-          </div>
-
-          {/* Featured Image */}
-          {post.featuredImage && post.featuredImage.trim() !== '' ? (
-            <div className="relative aspect-[21/9] rounded-xl overflow-hidden mb-8">
-              <img
-                src={post.featuredImage}
-                alt={post.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  const parent = e.currentTarget.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `
-                      <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-900/30 to-purple-900/30">
-                        <div class="text-center">
-                          <BookOpen class="w-16 h-16 text-blue-600 mx-auto mb-4" />
-                          <p class="text-lg text-blue-400">No image available</p>
-                        </div>
-                      </div>
-                    `;
-                  }
-                }}
-              />
-            </div>
-          ) : (
-            <div className="aspect-[21/9] rounded-xl overflow-hidden mb-8 bg-gradient-to-br from-blue-900/30 to-purple-900/30 flex items-center justify-center">
-              <div className="text-center">
-                <BookOpen className="w-24 h-24 text-blue-600 mx-auto mb-4" />
-                <p className="text-xl text-blue-400">No featured image</p>
+          <article className="max-w-3xl mx-auto">
+            {/* 2. Category Badge */}
+            {post.category?.name && (
+              <div className="mb-4">
+                <Badge 
+                  variant="secondary" 
+                  className="text-gray-600 bg-gray-100 hover:bg-gray-100 font-normal px-3 py-1 rounded-full"
+                >
+                  {post.category.name}
+                </Badge>
               </div>
-            </div>
-          )}
-
-          <article className="max-w-4xl mx-auto">
-            {post.category && (
-              <span className="inline-block px-4 py-2 rounded-full bg-blue-800 text-blue-200 text-sm font-medium mb-4">
-                {post.category.charAt(0).toUpperCase() + post.category.slice(1)}
-              </span>
             )}
 
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+            {/* 3. Title */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
               {post.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-6 text-blue-300 mb-8 pb-8 border-b border-blue-800">
+            {/* 4. Meta Info Row */}
+            <div className="flex items-center gap-4 mb-8 text-gray-600">
+              {/* Author - FIXED */}
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4" />
-                <span>{post.author}</span>
+                {post.author.avatar_url ? (
+                  <img 
+                    src={
+                      post.author.avatar_url.startsWith('http') 
+                        ? post.author.avatar_url 
+                        : `http://localhost:8000${post.author.avatar_url}`
+                    } 
+                    alt={post.author.full_name}
+                    className="w-10 h-10 rounded-full object-cover border border-gray-200"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
+                    <User className="w-5 h-5 text-gray-500" />
+                  </div>
+                )}
+               <span className="font-medium text-gray-900">
+  {post.author.full_name}
+</span>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  {new Date(post.publishDate).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                  })}
-                </span>
+              <span className="text-gray-300">•</span>
+              
+              {/* Date */}
+              <div className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                <time dateTime={post.published_date}>
+                  {format(new Date(post.published_date), "MMMM d, yyyy")}
+                </time>
               </div>
               
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span>{readTime} min read</span>
-              </div>
+              <span className="text-gray-300">•</span>
               
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4" />
-                <span>{post.views?.toLocaleString() || 0} views</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Heart className={`h-4 w-4 ${userLiked ? 'text-red-500 fill-red-500' : ''}`} />
-                <span>{post.likes?.toLocaleString() || 0} likes</span>
+              {/* Read Time */}
+              <div className="flex items-center gap-1">
+                <Clock className="w-4 h-4" />
+                <span>{Math.ceil((post.content || "").split(' ').length / 200)} min read</span>
               </div>
             </div>
 
+            {/* 5. Featured Image */}
+            {post.featured_image_url && (
+              <div className="mb-12">
+                <img
+                  src={post.featured_image_url}
+                  alt={post.title}
+                  className="w-full aspect-video object-cover rounded-xl shadow-lg"
+                />
+              </div>
+            )}
+
+            {/* 6. Content Body */}
+            <div className="prose prose-lg max-w-none prose-img:mx-auto prose-img:my-8 prose-img:rounded-lg prose-img:shadow-md">
+              <div 
+                className="article-content"
+                dangerouslySetInnerHTML={{ __html: convertMarkdownToHTML(post.content) }}
+              />
+            </div>
+
+            {/* 8. Tags */}
             {post.tags && post.tags.length > 0 && (
-              <div className="mb-8">
-                <div className="flex items-center gap-2 mb-3">
-                  <Tag className="h-4 w-4 text-blue-400" />
-                  <span className="text-blue-300">Tags:</span>
-                </div>
+              <div className="mt-12 pt-8 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Tags</h3>
                 <div className="flex flex-wrap gap-2">
-                  {post.tags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="px-3 py-1 bg-blue-900/50 text-blue-300 rounded-full text-sm hover:bg-blue-800 transition-colors"
+                  {post.tags.map((tag) => (
+                    <Badge 
+                      key={tag.id} 
+                      variant="outline"
+                      className="text-gray-600 border-gray-300 hover:bg-gray-50"
                     >
-                      {tag}
-                    </span>
+                      {tag.name}
+                    </Badge>
                   ))}
                 </div>
               </div>
             )}
-
-            {post.excerpt && (
-              <div className="mb-8 p-6 bg-blue-900/20 rounded-xl border border-blue-800">
-                <p className="text-xl text-blue-200 italic">{post.excerpt}</p>
-              </div>
-            )}
-
-            <div className="prose prose-lg prose-invert max-w-none mb-12">
-              {post.content.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-6 text-blue-200 leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-4 py-8 border-t border-blue-800">
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleShare}
-                  className="border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white"
-                >
-                  <Share2 className="mr-2 h-4 w-4" />
-                  Share
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  onClick={handleLike}
-                  disabled={offline || userLiked}
-                  className={`border-blue-700 text-blue-300 hover:bg-blue-800 hover:text-white ${userLiked ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  <Heart className={`mr-2 h-4 w-4 ${userLiked ? 'text-red-500 fill-red-500' : ''}`} />
-                  {userLiked ? 'Liked' : 'Like'} ({post.likes || 0})
-                </Button>
-              </div>
-              
-              <Button
-                variant="ghost"
-                onClick={() => navigate('/blog')}
-                className="text-blue-300 hover:text-white"
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to all articles
-              </Button>
-            </div>
           </article>
 
-          <section className="mt-16 pt-12 border-t border-blue-800">
-            <h2 className="text-2xl font-bold mb-8 text-center">
-              More articles you might like
-            </h2>
-            <div className="text-center">
-              <Button
-                onClick={() => navigate('/blog')}
-                className="bg-blue-600 hover:bg-blue-700"
+          {/* Back to Blog Button */}
+          <div className="mt-12 flex justify-center">
+            <Link to="/blog">
+              <Button 
+                variant="outline" 
+                className="flex items-center gap-2 border-gray-300 hover:border-blue-900"
               >
-                <BookOpen className="mr-2 h-4 w-4" />
-                Browse All Articles
+                <ArrowLeft className="w-4 h-4" />
+                Back to Blog
               </Button>
-            </div>
-          </section>
+            </Link>
+          </div>
         </div>
       </main>
-    </>
+
+      <BlogFooter />
+    </div>
   );
 }

@@ -145,7 +145,7 @@ export const CarouselSection = ({
                    onClick={() => setCurrentIndex(index)}
                   className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     currentIndex === index
-                      ? 'bg-[#081748] scale-125' 
+                      ? 'bg-blue-900 scale-125' 
                       : 'bg-gray-300 hover:bg-gray-400'
                   }`}
                   aria-label={`Go to group ${index + 1}`}
@@ -159,7 +159,7 @@ export const CarouselSection = ({
         {/* CTA */}
         <div className="text-center mt-8 sm:mt-12">
           <button
-            className="bg-[#081748] hover:bg-[#0a1f5a] text-white font-bold px-6 sm:px-8 py-3 sm:py-4 rounded-lg shadow-lg transition-colors duration-300 w-full sm:w-auto" // CHANGED to#081748  
+            className="bg-blue-900 hover:bg-[#0a1f5a] text-white font-bold px-6 sm:px-8 py-3 sm:py-4 rounded-lg shadow-lg transition-colors duration-300 w-full sm:w-auto" // CHANGED to#081748  
             onClick={() => navigate(buttonLink)}
           >
             {buttonText}

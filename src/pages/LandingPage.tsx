@@ -9,18 +9,47 @@ import { VideoSection } from "../components/VideoSection";
 import { useYouTubeVideos } from "../hooks/useYouTubeVideos";
 import CurrencyBoxes from "../components/CurrencyBoxes";
 import type { Product, ProductCategory } from "../types/product"; 
+import type { Slide as HeroSlide } from "../components/HeroSection"; // Import HeroSection Slide type
 import {
-  SLIDES,
+  SLIDES as PRODUCT_SLIDES, // Rename to avoid conflict
   ACCESSORIES,
   FEATURED_EQUIPMENT,
   ABOUT_CONTENT,
-  MOBILE_ABOUT_CONTENT // ADD THIS IMPORT
+  MOBILE_ABOUT_CONTENT 
 } from "../data/product";
+
+// Define the Slide interface from product.ts to ensure compatibility
+interface ProductSlide {
+  image: string;
+  mobileImage: string; // This is optional in product.ts but required in HeroSection
+  title: string;
+  subtitle: string;
+  mobileTitle?: string;
+  mobileSubtitle?: string;
+  position: 'left' | 'center' | 'right';
+}
+
+// Type guard to check if slides have mobileImage
+const hasMobileImage = (slide: any): slide is HeroSlide => {
+  return slide.mobileImage !== undefined && slide.mobileImage !== null;
+};
+
+// Convert product slides to HeroSection slides (ensuring mobileImage exists)
+const convertToHeroSlides = (slides: ProductSlide[]): HeroSlide[] => {
+  return slides.map(slide => ({
+    ...slide,
+    // Ensure mobileImage exists - if not, use the regular image as fallback
+    mobileImage: slide.mobileImage || slide.image
+  }));
+};
 
 // Main Component
 const LandingPage: React.FC = () => {
   const { videos, loading, refreshVideos } = useYouTubeVideos();
   const [isMobile, setIsMobile] = useState(false);
+  
+  // Convert slides to HeroSection format
+  const heroSlides = convertToHeroSlides(PRODUCT_SLIDES);
   
   const accessoriesWithStock = ACCESSORIES.map(item => ({
     ...item,
@@ -70,21 +99,20 @@ const LandingPage: React.FC = () => {
 
       {/* HERO SECTION */}
       <div className={`${isMobile ? 'mt-4' : ''}`}>
-        <HeroSection slides={SLIDES} />
+        <HeroSection slides={heroSlides} />
       </div>
       
-      {/* ABOUT PREVIEW SECTION */}
-      <div className={`${isMobile ? 'px-4' : ''}`}>
-        <AboutSection 
-          title={aboutTitle} 
-          description={aboutDescription}
-          videoUrl={ABOUT_CONTENT.videoUrl}
-        />
-      </div>
-
+     {/* ABOUT PREVIEW SECTION */}
+     <div className={`${isMobile ? 'px-4' : ''}`}>
+     <AboutSection 
+    title={<span className="text-blue-900">{aboutTitle}</span>} 
+    description={aboutDescription}
+    videoUrl={ABOUT_CONTENT.videoUrl}
+      />
+     </div>
       {/* ACCESSORIES SECTION */}
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="h-0.5 bg-[#081748] my-8 sm:my-16 w-full"></div>
+        <div className="h-0.5 bg-blue-900 my-8 sm:my-16 w-full"></div>
       </div>
 
       <div className={`${isMobile ? 'px-2' : ''}`}>
@@ -116,7 +144,7 @@ const LandingPage: React.FC = () => {
 
       {/* FULL WIDTH VIDEO SECTION */}
       <div className="mt-8">
-        <VideoSection videoUrl="https://www.youtube.com/embed/4UH2dQIjcx4" />
+        <VideoSection videoUrl="https://youtu.be/t2ZC7ReBJ5c?si=GJYeXFYh49xJ01ME" />
       </div>
 
       {/* FOOTER */}

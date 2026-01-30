@@ -1,7 +1,7 @@
 // config/whatsapp.ts
 
 export const WHATSAPP_CONFIG = {
-  businessNumber: "2349026194016", 
+  businessNumber: "+2349048332623",
   
   // Message templates
   templates: {
@@ -72,7 +72,7 @@ export const generateWhatsAppUrl = (
   
   const currencySymbol = currency === 'USD' ? '$' : '₦';
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.08;
+  const tax = subtotal * 0.075;
   const total = subtotal + tax;
   
   // Format total based on currency
@@ -206,8 +206,8 @@ export const generateWhatsAppContactUrl = (
   
   // For mobile, use simpler message format
   const finalMessage = mobileMode 
-    ? `${message}\n\n(Sent from OTIC GeoSystems Website)`
-    : `${message}\n\n---\n*Inquiry from OTIC GeoSystems Website*\n${new Date().toLocaleString()}`;
+    ? `${message}\n\n(Sent from OTIC Geosystems Website)`
+    : `${message}\n\n---\n*Inquiry from OTIC Geosystems Website*\n${new Date().toLocaleString()}`;
   
   const formattedNumber = formatWhatsAppNumber(WHATSAPP_CONFIG.businessNumber);
   const encodedMessage = encodeURIComponent(finalMessage);

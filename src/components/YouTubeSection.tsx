@@ -301,7 +301,7 @@ export const YouTubeSection = ({
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-10 md:mb-16">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-900 mb-3 md:mb-4">
             Explore Our Tutorials
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl mx-auto mb-6 md:mb-8">
@@ -341,7 +341,7 @@ export const YouTubeSection = ({
           <div className="flex flex-col justify-center items-center h-40 space-y-4">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-600" />
             <span className="text-gray-600 text-sm md:text-base">
-              Loading latest videos from GeossoTech...
+              Loading latest videos from OTIC GS...
             </span>
           </div>
         ) : (

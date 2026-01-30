@@ -111,7 +111,7 @@ const CartPage = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.08;
+  const tax = subtotal * 0.075;
   const total = subtotal + tax;
 
   // Mobile breadcrumb
@@ -449,7 +449,7 @@ const CartPage = () => {
                     </div>
                     
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Tax (VAT 8%)</span>
+                      <span className="text-gray-600">Tax (VAT 7.5%)</span>
                       <span className="font-semibold text-gray-900">{getConvertedPrice(tax)}</span>
                     </div>
                     
@@ -545,7 +545,7 @@ const CartPage = () => {
                     </div>
                     
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Tax (VAT 8%)</span>
+                      <span className="text-gray-600">Tax (VAT 7.5%)</span>
                       <span className="font-semibold text-gray-900">{getConvertedPrice(tax)}</span>
                     </div>
                     

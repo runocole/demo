@@ -120,7 +120,7 @@ export const CheckoutModal = ({
   };
 
   const calculateTaxUSD = (): number => {
-    return calculateSubtotalUSD() * 0.08;
+    return calculateSubtotalUSD() * 0.075;
   };
 
   const calculateTotalUSD = (): number => {
@@ -189,94 +189,108 @@ export const CheckoutModal = ({
     setStep("review");
   };
 
-  const handlePaystackPayment = async () => {
-    setIsLoading(true);
+const handlePaystackPayment = async () => {
+  setIsLoading(true);
+  
+  // Calculate total in USD
+  const totalUSD = calculateTotalUSD();
+  
+  console.log('=== PAYSTACK PAYMENT CALCULATION ===');
+  console.log('Total USD:', totalUSD);
+  console.log('Current Currency:', currentCurrency);
+  console.log('Exchange Rate:', exchangeRate);
+  
+  // Convert to NGN for Paystack
+  const amountInNGN = convertUSDToNGN(totalUSD);
+  console.log('Amount in NGN:', amountInNGN);
+  console.log('Expected: ₦', amountInNGN.toLocaleString('en-NG'));
+  
+  // Paystack expects amount in kobo (smallest NGN unit)
+  // Check if amount is within Paystack limits
+  if (amountInNGN > 25000000) { // If more than ₦25 million
+    toast({
+      title: "Amount Too Large",
+      description: "This amount exceeds Paystack's transaction limit. Please contact us for alternative payment methods.",
+      variant: "destructive"
+    });
+    setIsLoading(false);
+    return;
+  }
+  
+  const amountForPayment = Math.round(amountInNGN * 100); // Convert to kobo
+  
+  console.log('Amount for Paystack (kobo):', amountForPayment);
+  console.log('====================================');
+  
+  try {
+    const response = await fetch('https://gs.oticgs.com/api/paystack/initialize', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        amount: amountForPayment, // Send amount in kobo
+        orderNumber: generatedOrderNumber,
+        metadata: {
+          customer_name: `${formData.firstName} ${formData.lastName}`,
+          customer_phone: formData.phone,
+          customer_country: formData.country,
+          customer_state: formData.state,
+          original_currency: currentCurrency,
+          original_amount_usd: totalUSD,
+          original_amount_current: getTotalInCurrentCurrency(),
+          exchange_rate: exchangeRate,
+          conversion_applied: currentCurrency !== 'NGN',
+          cart_items: cart.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity,
+            price_usd: item.price,
+            price_current: convertAmountToCurrentCurrency(item.price),
+            price_currency: currentCurrency,
+            category: item.category
+          }))
+        }
+      })
+    });
     
-    // Calculate total in USD
-    const totalUSD = calculateTotalUSD();
-    
-    console.log('=== PAYSTACK PAYMENT CALCULATION ===');
-    console.log('Total USD:', totalUSD);
-    console.log('Current Currency:', currentCurrency);
-    console.log('Exchange Rate:', exchangeRate);
-    
-    // Convert to NGN for Paystack
-    const amountInNGN = convertUSDToNGN(totalUSD);
-    console.log('Amount in NGN:', amountInNGN);
-    console.log('Expected: ₦', amountInNGN.toLocaleString('en-NG'));
-    
-    // Paystack expects amount in kobo (smallest NGN unit)
-    // Check if amount is within Paystack limits
-    if (amountInNGN > 25000000) { // If more than ₦25 million
-      toast({
-        title: "Amount Too Large",
-        description: "This amount exceeds Paystack's transaction limit. Please contact us for alternative payment methods.",
-        variant: "destructive"
-      });
-      setIsLoading(false);
-      return;
+    // Check if response is OK before parsing JSON
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API Error Response:', errorText);
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
     
-    const amountForPayment = Math.round(amountInNGN * 100); // Convert to kobo
+    const data = await response.json();
     
-    console.log('Amount for Paystack (kobo):', amountForPayment);
-    console.log('====================================');
-    
-    try {
-     const response = await fetch('https://otic-backend-production.up.railway.app/api/paystack/initialize', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: formData.email,
-          amount: amountForPayment, // Send amount in kobo
-          orderNumber: generatedOrderNumber,
-          metadata: {
-            customer_name: `${formData.firstName} ${formData.lastName}`,
-            customer_phone: formData.phone,
-            customer_country: formData.country,
-            customer_state: formData.state,
-            original_currency: currentCurrency,
-            original_amount_usd: totalUSD,
-            original_amount_current: getTotalInCurrentCurrency(),
-            exchange_rate: exchangeRate,
-            conversion_applied: currentCurrency !== 'NGN',
-            cart_items: cart.map(item => ({
-              id: item.id,
-              name: item.name,
-              quantity: item.quantity,
-              price_usd: item.price,
-              price_current: convertAmountToCurrentCurrency(item.price),
-              price_currency: currentCurrency,
-              category: item.category
-            }))
-          }
-        })
-      });
+    if (data.success) {
+      // === ADD THESE 3 LINES TO SAVE ORDER DETAILS FOR EMAIL ===
+      localStorage.setItem('lastOrderNumber', generatedOrderNumber);
+      localStorage.setItem('lastCustomerInfo', JSON.stringify(formData));
+      localStorage.setItem('lastCart', JSON.stringify(cart));
+      // =========================================================
       
-      const data = await response.json();
+      // Clear cart after successful payment initialization
+      localStorage.removeItem('cart');
       
-      if (response.ok) {
-        // Clear cart after successful payment initialization
-        localStorage.removeItem('cart');
-        
-        onComplete(formData, generatedOrderNumber);
-        window.location.href = data.authorization_url;
-      } else {
-        throw new Error(data.error || data.message || 'Payment failed');
-      }
-      
-    } catch (error) {
-      console.error('Payment error:', error);
-      toast({
-        title: "Payment Error",
-        description: "Failed to initialize payment. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
+      onComplete(formData, generatedOrderNumber);
+      window.location.href = data.authorization_url;
+    } else {
+      throw new Error(data.error || data.message || 'Payment failed');
     }
-  };
-
+    
+  } catch (error) {
+    console.error('Payment error:', error);
+    toast({
+      title: "Payment Error",
+      description: error instanceof Error ? error.message : "Failed to initialize payment. Please try again.",
+      variant: "destructive"
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 const handleWhatsAppCheckout = () => {
   const customerState = formData.state || "Not specified";
   
@@ -750,7 +764,7 @@ const handleWhatsAppCheckout = () => {
               </div>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-400">Tax (8%)</span>
+              <span className="text-gray-400">Tax (7%)</span>
               <div className="text-right">
                 <span className="font-semibold text-white">
                   {getConvertedPrice(taxUSD)}

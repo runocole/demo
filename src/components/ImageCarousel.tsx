@@ -123,13 +123,6 @@ const ImageCarousel: React.FC = () => {
                 />
                 {/* Mobile Touch Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 lg:hidden" />
-                
-                {/* Desktop Hover Overlay */}
-                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden lg:flex items-center justify-center">
-                  <span className="text-white text-sm font-medium px-3 py-1 bg-black/50 rounded-full">
-                    View Image {index + 1}
-                  </span>
-                </div>
               </div>
             </div>
           ))}

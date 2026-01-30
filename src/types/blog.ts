@@ -1,39 +1,25 @@
-// types/blog.ts
+export interface Author {
+  id: string;
+  name: string;
+  avatar?: string;
+}
+
 export interface BlogPost {
   id: string;
   title: string;
-  content: string;
+  slug: string;
   excerpt: string;
-  featuredImage?: string; 
-  publishDate: string;
-  author: string;
-  tags: string[];
-  isPublished: boolean;
-  createdAt?: string;     
-  updatedAt?: string;
-  isFeatured?: boolean;
-  metaTitle?: string;
-  metaDescription?: string;
-  slug?: string;
-  readTime?: number;
-  views?: number;
-  likes?: number;
-  category?: string;
-}
-
-export interface BlogPostInput {
-  title: string;
   content: string;
-  excerpt: string;
-  featuredImage?: string; 
-  publishDate: string;
-  author: string;
-  tags: string[];
-  isPublished: boolean;
-  isFeatured?: boolean;
-  metaTitle?: string;
+  coverImage?: string;
+  author: Author;
+  publishedAt: string;
+  status: 'draft' | 'published' | 'scheduled';
+  tags?: string[];
+  category?: string; 
   metaDescription?: string;
-  slug?: string;
-  readTime?: number;
-  category?: string;
+  isFeatured?: boolean; 
+  seo_keywords?: string[];
+  viewCount?: number; 
+  scheduled_publish_date?: string;
+  readTime?: number; 
 }

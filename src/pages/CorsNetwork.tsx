@@ -62,7 +62,7 @@ const CountUp = ({ end, duration = 800, suffix = "+" }: CountUpProps) => {
   }, [end, duration]);
 
   return (
-    <div ref={elementRef} className="text-5xl font-bold text-primary">
+    <div ref={elementRef} className="text-5xl font-bold text-blue-900">
       {count}{suffix}
     </div>
   );
@@ -78,29 +78,13 @@ interface CorsStation {
   distance?: number;
 }
 
-// Helper function to convert DMS to decimal - SIMPLIFIED
-const parseDMS = (dmsStr: string): number => {
-  // Example: "6 09'25.254721" -> 6 + 9/60 + 25.254721/3600
-  try {
-    const parts = dmsStr.trim().split(/[^\d.]+/);
-    const degrees = parseFloat(parts[0]) || 0;
-    const minutes = parseFloat(parts[1]) || 0;
-    const seconds = parseFloat(parts[2]) || 0;
-    
-    return degrees + (minutes / 60) + (seconds / 3600);
-  } catch (error) {
-    console.error('Error parsing DMS:', dmsStr, error);
-    return 0;
-  }
-};
-
 // Using your table data - converting DMS to decimal manually for accuracy
 const corsStations: CorsStation[] = [
   // Using approximate decimal coordinates for Nigeria
   {
     id: 1,
     name: "OTIC-ONITSHA",
-    position: [6.1570, 6.7845], // ~6°09'N, 6°47'E
+    position: [6.1570, 6.7845],
     address: "Onitsha, Anambra",
     status: "Operational",
     coverage: "Anambra State"
@@ -108,7 +92,7 @@ const corsStations: CorsStation[] = [
   {
     id: 2,
     name: "OTIC-AWKA",
-    position: [6.2097, 7.0429], // ~6°12'N, 7°02'E
+    position: [6.2097, 7.0429],
     address: "Awka, Anambra",
     status: "Operational",
     coverage: "Anambra State"
@@ -116,7 +100,7 @@ const corsStations: CorsStation[] = [
   {
     id: 3,
     name: "OTIC-ABEOKUTA",
-    position: [7.0767, 3.2910], // ~7°04'N, 3°17'E
+    position: [7.0767, 3.2910],
     address: "Abeokuta, Ogun",
     status: "Operational",
     coverage: "Ogun State"
@@ -124,7 +108,7 @@ const corsStations: CorsStation[] = [
   {
     id: 4,
     name: "OTIC-IBADAN",
-    position: [7.3666, 3.8321], // ~7°22'N, 3°50'E
+    position: [7.3666, 3.8321],
     address: "Ibadan, Oyo",
     status: "Operational",
     coverage: "Oyo State"
@@ -132,7 +116,7 @@ const corsStations: CorsStation[] = [
   {
     id: 5,
     name: "OTIC-EPE",
-    position: [6.6659, 4.0034], // ~6°40'N, 4°00'E
+    position: [6.6659, 4.0034],
     address: "Epe, Lagos",
     status: "Operational",
     coverage: "Lagos State"
@@ -140,7 +124,7 @@ const corsStations: CorsStation[] = [
   {
     id: 6,
     name: "OTIC-OYO-FSS",
-    position: [7.8408, 3.9499], // ~7°50'N, 3°57'E
+    position: [7.8408, 3.9499],
     address: "Oyo, Oyo",
     status: "Operational",
     coverage: "Oyo State"
@@ -148,7 +132,7 @@ const corsStations: CorsStation[] = [
   {
     id: 7,
     name: "OTIC-YENAGOA",
-    position: [4.9394, 6.2711], // ~4°56'N, 6°16'E
+    position: [4.9394, 6.2711],
     address: "Yenagoa, Bayelsa",
     status: "Operational",
     coverage: "Bayelsa State"
@@ -156,7 +140,7 @@ const corsStations: CorsStation[] = [
   {
     id: 8,
     name: "OTIC-GOMBE",
-    position: [10.2963, 11.1545], // ~10°18'N, 11°09'E
+    position: [10.2963, 11.1545],
     address: "Gombe, Gombe",
     status: "Operational",
     coverage: "Gombe State"
@@ -164,7 +148,7 @@ const corsStations: CorsStation[] = [
   {
     id: 9,
     name: "OTIC-AJAH",
-    position: [6.4412, 3.5281], // ~6°26'N, 3°32'E - AJAH, Lagos (your location!)
+    position: [6.4412, 3.5281],
     address: "Ajah, Lagos",
     status: "Operational",
     coverage: "Lagos State"
@@ -172,7 +156,7 @@ const corsStations: CorsStation[] = [
   {
     id: 10,
     name: "OTIC-AUCHI",
-    position: [7.0547, 6.2667], // ~7°03'N, 6°16'E
+    position: [7.0547, 6.2667],
     address: "Auchi, Edo",
     status: "Operational",
     coverage: "Edo State"
@@ -180,7 +164,7 @@ const corsStations: CorsStation[] = [
   {
     id: 11,
     name: "OTIC-NIS-OSOGBO",
-    position: [7.7526, 4.5255], // ~7°45'N, 4°31'E
+    position: [7.7526, 4.5255],
     address: "Osogbo, Osun",
     status: "Operational",
     coverage: "Osun State"
@@ -188,7 +172,7 @@ const corsStations: CorsStation[] = [
   {
     id: 12,
     name: "OTIC-BADAGRY",
-    position: [6.4730, 2.9617], // ~6°28'N, 2°58'E
+    position: [6.4730, 2.9617],
     address: "Badagry, Lagos",
     status: "Operational",
     coverage: "Lagos State"
@@ -196,7 +180,7 @@ const corsStations: CorsStation[] = [
   {
     id: 13,
     name: "OTIC-AKURE",
-    position: [7.2566, 5.1631], // ~7°15'N, 5°10'E
+    position: [7.2566, 5.1631],
     address: "Akure, Ondo",
     status: "Operational",
     coverage: "Ondo State"
@@ -204,7 +188,7 @@ const corsStations: CorsStation[] = [
   {
     id: 14,
     name: "OTIC-NIS-IWO",
-    position: [7.6582, 4.2002], // ~7°39'N, 4°12'E
+    position: [7.6582, 4.2002],
     address: "Iwo, Osun",
     status: "Operational",
     coverage: "Osun State"
@@ -212,7 +196,7 @@ const corsStations: CorsStation[] = [
   {
     id: 15,
     name: "OTIC-OSGOF-ABJ",
-    position: [9.0279, 7.4867], // ~9°02'N, 7°29'E
+    position: [9.0279, 7.4867],
     address: "Abuja, FCT",
     status: "Operational",
     coverage: "Federal Capital Territory"
@@ -220,7 +204,7 @@ const corsStations: CorsStation[] = [
   {
     id: 16,
     name: "OTIC-ADO-EKITI",
-    position: [7.5903, 5.3039], // ~7°35'N, 5°18'E
+    position: [7.5903, 5.3039],
     address: "Ado-Ekiti, Ekiti",
     status: "Operational",
     coverage: "Ekiti State"
@@ -228,7 +212,7 @@ const corsStations: CorsStation[] = [
   {
     id: 17,
     name: "OTIC-ENUGU",
-    position: [6.4393, 7.4952], // ~6°26'N, 7°30'E
+    position: [6.4393, 7.4952],
     address: "Enugu, Enugu",
     status: "Operational",
     coverage: "Enugu State"
@@ -236,7 +220,7 @@ const corsStations: CorsStation[] = [
   {
     id: 18,
     name: "OTIC-OSSG-OS",
-    position: [7.7291, 4.5186], // ~7°44'N, 4°31'E
+    position: [7.7291, 4.5186],
     address: "Osogbo, Osun",
     status: "Operational",
     coverage: "Osun State"
@@ -244,7 +228,7 @@ const corsStations: CorsStation[] = [
   {
     id: 19,
     name: "OTIC-UYO",
-    position: [5.0128, 7.9146], // ~5°01'N, 7°55'E
+    position: [5.0128, 7.9146],
     address: "Uyo, Akwa Ibom",
     status: "Operational",
     coverage: "Akwa Ibom State"
@@ -252,7 +236,7 @@ const corsStations: CorsStation[] = [
   {
     id: 20,
     name: "OTIC-SANGOOTA",
-    position: [6.6763, 3.2243], // ~6°40'N, 3°13'E
+    position: [6.6763, 3.2243],
     address: "Sango Ota, Ogun",
     status: "Operational",
     coverage: "Ogun State"
@@ -260,7 +244,7 @@ const corsStations: CorsStation[] = [
   {
     id: 21,
     name: "OTIC-BENIN",
-    position: [6.3566, 5.6193], // ~6°21'N, 5°37'E
+    position: [6.3566, 5.6193],
     address: "Benin, Edo",
     status: "Operational",
     coverage: "Edo State"
@@ -295,7 +279,7 @@ const StationList = ({ stations, onStationSelect, searchQuery, onSearchChange, n
           placeholder="Search stations by name or location..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:border-transparent"
         />
         {searchQuery && (
           <button 
@@ -483,61 +467,94 @@ const CorsNetwork = () => {
     <div className="flex min-h-screen flex-col">
       <Header />
       
-      {/* Hero Section - Fixed with better text contrast */}
-      <section className="relative h-[750px] flex items-center justify-center overflow-hidden">
-        {/* Darker overlay for better text contrast on light image */}
+      {/* Hero Section - Fixed with all improvements */}
+      <section className="relative h-[500px] flex items-center justify-center overflow-hidden">
+        {/* Hero image with gradient overlay */}
         <div 
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${heroImage})` }}
         >
-          <div className="absolute inset-0 bg-black/70" /> {/* Changed from bg-primary/60 to darker overlay */}
+          {/* Gradient overlay for better contrast */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent" />
         </div>
         
         <div className="relative z-10 container mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 font-montserrat tracking-tight drop-shadow-lg">
-            Find & Log Your Nearest CORS Station
-          </h1>
-          <p className="text-xl md:text-2xl text-gray-200 max-w-2xl mx-auto mb-8 font-montserrat drop-shadow-md">
-            Locate Continuously Operating Reference Stations instantly. 
-            Access correction streams and upload RINEX data in seconds.
-          </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button
-              onClick={scrollToMap} // Changed to scroll to map instead of navigate
-              size="lg"
-              className="bg-[#081748] text-white hover:bg-[#0a1f5a] font-bold text-base px-8 py-4 shadow-xl hover:shadow-2xl transition-all"
-            >
-              Find Nearest CORS →
-            </Button>
+          <div className="max-w-2xl mx-auto">
+            <h1 className="text-3xl md:text-5xl font-bold text-white mb-6 tracking-tight drop-shadow-lg leading-tight pt-30">
+              Nationwide GNSS CORS Network for Surveyors & Engineers
+            </h1>
+            <p className="text-lg md:text-xl text-gray-200 mb-8 leading-relaxed drop-shadow-md">
+              Achieve centimeter-level positioning anywhere in Nigeria—without setting up your own base station.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button
+                onClick={scrollToMap}
+                size="lg"
+                className="bg-blue-900 text-white hover:bg-blue-800 font-bold text-base px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border-0"
+              >
+                Find Nearest CORS →
+              </Button>
+              <Button
+                onClick={() => navigate("/contact")}
+                size="lg"
+                variant="outline"
+                className="bg-white/10 backdrop-blur-sm text-white border-white/30 hover:bg-white/20 font-bold text-base px-8 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                Request Access
+              </Button>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Section */}
-      <section className="py-16 bg-blue-100">
-        <div className="container mx-auto px-4 bg-blue-100">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-16 md:gap-70">
-            {/* Left side - Stats */}
-            <div className="flex flex-col md:flex-row gap-8 md:gap-40 text-center md:text-left">
-              <div className="space-y-2">
-                <CountUp end={21} />
-                <div className="text-xl text-muted-foreground">CORS Stations</div>
+      {/* Stats Section - Premium redesign */}
+      <section className="py-16 bg-white relative">
+        {/* Curved separator */}
+        <div className="absolute top-0 left-0 right-0 h-8 -translate-y-full overflow-hidden">
+          <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full">
+            <path d="M1200 120L0 0 0 0 1200 0 1200 120z" fill="white" />
+          </svg>
+        </div>
+        
+        <div className="container mx-auto px-4">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-16">
+            {/* Stats Cards */}
+            <div className="flex flex-col sm:flex-row gap-8 text-center">
+              <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl shadow-lg border border-blue-100 hover:shadow-xl transition-shadow duration-300 min-w-[200px]">
+                <div className="flex flex-col items-center">
+                  <CountUp end={23} />
+                  <div className="text-lg font-semibold text-blue-900 mt-4">CORS Stations</div>
+                  <p className="text-sm text-gray-600 mt-2">Nationwide coverage</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <CountUp end={1000} />
-                <div className="text-xl text-muted-foreground">Customers</div>
+              <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl shadow-lg border border-blue-100 hover:shadow-xl transition-shadow duration-300 min-w-[200px]">
+                <div className="flex flex-col items-center">
+                  <CountUp end={1000} />
+                  <div className="text-lg font-semibold text-blue-900 mt-4">Customers</div>
+                  <p className="text-sm text-gray-600 mt-2">Trusted by professionals</p>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-white p-8 rounded-2xl shadow-lg border border-blue-100 hover:shadow-xl transition-shadow duration-300 min-w-[200px]">
+                <div className="flex flex-col items-center">
+                  <div className="text-5xl font-bold text-blue-900">99.7%</div>
+                  <div className="text-lg font-semibold text-blue-900 mt-4">Uptime</div>
+                  <p className="text-sm text-gray-600 mt-2">Reliable service</p>
+                </div>
               </div>
             </div>
             
-            {/* Right side - Content */}
-            <div className="max-w-md space-y-6 text-center md:text-left">
-              <h2 className="text-3xl font-bold text-primary">Experience CM-Level Accuracy with Our CORS Network</h2>
-              <p className="text-lg text-muted-foreground">
-                With 21 CORS stations nationwide and serving 1000+ customers, 
-                we deliver precise positioning solutions and reliable service.
+            {/* Value Proposition */}
+            <div className="max-w-lg space-y-6 text-center md:text-left">
+              <h2 className="text-3xl font-bold text-blue-900 leading-tight">
+                Experience CM-Level Accuracy with Our CORS Network
+              </h2>
+              <p className="text-gray-600 leading-relaxed">
+                Trusted by surveyors across 15+ states in Nigeria. With 23 CORS stations nationwide 
+                and serving 1000+ customers, we deliver precise positioning solutions and reliable service.
               </p>
               
-              <div className="flex items-center gap-6 mb-6">
+              {/* Ratings moved up below headline */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
                 <div className="flex items-center gap-1">
                   {Array.from({ length: 5 }, (_, i) => (
                     <Star
@@ -547,37 +564,39 @@ const CorsNetwork = () => {
                       }`}
                     />
                   ))}
-                  <span className="ml-2 text-sm text-muted-foreground">
-                    4.9 (127 reviews)
-                  </span>
+                  <span className="ml-2 text-lg font-semibold text-blue-900">4.9</span>
+                  <span className="ml-1 text-sm text-gray-500 opacity-75">(127 reviews)</span>
+                </div>
+                <div className="text-sm text-gray-500">
+                  <span className="font-medium text-blue-900">Active users:</span> 250+ institutions
                 </div>
               </div>
               
-             <button 
-  onClick={() => navigate("/contact")}
-  className="bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors"
->
-  Register Now
-</button>
+              <button 
+                onClick={() => navigate("/contact")}
+                className="bg-blue-900 text-white px-8 py-4 rounded-lg font-bold hover:bg-blue-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+              >
+                Start Using OTIC CORS
+              </button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CORS Network Section - Added ref for scrolling */}
+      {/* CORS Network Section */}
       <section id="cors-map" ref={mapSectionRef} className="py-16 bg-gray-50">
         <div className="container mx-auto px-4">
           <div className="text-center space-y-4 mb-12">
-            <h2 className="text-4xl font-bold text-primary">CORS Network Coverage</h2>
-            <p className="text-lg text-gray-600">21 stations providing nationwide coverage</p>
+            <h2 className="text-4xl font-bold text-blue-900">Interactive Station Finder</h2>
+            <p className="text-lg text-gray-600">Locate and connect to the nearest CORS station instantly</p>
           </div>
 
           {/* Controls Section */}
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-200 mb-8">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="bg-white rounded-2xl p-8 shadow-xl border border-gray-200 mb-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex-1">
-                <h3 className="text-xl font-bold text-primary mb-2 flex items-center gap-2">
-                  <Crosshair className="w-5 h-5" />
+                <h3 className="text-2xl font-bold text-blue-900 mb-3 flex items-center gap-3">
+                  <Crosshair className="w-6 h-6" />
                   Find Nearest CORS Station
                 </h3>
                 <p className="text-gray-600">
@@ -588,22 +607,22 @@ const CorsNetwork = () => {
                 </p>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 {!userLocation ? (
                   <button
                     onClick={findNearestStation}
                     disabled={isLoading}
-                    className="bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    className="bg-blue-900 text-white px-6 py-4 rounded-lg font-semibold hover:bg-blue-800 transition-all duration-300 disabled:opacity-50 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
                   >
-                    <Navigation className="w-4 h-4" />
+                    <Navigation className="w-5 h-5" />
                     {isLoading ? 'Locating...' : 'Find Nearest Station'}
                   </button>
                 ) : (
                   <button
                     onClick={clearLocation}
-                    className="bg-gray-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-600 transition-colors flex items-center gap-2"
+                    className="bg-gray-600 text-white px-6 py-4 rounded-lg font-semibold hover:bg-gray-700 transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-5 h-5" />
                     Clear Location
                   </button>
                 )}
@@ -611,27 +630,32 @@ const CorsNetwork = () => {
             </div>
 
             {error && (
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-                {error}
+              <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-red-700">{error}</p>
               </div>
             )}
 
             {nearestStation && (
-              <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h4 className="font-bold text-green-800 text-lg mb-2 flex items-center gap-2">
-                  <MapPin className="w-5 h-5" />
+              <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                <h4 className="font-bold text-green-800 text-xl mb-4 flex items-center gap-3">
+                  <MapPin className="w-6 h-6" />
                   Nearest Station Found!
                 </h4>
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <p className="font-semibold text-green-700">{nearestStation.name}</p>
-                    <p className="text-sm text-green-600">{nearestStation.address}</p>
+                    <p className="text-2xl font-bold text-green-900">{nearestStation.name}</p>
+                    <p className="text-green-700">{nearestStation.address}</p>
+                    <div className="mt-3">
+                      <span className="inline-block px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">
+                        ● {nearestStation.status}
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-green-800">
+                    <p className="text-3xl font-bold text-green-900">
                       {nearestStation.distance?.toFixed(1)} km away
                     </p>
-                    <p className="text-sm text-green-600">Coverage: {nearestStation.coverage}</p>
+                    <p className="text-green-700">Coverage: {nearestStation.coverage}</p>
                   </div>
                 </div>
               </div>
@@ -640,12 +664,13 @@ const CorsNetwork = () => {
 
           {/* Full Width Map */}
           <div className="mb-12">
-            <div className="bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-primary/20">
+            <div className="bg-white rounded-2xl overflow-hidden shadow-2xl border-2 border-blue-900/10 hover:border-blue-900/20 transition-all duration-300">
               <MapContainer 
                 center={mapCenter}
                 zoom={selectedStation || userLocation ? 10 : 7}
                 style={{ height: '500px', width: '100%' }}
                 key={selectedStation?.id || 'default'}
+                className="transition-all duration-300"
               >
                 <TileLayer
                   url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -656,10 +681,10 @@ const CorsNetwork = () => {
                 {userLocation && (
                   <Marker position={userLocation} icon={userIcon}>
                     <Popup>
-                      <div className="p-2">
-                        <h3 className="font-bold text-green-600">Your Location</h3>
-                        <p className="text-sm">Lat: {userLocation[0].toFixed(6)}°</p>
-                        <p className="text-sm">Lng: {userLocation[1].toFixed(6)}°</p>
+                      <div className="p-3">
+                        <h3 className="font-bold text-green-600 text-lg">Your Location</h3>
+                        <p className="text-sm text-gray-600">Lat: {userLocation[0].toFixed(6)}°</p>
+                        <p className="text-sm text-gray-600">Lng: {userLocation[1].toFixed(6)}°</p>
                       </div>
                     </Popup>
                   </Marker>
@@ -675,30 +700,32 @@ const CorsNetwork = () => {
                       position={station.position}
                       icon={isNearest ? nearestIcon : stationIcon}
                       eventHandlers={{
-                        click: () => handleStationSelect(station)
+                        click: () => handleStationSelect(station),
+                        mouseover: (e) => e.target.openPopup(),
+                        mouseout: (e) => e.target.closePopup()
                       }}
                     >
-                      <Popup>
-                        <div className="p-2 min-w-[200px]">
-                          <h3 className={`font-bold ${isNearest ? 'text-orange-600' : 'text-blue-600'} text-lg`}>
+                      <Popup className="rounded-lg">
+                        <div className="p-3 min-w-[220px]">
+                          <h3 className={`font-bold text-lg ${isNearest ? 'text-orange-600' : 'text-blue-900'}`}>
                             {station.name} {isNearest && '⭐'}
                           </h3>
-                          <p className="text-sm text-gray-600">{station.address}</p>
-                          <div className="mt-2">
-                            <p className="text-sm font-medium text-gray-700">Coordinates:</p>
-                            <div className="text-xs font-mono">
+                          <p className="text-gray-600">{station.address}</p>
+                          <div className="mt-3 pt-3 border-t border-gray-200">
+                            <p className="text-sm font-semibold text-gray-700">Coordinates:</p>
+                            <div className="text-xs font-mono bg-gray-100 p-2 rounded mt-1">
                               {station.position[0].toFixed(6)}°, {station.position[1].toFixed(6)}°
                             </div>
                           </div>
                           {userLocation && (
-                            <p className="text-sm font-semibold text-green-600 mt-2">
+                            <p className="text-sm font-semibold text-green-600 mt-3">
                               Distance: {calculateDistance(
                                 userLocation[0], userLocation[1],
                                 station.position[0], station.position[1]
                               ).toFixed(1)} km
                             </p>
                           )}
-                          <p className={`text-sm font-semibold mt-2 inline-block px-2 py-1 rounded ${
+                          <p className={`text-sm font-semibold mt-3 inline-block px-3 py-1 rounded-full ${
                             station.status === "Operational" 
                               ? "bg-green-100 text-green-800" 
                               : "bg-red-100 text-red-800"
@@ -727,59 +754,104 @@ const CorsNetwork = () => {
         </div>
       </section>
 
-      {/* What is CORS Network Section */}
+      {/* How It Works Section - Improved content flow */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
           <div className="flex flex-col lg:flex-row items-center gap-12">
-            <div className="flex-1 space-y-6">
-              <h2 className="text-4xl font-bold text-primary">What is CORS Network?</h2>
-              <p className="text-lg text-gray-600">
-                A Continuously Operating Reference Station (CORS) network provides high-precision 
-                positioning data 24/7, delivering real-time centimeter-level accuracy for 
-                surveying, construction, and geospatial applications.
+            <div className="flex-1 space-y-8">
+              <h2 className="text-4xl font-bold text-blue-900">
+                How It Works: Visualizing Precision
+              </h2>
+              <p className="text-gray-600 leading-relaxed text-lg">
+                Achieve centimeter-level positioning anywhere in Nigeria—without setting up your own base station. 
+                Our CORS network provides real-time GNSS corrections for instant accuracy.
               </p>
               
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {[
-                  { title: "High Precision Positioning", desc: "Achieve centimeter-level accuracy for surveying and mapping" },
-                  { title: "Real-time Data", desc: "Access continuous GNSS data streams for immediate corrections" },
-                  { title: "Nationwide Coverage", desc: "21 stations ensuring reliable service across Nigeria" },
-                  { title: "Multiple Applications", desc: "Ideal for surveying, construction, agriculture, and GIS" }
+                  { title: "High Precision Positioning", desc: "Achieve centimeter-level accuracy for surveying and mapping with real-time corrections" },
+                  { title: "Real-time Data Streams", desc: "Access continuous GNSS data streams for immediate positioning corrections" },
+                  { title: "Nationwide Coverage", desc: "23 strategically located stations ensuring reliable service across Nigeria" },
+                  { title: "Multiple Applications", desc: "Ideal for land surveying, construction, precision agriculture, and GIS mapping" }
                 ].map((item, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-6 h-6 text-green-600 mt-1 flex-shrink-0" />
+                  <div 
+                    key={idx} 
+                    className="flex items-start gap-4 p-4 rounded-xl hover:bg-blue-50 transition-all duration-300 group cursor-pointer"
+                  >
+                    <div className="bg-blue-100 p-2 rounded-lg group-hover:bg-blue-200 transition-colors duration-300">
+                      <CheckCircle2 className="w-6 h-6 text-blue-900 flex-shrink-0" />
+                    </div>
                     <div>
-                      <h4 className="font-semibold text-gray-800">{item.title}</h4>
-                      <p className="text-gray-600">{item.desc}</p>
+                      <h4 className="font-bold text-lg text-blue-900">{item.title}</h4>
+                      <p className="text-gray-600 mt-1">{item.desc}</p>
                     </div>
                   </div>
                 ))}
               </div>
+              
+              {/* Client Logos - Trust signals */}
+              <div className="pt-8 border-t border-gray-200">
+                <p className="text-sm text-gray-500 mb-4">Trusted by leading firms:</p>
+                <div className="flex flex-wrap items-center gap-6 opacity-70">
+                  <div className="bg-gray-100 px-6 py-3 rounded-lg text-gray-600 font-semibold">CraneBurg</div>
+                  <div className="bg-gray-100 px-6 py-3 rounded-lg text-gray-600 font-semibold">Julius Berger</div>
+                  <div className="bg-gray-100 px-6 py-3 rounded-lg text-gray-600 font-semibold">National Oil</div>
+                </div>
+              </div>
             </div>
             
             <div className="flex-1">
-              <img 
-                src={heroImage} 
-                alt="CORS Network Station" 
-                className="w-full h-96 object-cover rounded-2xl shadow-lg"
-              />
+              <div className="bg-gradient-to-br from-blue-50 to-gray-50 p-8 rounded-2xl shadow-xl border border-blue-100">
+                <img 
+                  src={heroImage} 
+                  alt="CORS Network Diagram" 
+                  className="w-full h-auto rounded-xl shadow-lg object-cover"
+                />
+                <div className="mt-6 p-4 bg-blue-900/5 rounded-lg border border-blue-900/10">
+                  <p className="text-sm text-blue-900 font-semibold">
+                    <span className="text-lg">📡</span> Real-time correction flow: Base Station → Network → Your Rover
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section className="py-12 bg-gray-50">
+      {/* Call to Action Section */}
+      <section className="py-16 bg-white">
         <div className="container mx-auto px-4 text-center">
-          <p className="text-lg text-gray-800">
-            Need a quotation or further inquiries? Call{" "}
-            <a 
-              href="tel: +2349026194016" 
-              className="font-bold text-blue-600 hover:text-blue-800 underline transition-colors"
-            >
-              +234 902 6194 016
-            </a>
-          </p>
+          <div className="max-w-2xl mx-auto space-y-8">
+            <h2 className="text-4xl font-bold text-blue-900">
+              Ready to Achieve Centimeter Accuracy?
+            </h2>
+            <p className="text-xl text-blue-900">
+              Join 100+ surveyors and engineers using Nigeria's most reliable CORS network.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-6 pt-4">
+              <button 
+                onClick={() => navigate("/contact")}
+                className="bg-blue-900 text-white px-10 py-5 rounded-xl font-bold hover:bg-blue-50 transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:-translate-y-1 text-lg"
+              >
+                Start Using OTIC CORS
+              </button>
+              <button 
+                onClick={() => navigate("/contact")}
+                className="bg-blue-900 text-white px-10 py-5 rounded-xl font-bold hover:bg-white/10 transition-all duration-300 shadow-lg hover:shadow-xl text-lg"
+              >
+                Request Demo
+              </button>
+            </div>
+            <p className="text-blue-900 pt-6">
+              Need immediate assistance? Call{" "}
+              <a 
+                href="tel:+2349026194016" 
+                className="font-bold text-blue-900 hover:text-blue-200 underline transition-colors"
+              >
+                +234 902 6194 016
+              </a>
+            </p>
+          </div>
         </div>
       </section>
 

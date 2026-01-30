@@ -12,7 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "../components/ui/table";
-import { fetchDashboardData } from "../services/api";
+import { fetchDashboardData } from "../services/inventoryAPI";
 import {
   ResponsiveContainer,
   PieChart,

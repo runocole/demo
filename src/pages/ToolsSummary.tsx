@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { getTools } from "../services/api";
+import { getTools } from "../services/inventoryAPI";
 import { Button } from "../components/ui/button";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Card, CardContent } from "../components/ui/card";

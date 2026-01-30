@@ -75,7 +75,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               <div className="flex items-center gap-3">
                 <div className="leading-tight">
                   <h1 className="font-extrabold text-lg md:text-2xl text-foreground">
-                    OTIC GeoSystems Ltd
+                    OTIC Geosystems Ltd
                   </h1>
                   <p className="text-xs text-muted-foreground hidden sm:block">
                     Precision surveying equipment
@@ -109,7 +109,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="container mx-auto px-4 py-6">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <div className="text-sm text-muted-foreground text-center md:text-left">
-                © {new Date().getFullYear()} OTIC GeoSystems  — All rights reserved
+                © {new Date().getFullYear()} OTIC Geosystems  — All rights reserved
               </div>
               <div className="flex items-center gap-4 flex-wrap justify-center">
                 <a

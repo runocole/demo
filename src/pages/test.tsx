@@ -311,7 +311,7 @@ const Contact: React.FC = () => {
                 <h3 className="text-xl font-bold">Address</h3>
               </div>
               
-              <p className="text-sm text-blue-100 leading-relaxed">
+              <p className="text-sm text-blue-100 font-normal">
                 No. 3, Bello Close, Chevyview Estate, Chevron Drive, Lekki, Lagos, Nigeria
               </p>
               
@@ -357,7 +357,7 @@ const Contact: React.FC = () => {
                 </a>
                 <a
                   aria-label="Instagram"
-                  href="https://www.instagram.com"
+                  href="https://www.instagram.com/oticgeosystems?igsh=MW81MmY0cXMxNnVjMA=="
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-full hover:bg-blue-700 transition-all hover:scale-110 bg-blue-500"
@@ -366,7 +366,7 @@ const Contact: React.FC = () => {
                 </a>
                 <a
                   aria-label="LinkedIn"
-                  href="https://www.linkedin.com"
+                  href="https://www.linkedin.com/company/otic-geosystems-limited/posts/?feedView=all"
                   target="_blank"
                   rel="noreferrer"
                   className="p-3 rounded-full hover:bg-blue-700 transition-all hover:scale-110 bg-blue-500"

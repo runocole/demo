@@ -119,7 +119,7 @@ export const Testimonials = () => {
   const goToSlide = (index: number) => {
     setCurrentIndex(index);
   };
-
+  
   // Determine how many cards to show based on screen size
   const getCardsToShow = () => {
     if (isMobile) {
@@ -135,138 +135,169 @@ export const Testimonials = () => {
   const cardsToShow = getCardsToShow();
 
   return (
-    <section className="py-20 bg-blue-100 relative overflow-hidden">
-      {/* Background Pattern with Blue Tint */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-400"></div>
+    <section className="py-16 bg-gradient-to-b from-white to-blue-50/30 relative overflow-hidden">
+      {/* Subtle Background Pattern */}
+      <div className="absolute inset-0 opacity-3 pointer-events-none">
+        <div className="absolute top-1/4 left-0 w-64 h-64 rounded-full bg-blue-100 blur-3xl"></div>
+        <div className="absolute bottom-1/4 right-0 w-64 h-64 rounded-full bg-blue-100 blur-3xl"></div>
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
-        <div className="grid lg:grid-cols-12 gap-8 items-center">
-          {/* Left Content */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center">
-              <Quote className="w-12 h-12 text-[#081748]" />
-            </div>
-            <h2 className="text-4xl md:text-5xl font-bold leading-tight text-[#081748]">
-              What Our<br />Students Say
-            </h2>
-            <p className="text-[#081748]/80 text-lg">
-              Hear from professionals who have transformed their careers through our comprehensive drone and surveying training programs.
-            </p>
+        {/* Section Header - Improved */}
+        <div className="text-center mb-12 max-w-3xl mx-auto">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-50 mb-6 shadow-sm">
+            <Quote className="w-8 h-8 text-blue-600" />
           </div>
+          
+          <div className="relative mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-blue-900 mb-4">
+              What Our Students Say
+            </h2>
+            <div className="h-1 w-20 bg-gradient-to-r from-blue-400 to-blue-600 mx-auto rounded-full"></div>
+          </div>
+          
+          <p className="text-gray-600 text-lg max-w-2xl mx-auto leading-relaxed">
+            Hear from professionals who have transformed their careers through our comprehensive training programs.
+          </p>
+        </div>
 
-          {/* Right - Testimonial Cards */}
-          <div className="lg:col-span-8">
-            <div 
-              className="relative"
-              onMouseEnter={() => setIsPaused(true)} // Pause on hover
-              onMouseLeave={() => setIsPaused(false)} // Resume when mouse leaves
-              onTouchStart={() => setIsPaused(true)} // Pause on touch
-              onTouchEnd={() => setTimeout(() => setIsPaused(false), 1000)} // Resume after touch
-            >
-              {/* Cards Container */}
-              <div className="flex gap-6 transition-transform duration-500 ease-in-out">
-                {cardsToShow.map((testimonial, idx) => (
-                  <div
-                    key={testimonial.id}
-                    className={`${isMobile ? 'w-full' : 'flex-1'} bg-white rounded-2xl p-8 shadow-xl min-w-[300px] border border-blue-100 hover:border-blue-200 transition-colors`}
-                    style={{
-                      animation: `fadeIn 0.5s ease-in-out ${idx * 0.1}s both`,
-                    }}
-                  >
-                    <div className="flex flex-col h-full">
-                      {/* Image */}
-                      <div className="mb-6">
+        {/* Testimonial Cards - Enhanced */}
+        <div className="max-w-6xl mx-auto">
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+            onTouchStart={() => setIsPaused(true)}
+            onTouchEnd={() => setTimeout(() => setIsPaused(false), 1000)}
+          >
+            {/* Cards Container */}
+            <div className="flex gap-8 transition-transform duration-500 ease-in-out">
+              {cardsToShow.map((testimonial, idx) => (
+                <div
+                  key={testimonial.id}
+                  className={`${isMobile ? 'w-full' : 'flex-1 min-w-0'} bg-white rounded-xl p-8 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 hover:border-blue-100`}
+                  style={{
+                    animation: `fadeIn 0.5s ease-in-out ${idx * 0.1}s both`,
+                  }}
+                >
+                  <div className="flex flex-col h-full">
+                    {/* Header with Avatar and Course */}
+                    <div className="flex items-start gap-4 mb-6">
+                      <div className="relative">
                         <img
                           src={testimonial.image}
                           alt={testimonial.name}
-                          className="w-24 h-24 rounded-2xl object-cover border-4 border-blue-100"
+                          className="w-16 h-16 rounded-full object-cover border-3 border-white shadow-md"
                         />
+                        <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-blue-600 rounded-full flex items-center justify-center">
+                          <Quote className="w-3 h-3 text-white" />
+                        </div>
                       </div>
-
-                      {/* Course Title */}
-                      <h3 className="font-bold text-lg text-[#081748] mb-2">
-                        {testimonial.course}
-                      </h3>
-
-                      {/* Testimonial Text */}
-                      <p className="text-[#081748]/80 mb-6 flex-grow leading-relaxed">
-                        "{testimonial.text}"
-                      </p>
-
-                      {/* Name and Rating */}
-                      <div className="flex items-center justify-between pt-4 border-t border-blue-100">
-                        <span className="font-bold text-[#081748] text-lg">
-                          {testimonial.name}
-                        </span>
-                        <div className="flex gap-1">
+                      
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg text-blue-900 mb-1">
+                          {testimonial.course}
+                        </h3>
+                        <div className="flex items-center gap-1">
                           {[...Array(testimonial.rating)].map((_, i) => (
                             <Star
                               key={i}
-                              className="w-5 h-5 fill-[#081748] text-[#081748]"
+                              className="w-4 h-4 fill-amber-400 text-amber-400"
                             />
                           ))}
+                          <span className="text-sm text-gray-500 ml-1">
+                            {testimonial.rating}.0
+                          </span>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
 
-              {/* Navigation Arrows - Hidden on mobile when auto-sliding is active */}
-              <div className="flex gap-3 mt-8">
-                <Button
-                  onClick={prevSlide}
-                  size="icon"
-                  className="bg-white hover:bg-gray-50 text-[#081748] rounded-full w-12 h-12 shadow-lg transition-colors border border-blue-100"
-                  disabled={isMobile ? currentIndex === 0 : currentIndex === 0}
-                >
-                  <ChevronLeft className="w-6 h-6" />
-                </Button>
-                <Button
-                  onClick={nextSlide}
-                  size="icon"
-                  className="bg-white hover:bg-gray-50 text-[#081748] rounded-full w-12 h-12 shadow-lg transition-colors border border-blue-100"
-                  disabled={isMobile ? currentIndex >= testimonials.length - 1 : currentIndex + 2 >= testimonials.length}
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </Button>
-              </div>
+                    {/* Testimonial Text */}
+                    <div className="mb-8 flex-grow">
+                      <p className="text-gray-700 leading-relaxed italic font-normal relative pl-6">
+                        <span className="absolute left-0 top-0 text-blue-400 text-2xl leading-none">"</span>
+                        {testimonial.text}
+                        <span className="text-blue-400 text-2xl leading-none ml-1">"</span>
+                      </p>
+                    </div>
+
+                    {/* Student Name */}
+                    <div className="pt-6 border-t border-gray-100">
+                      <span className="font-semibold text-blue-900">
+                        {testimonial.name}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Navigation Controls */}
+            <div className="flex items-center justify-center gap-6 mt-10">
+              {/* Left Arrow */}
+              <Button
+                onClick={prevSlide}
+                size="icon"
+                className="bg-white hover:bg-blue-50 text-blue-700 rounded-full w-12 h-12 shadow-md hover:shadow-lg transition-all duration-300 border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isMobile ? currentIndex === 0 : currentIndex === 0}
+              >
+                <ChevronLeft className="w-6 h-6" />
+              </Button>
 
               {/* Dot Indicators */}
-              <div className="flex gap-2 mt-6">
+              <div className="flex gap-2">
                 {testimonials.map((_, index) => (
                   <button
                     key={index}
                     onClick={() => goToSlide(index)}
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      currentIndex === index
-                        ? "bg-[#081748] w-8"
-                        : "bg-[#081748]/30"
-                    }`}
+                    className="group relative"
                     aria-label={`Go to slide ${index + 1}`}
-                  />
+                  >
+                    <div 
+                      className={`w-8 h-2 rounded-full transition-all duration-300 ${
+                        currentIndex === index
+                          ? "bg-blue-600"
+                          : "bg-gray-300 group-hover:bg-gray-400"
+                      }`}
+                    />
+                    <div 
+                      className={`absolute -top-1 -bottom-1 -left-2 -right-2 rounded-full transition-all ${
+                        currentIndex === index
+                          ? "bg-blue-100/50"
+                          : "group-hover:bg-gray-100/50"
+                      }`}
+                    />
+                  </button>
                 ))}
               </div>
 
-              {/* Auto-slide indicator (mobile only) */}
-              {isMobile && (
-                <div className="mt-4 flex items-center justify-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-[#081748]/30 relative overflow-hidden">
-                    <div 
-                      className={`absolute top-0 left-0 h-full bg-[#081748] transition-all duration-4000 ease-linear ${isPaused ? 'w-0' : 'w-full'}`}
-                      style={{ 
-                        animation: isPaused ? 'none' : 'slideTimer 4s linear infinite'
-                      }}
-                    />
-                  </div>
-                  <span className="text-sm text-[#081748]/70">
-                    {isPaused ? 'Paused' : 'Auto-sliding'}
-                  </span>
-                </div>
-              )}
+              {/* Right Arrow */}
+              <Button
+                onClick={nextSlide}
+                size="icon"
+                className="bg-white hover:bg-blue-50 text-blue-700 rounded-full w-12 h-12 shadow-md hover:shadow-lg transition-all duration-300 border border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isMobile ? currentIndex >= testimonials.length - 1 : currentIndex + 2 >= testimonials.length}
+              >
+                <ChevronRight className="w-6 h-6" />
+              </Button>
             </div>
+
+            {/* Auto-slide indicator (mobile only) */}
+            {isMobile && (
+              <div className="mt-8 flex items-center justify-center gap-2">
+                <div className="text-sm text-gray-500">
+                  {currentIndex + 1} of {testimonials.length}
+                </div>
+                <div className="w-16 h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-blue-600 transition-all duration-300"
+                    style={{ 
+                      width: isPaused ? '0%' : `${((currentIndex + 1) / testimonials.length) * 100}%`
+                    }}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -275,20 +306,11 @@ export const Testimonials = () => {
         @keyframes fadeIn {
           from {
             opacity: 0;
-            transform: translateY(10px);
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
             transform: translateY(0);
-          }
-        }
-        
-        @keyframes slideTimer {
-          from {
-            width: 0%;
-          }
-          to {
-            width: 100%;
           }
         }
       `}</style>

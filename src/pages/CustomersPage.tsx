@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Label } from "../components/ui/label";
-import { registerCustomer, getCustomers } from "../services/api";
+import { registerCustomer, getCustomers } from "../services/inventoryAPI";
 import {
   Table,
   TableBody,

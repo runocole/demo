@@ -2,7 +2,7 @@ import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface AboutSectionProps {
-  title: string;
+  title: string | React.ReactNode;
   description: string[];
   videoUrl: string;
 }
@@ -20,7 +20,7 @@ export const AboutSection = ({ title, description, videoUrl }: AboutSectionProps
               {title}
             </h1>
             
-            <div className="space-y-4 text-lg text-gray-700 leading-relaxed">
+            <div className="space-y-4 text-lg text-gray-700 font-normal">
               {description.map((paragraph, index) => (
                 <p key={index}>{paragraph}</p>
               ))}
@@ -28,7 +28,7 @@ export const AboutSection = ({ title, description, videoUrl }: AboutSectionProps
 
             <Button 
               size="lg" 
-              className="bg-[#081748] text-white hover:bg-blue-800 font-bold px-8 py-6 text-lg transition-all"
+              className="bg-blue-900 text-white hover:bg-blue-800 font-bold px-8 py-6 text-lg transition-all"
               onClick={() => navigate('/about')}
             >
               Read More About Us

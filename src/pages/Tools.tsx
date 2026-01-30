@@ -27,7 +27,7 @@ import {
   deleteTool,
   getEquipmentTypes,
   getSuppliers,
-} from "../services/api";
+} from "../services/inventoryAPI";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 

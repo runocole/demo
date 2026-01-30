@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "../components/ui/table";
 import { Button } from "../components/ui/button";
-import { fetchCustomerOwingData } from "../services/api";
+import { fetchCustomerOwingData } from "../services/inventoryAPI";
 
 interface CustomerOwingData {
   summary: {

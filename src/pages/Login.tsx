@@ -3,7 +3,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Card } from "../components/ui/card";
-import authHero from "@/assets/auth-hero.jpg";
+import authHero from "../assets/auth-hero.jpg";
 import { useNavigate } from "react-router-dom";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";

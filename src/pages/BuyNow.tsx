@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import type { Product, CustomerInfo, ProductCategory } from "../types/product";
+import type { Product, CustomerInfo, ProductCategory, AccessorySubcategory } from "../types/product";
 import { PRODUCTS } from "../data/product";
 import { ProductCard } from "../components/ProductCard";
 import { CheckoutModal } from "../components/CheckoutModal";
@@ -11,7 +11,7 @@ import { Badge } from "../components/ui/badge";
 import { 
   Search, X, ChevronDown, Home, ShoppingCart, 
   Trash2, Plus, Minus, Grid3x3, List, ChevronRight,
-  Menu
+  Menu, Tag
 } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
@@ -38,6 +38,23 @@ const TOOL_CATEGORIES: ProductCategory[] = [
   "Other",
 ];
 
+// Define accessory subcategories
+const ACCESSORY_SUBCATEGORIES: AccessorySubcategory[] = [
+  "Tapes",
+  "Leveling Staffs",
+  "Poles",
+  "Cables",
+  "External Radio Components",
+  "Batteries",
+  "Chargers",
+  "Levels",
+  "Prisms",
+  "Tripods",
+  "tribrach & Spindle",
+  "Controllers",
+  "Others"
+];
+
 type SortOption = "featured" | "price-asc" | "price-desc" | "newest";
 type ViewMode = "grid" | "list";
 
@@ -51,6 +68,7 @@ const BuyNow = () => {
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategories, setSelectedCategories] = useState<ProductCategory[]>([]);
+  const [selectedSubcategories, setSelectedSubcategories] = useState<AccessorySubcategory[]>([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
@@ -59,6 +77,8 @@ const BuyNow = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [mobileSubfiltersOpen, setMobileSubfiltersOpen] = useState(false);
+  const [showAccessoryFilters, setShowAccessoryFilters] = useState(false);
 
   // Check if mobile
   useEffect(() => {
@@ -78,8 +98,21 @@ const BuyNow = () => {
     
     if (urlCategory && TOOL_CATEGORIES.includes(urlCategory)) {
       setSelectedCategories([urlCategory]);
+      if (urlCategory === "Accessory") {
+        setShowAccessoryFilters(true);
+      }
     }
   }, [location.search]);
+
+  // Reset accessory filters when accessory category is deselected
+  useEffect(() => {
+    if (!selectedCategories.includes("Accessory")) {
+      setSelectedSubcategories([]);
+      setShowAccessoryFilters(false);
+    } else {
+      setShowAccessoryFilters(true);
+    }
+  }, [selectedCategories]);
 
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -94,7 +127,18 @@ const BuyNow = () => {
       const matchesCategory =
         selectedCategories.length === 0 || selectedCategories.includes(product.category);
 
-      return matchesSearch && matchesCategory;
+      const matchesSubcategory = 
+        // Only apply subcategory filter if:
+        // 1. Product is an accessory AND 
+        // 2. We have selected subcategories AND
+        // 3. Product has a subcategory
+        product.category === "Accessory" &&
+        selectedSubcategories.length > 0 &&
+        product.subcategory
+          ? selectedSubcategories.includes(product.subcategory)
+          : true;
+
+      return matchesSearch && matchesCategory && matchesSubcategory;
     });
 
     const sorted = [...base].sort((a, b) => {
@@ -109,7 +153,7 @@ const BuyNow = () => {
     });
 
     return sorted;
-  }, [searchQuery, selectedCategories, sortOption]);
+  }, [searchQuery, selectedCategories, selectedSubcategories, sortOption]);
 
   const handleAddToCart = (product: Product) => {
     addToCart(product);
@@ -139,10 +183,22 @@ const BuyNow = () => {
     );
   };
 
+  const toggleSubcategory = (subcategory: AccessorySubcategory) => {
+    setSelectedSubcategories((prev) =>
+      prev.includes(subcategory) ? prev.filter((c) => c !== subcategory) : [...prev, subcategory]
+    );
+  };
+
   const clearFilters = () => {
     setSelectedCategories([]);
+    setSelectedSubcategories([]);
+    setShowAccessoryFilters(false);
     setSearchQuery("");
     setSortOption("featured");
+  };
+
+  const clearSubcategoryFilters = () => {
+    setSelectedSubcategories([]);
   };
 
   const handleCheckout = () => {
@@ -201,13 +257,29 @@ const BuyNow = () => {
   // Mobile cart items count for badge
   const mobileCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+// Count products in each accessory subcategory
+const accessorySubcategoryCounts = useMemo(() => {
+  const counts: Record<string, number> = {};
+  // Filter out null values before processing
+  const validSubcategories = ACCESSORY_SUBCATEGORIES.filter((sc): sc is Exclude<typeof sc, null> => sc !== null);
+  
+  validSubcategories.forEach(subcat => {
+    const count = PRODUCTS.filter(p => 
+      p.category === "Accessory" && p.subcategory === subcat
+    ).length;
+    if (count > 0) {
+      counts[subcat] = count;
+    }
+  });
+  return counts;
+}, []);
   return (
     <div className="min-h-screen bg-blue-50 text-gray-900">
       <Header />   
       
       {/* Hero Section - Responsive */}
       <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white border-b border-gray-200">
-        <div className="container mx-auto px-4 sm:px-6 py-12 md:py-16">
+        <div className="container mx-auto px-4 sm:px-6 py-20 md:py-16 mt-29">
           <div className="max-w-4xl">
             <motion.h1
               initial={{ opacity: 0, y: 20 }}
@@ -272,59 +344,119 @@ const BuyNow = () => {
               {/* Mobile Filter Toggle */}
               <div className="flex items-center justify-between mb-4 md:hidden">
                 <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
-                <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
-                  <SheetTrigger asChild>
-                    <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100">
-                      <Menu className="w-4 h-4 mr-2" />
-                      Categories
-                      {selectedCategories.length > 0 && (
-                        <Badge className="ml-2 bg-blue-600">
-                          {selectedCategories.length}
-                        </Badge>
-                      )}
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side="left" className="bg-white border-gray-200 text-gray-900 w-[300px] sm:w-[350px]">
-                    <SheetHeader className="mb-4">
-                      <SheetTitle className="text-gray-900">Categories</SheetTitle>
-                    </SheetHeader>
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        {TOOL_CATEGORIES.map((category) => (
-                          <button
-                            key={category}
-                            onClick={() => {
-                              toggleCategory(category);
-                              if (isMobile) setMobileFiltersOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
-                              selectedCategories.includes(category)
-                                ? "bg-blue-600 text-white shadow-md"
-                                : "bg-gray-50 text-gray-700 hover:bg-gray-100"
-                            }`}
+                <div className="flex gap-2">
+                  <Sheet open={mobileFiltersOpen} onOpenChange={setMobileFiltersOpen}>
+                    <SheetTrigger asChild>
+                      <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                        <Menu className="w-4 h-4 mr-2" />
+                        Categories
+                        {selectedCategories.length > 0 && (
+                          <Badge className="ml-2 bg-blue-600">
+                            {selectedCategories.length}
+                          </Badge>
+                        )}
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="bg-white border-gray-200 text-gray-900 w-[300px] sm:w-[350px]">
+                      <SheetHeader className="mb-4">
+                        <SheetTitle className="text-gray-900">Categories</SheetTitle>
+                      </SheetHeader>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          {TOOL_CATEGORIES.map((category) => (
+                            <button
+                              key={category}
+                              onClick={() => {
+                                toggleCategory(category);
+                                if (isMobile) setMobileFiltersOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
+                                selectedCategories.includes(category)
+                                  ? "bg-blue-600 text-white shadow-md"
+                                  : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                              }`}
+                            >
+                              <div className="flex justify-between items-center">
+                                <span>{category}</span>
+                                <span className="text-xs opacity-75">
+                                  ({PRODUCTS.filter((p) => p.category === category).length})
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        {(selectedCategories.length > 0 || searchQuery) && (
+                          <Button 
+                            onClick={clearFilters} 
+                            variant="outline" 
+                            className="w-full mt-4 border-gray-300 text-gray-700 hover:bg-gray-100"
                           >
-                            <div className="flex justify-between items-center">
-                              <span>{category}</span>
-                              <span className="text-xs opacity-75">
-                                ({PRODUCTS.filter((p) => p.category === category).length})
-                              </span>
-                            </div>
-                          </button>
-                        ))}
+                            <X className="w-4 h-4 mr-2" />
+                            Clear Filters
+                          </Button>
+                        )}
                       </div>
-                      {(selectedCategories.length > 0 || searchQuery) && (
-                        <Button 
-                          onClick={clearFilters} 
-                          variant="outline" 
-                          className="w-full mt-4 border-gray-300 text-gray-700 hover:bg-gray-100"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Clear Filters
+                    </SheetContent>
+                  </Sheet>
+
+                  {/* Mobile Accessory Subcategory Filter Button */}
+                  {showAccessoryFilters && (
+                    <Sheet open={mobileSubfiltersOpen} onOpenChange={setMobileSubfiltersOpen}>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-100">
+                          <Tag className="w-4 h-4 mr-2" />
+                          Accessory Types
+                          {selectedSubcategories.length > 0 && (
+                            <Badge className="ml-2 bg-green-600">
+                              {selectedSubcategories.length}
+                            </Badge>
+                          )}
                         </Button>
-                      )}
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                      </SheetTrigger>
+                      <SheetContent side="right" className="bg-white border-gray-200 text-gray-900 w-[300px] sm:w-[350px]">
+                        <SheetHeader className="mb-4">
+                          <SheetTitle className="text-gray-900">Accessory Types</SheetTitle>
+                        </SheetHeader>
+                        <div className="space-y-4">
+                          <div className="space-y-2">
+                            {ACCESSORY_SUBCATEGORIES.map((subcategory) => (
+                               subcategory && accessorySubcategoryCounts[subcategory] > 0 && (
+                                <button
+                                  key={subcategory}
+                                  onClick={() => {
+                                    toggleSubcategory(subcategory);
+                                  }}
+                                  className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all ${
+                                    selectedSubcategories.includes(subcategory)
+                                      ? "bg-green-600 text-white shadow-md"
+                                      : "bg-gray-50 text-gray-700 hover:bg-gray-100"
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <span>{subcategory}</span>
+                                    <span className="text-xs opacity-75">
+                                      ({accessorySubcategoryCounts[subcategory]})
+                                    </span>
+                                  </div>
+                                </button>
+                              )
+                            ))}
+                          </div>
+                          {selectedSubcategories.length > 0 && (
+                            <Button 
+                              onClick={clearSubcategoryFilters} 
+                              variant="outline" 
+                              className="w-full mt-4 border-gray-300 text-gray-700 hover:bg-gray-100"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Clear Accessory Filters
+                            </Button>
+                          )}
+                        </div>
+                      </SheetContent>
+                    </Sheet>
+                  )}
+                </div>
               </div>
 
               <div className="flex flex-col md:flex-row gap-4">
@@ -411,6 +543,52 @@ const BuyNow = () => {
                 )}
               </div>
 
+              {/* Accessory Subcategory Filters - Desktop */}
+              {showAccessoryFilters && !isMobile && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  transition={{ duration: 0.3 }}
+                  className="mt-4 pt-4 border-t border-gray-200"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Tag className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-gray-700">Accessory Types:</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {ACCESSORY_SUBCATEGORIES.map((subcategory) => (
+                      subcategory && accessorySubcategoryCounts[subcategory] > 0 && (
+                        <button
+                          key={subcategory}
+                          onClick={() => toggleSubcategory(subcategory)}
+                          className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                            selectedSubcategories.includes(subcategory)
+                              ? "bg-green-600 text-white shadow-md"
+                              : "bg-green-50 text-green-700 hover:bg-green-100"
+                          }`}
+                        >
+                          {subcategory}
+                          <span className="ml-1 text-xs opacity-60">
+                            ({accessorySubcategoryCounts[subcategory]})
+                          </span>
+                        </button>
+                      )
+                    ))}
+                    {selectedSubcategories.length > 0 && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={clearSubcategoryFilters} 
+                        className="text-gray-500 hover:text-gray-700 text-xs"
+                      >
+                        <X className="w-3 h-3 mr-1" />
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+
               {/* Mobile Selected Categories */}
               {isMobile && selectedCategories.length > 0 && (
                 <div className="mt-4">
@@ -419,6 +597,23 @@ const BuyNow = () => {
                     {selectedCategories.map(category => (
                       <Badge key={category} className="bg-blue-100 text-blue-700">
                         {category}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Selected Subcategories */}
+              {isMobile && selectedSubcategories.length > 0 && (
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-green-700 flex items-center gap-1">
+                      <Tag className="w-3 h-3" />
+                      Accessory Types:
+                    </span>
+                    {selectedSubcategories.map(subcat => (
+                      <Badge key={subcat} className="bg-green-100 text-green-700">
+                        {subcat}
                       </Badge>
                     ))}
                   </div>
@@ -436,7 +631,14 @@ const BuyNow = () => {
                 {selectedCategories.length > 0 && (
                   <span className="inline-flex items-center gap-1">
                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                      {selectedCategories.length} filter{selectedCategories.length !== 1 ? 's' : ''} active
+                      {selectedCategories.length} categor{selectedCategories.length !== 1 ? 'ies' : 'y'}
+                    </span>
+                  </span>
+                )}
+                {selectedSubcategories.length > 0 && (
+                  <span className="inline-flex items-center gap-1 ml-2">
+                    <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
+                      {selectedSubcategories.length} accessory type{selectedSubcategories.length !== 1 ? 's' : ''}
                     </span>
                   </span>
                 )}
@@ -518,6 +720,11 @@ const BuyNow = () => {
                           />
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-sm truncate text-gray-900">{item.name}</h4>
+                            {item.subcategory && (
+                              <Badge variant="outline" className="text-xs mt-1 bg-green-50 text-green-700 border-green-200">
+                                {item.subcategory}
+                              </Badge>
+                            )}
                             <p className="text-blue-600 font-bold text-sm mt-1">
                               {getConvertedPrice(item.price)}
                             </p>
@@ -638,6 +845,11 @@ const BuyNow = () => {
                           />
                           <div className="flex-1 min-w-0">
                             <h4 className="font-medium text-gray-900 line-clamp-2 mb-1">{item.name}</h4>
+                            {item.subcategory && (
+                              <Badge variant="outline" className="text-xs mt-1 bg-green-50 text-green-700 border-green-200">
+                                {item.subcategory}
+                              </Badge>
+                            )}
                             <p className="text-blue-600 font-bold text-lg mb-3">
                               {getConvertedPrice(item.price)}
                             </p>

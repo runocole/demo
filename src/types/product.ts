@@ -14,10 +14,28 @@ export type ProductCategory =
   | "RTK Tablets"
   | "Other";
 
+// Subcategories for Accessories only
+export type AccessorySubcategory =
+  | "Tapes"
+  | "Leveling Staffs"
+  | "Poles"
+  | "Cables"
+  | "External Radio Components"
+  | "Batteries"
+  | "Chargers"
+  | "Levels"
+  | "Prisms"
+  | "Tripods"
+  | "tribrach & Spindle"
+  | "Controllers"
+  | "Others"
+  | null;
+
 export interface Product {
   id: string;
   name: string;
   category: ProductCategory;
+  subcategory?: AccessorySubcategory; 
   price: number;
   description: string;
   image: string;
@@ -49,4 +67,14 @@ export interface CustomerInfo {
   phone: string;
   country: string;
   state: string;
+}
+
+// ADD THIS NEW INTERFACE FOR SLIDES
+export interface Slide {
+  image: string;
+  title: string;
+  subtitle: string;
+  mobileTitle?: string;
+  mobileSubtitle?: string;
+  position?: 'left' | 'center' | 'right';
 }

@@ -3,10 +3,14 @@ import { Button } from "../components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 
+// UPDATED Slide interface with mobileImage field
 export interface Slide {
-  image: string;
+  image: string; // Desktop image
+  mobileImage: string; // Mobile-specific image
   title: string;
   subtitle: string;
+  mobileTitle?: string;
+  mobileSubtitle?: string;
   position: 'left' | 'center' | 'right';
 }
 
@@ -14,10 +18,14 @@ interface HeroSectionProps {
   slides: Slide[];
 }
 
-const useAutoSlide = (slides: any[], interval = 5000) => {
+// Fixed useAutoSlide hook
+const useAutoSlide = (slides: Slide[], interval = 5000) => {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number>(0);
+  const progressRef = useRef<number>(0);
+  const slideCount = slides.length;
 
   const clearTimer = useCallback(() => {
     if (timerRef.current !== null) {
@@ -26,31 +34,37 @@ const useAutoSlide = (slides: any[], interval = 5000) => {
     }
   }, []);
 
-  const startTimer = useCallback(() => {
-    if (isPaused) return;
-    clearTimer();
-    timerRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, interval);
-  }, [slides.length, interval, clearTimer, isPaused]);
+  const goToSlide = useCallback((index: number) => {
+    setCurrentSlide(index);
+    progressRef.current = 0;
+    startTimeRef.current = Date.now();
+  }, []);
 
   const goToNextSlide = useCallback(() => {
-    clearTimer();
-    setCurrentSlide((prev) => (prev + 1) % slides.length);
-    startTimer();
-  }, [slides.length, clearTimer, startTimer]);
+    goToSlide((currentSlide + 1) % slideCount);
+  }, [currentSlide, slideCount, goToSlide]);
 
   const goToPreviousSlide = useCallback(() => {
-    clearTimer();
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-    startTimer();
-  }, [slides.length, clearTimer, startTimer]);
+    goToSlide((currentSlide - 1 + slideCount) % slideCount);
+  }, [currentSlide, slideCount, goToSlide]);
 
-  const goToSlide = useCallback((index: number) => {
+  const startTimer = useCallback(() => {
+    if (isPaused || slideCount <= 1) return;
+    
     clearTimer();
-    setCurrentSlide(index);
-    startTimer();
-  }, [clearTimer, startTimer]);
+    
+    startTimeRef.current = Date.now();
+    progressRef.current = 0;
+    
+    timerRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      progressRef.current = (elapsed / interval) * 100;
+      
+      if (elapsed >= interval) {
+        goToNextSlide();
+      }
+    }, 50);
+  }, [clearTimer, isPaused, slideCount, interval, goToNextSlide]);
 
   const pauseSlider = useCallback(() => {
     setIsPaused(true);
@@ -58,14 +72,24 @@ const useAutoSlide = (slides: any[], interval = 5000) => {
   }, [clearTimer]);
 
   const resumeSlider = useCallback(() => {
-    setIsPaused(false);
-    startTimer();
-  }, [startTimer]);
+    if (isPaused) {
+      setIsPaused(false);
+      startTimer();
+    }
+  }, [isPaused, startTimer]);
 
+  // Initialize and clean up timer
   useEffect(() => {
     startTimer();
     return () => clearTimer();
   }, [startTimer, clearTimer]);
+
+  // Reset timer when slide changes
+  useEffect(() => {
+    if (!isPaused) {
+      startTimer();
+    }
+  }, [currentSlide, isPaused, startTimer]);
 
   return { 
     currentSlide, 
@@ -74,21 +98,28 @@ const useAutoSlide = (slides: any[], interval = 5000) => {
     goToPreviousSlide,
     pauseSlider,
     resumeSlider,
-    isPaused
+    isPaused,
+    progress: progressRef.current
   };
 };
 
 interface HeroSlideProps {
   slide: Slide;
   isActive: boolean;
+  isTransitioning: boolean;
+  isMobile: boolean;
 }
 
-const HeroSlide = ({ slide, isActive }: HeroSlideProps) => (
+const HeroSlide = ({ slide, isActive, isTransitioning, isMobile }: HeroSlideProps) => (
   <div
     className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out ${
-      isActive ? "opacity-100 scale-100" : "opacity-0 scale-105"
-    }`}
-    style={{ backgroundImage: `url(${slide.image})` }}
+      isActive ? "opacity-100" : "opacity-0"
+    } ${isTransitioning ? "scale-105" : "scale-100"}`}
+    style={{ 
+      backgroundImage: `url(${isMobile ? slide.mobileImage : slide.image})`,
+      transitionProperty: 'opacity, transform',
+      willChange: 'opacity, transform'
+    }}
     aria-hidden={!isActive}
   >
     {/* Gradient Overlay for better text readability */}
@@ -106,9 +137,21 @@ export const HeroSection = ({ slides }: HeroSectionProps) => {
     goToNextSlide, 
     goToPreviousSlide,
     pauseSlider,
-    resumeSlider
+    resumeSlider,
+    progress
   } = useAutoSlide(slides);
   const [isMobile, setIsMobile] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+
+  // Handle slide transitions
+  useEffect(() => {
+    setIsTransitioning(true);
+    const timer = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 1000);
+    
+    return () => clearTimeout(timer);
+  }, [currentSlide]);
 
   // Check if mobile
   useEffect(() => {
@@ -121,19 +164,66 @@ export const HeroSection = ({ slides }: HeroSectionProps) => {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Get the appropriate title and subtitle based on device
+  const getSlideTitle = (slide: Slide) => {
+    return isMobile ? slide.mobileTitle || slide.title : slide.title;
+  };
+
+  const getSlideSubtitle = (slide: Slide) => {
+    return isMobile ? slide.mobileSubtitle || slide.subtitle : slide.subtitle;
+  };
+
+  // Handle swipe gestures for mobile
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+    pauseSlider();
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) {
+      resumeSlider();
+      return;
+    }
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      goToNextSlide();
+    } else if (isRightSwipe) {
+      goToPreviousSlide();
+    }
+    
+    setTimeout(resumeSlider, 1000);
+  };
+
   return (
     <section 
       className="relative h-[70vh] md:h-screen overflow-hidden"
       onMouseEnter={pauseSlider}
       onMouseLeave={resumeSlider}
-      onTouchStart={pauseSlider}
-      onTouchEnd={resumeSlider}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       {slides.map((slide, index) => (
         <HeroSlide
           key={index}
           slide={slide}
           isActive={index === currentSlide}
+          isTransitioning={isTransitioning && index === currentSlide}
+          isMobile={isMobile}
         />
       ))}
       
@@ -170,7 +260,9 @@ export const HeroSection = ({ slides }: HeroSectionProps) => {
               top: isMobile ? 'auto' : '50%',
               transform: isMobile 
                 ? (index === currentSlide ? 'translateY(0)' : 'translateY(20px)') 
-                : (index === currentSlide ? 'translateY(-50%)' : 'translateY(-50%) translateX(20px)')
+                : (index === currentSlide ? 'translateY(-50%)' : 'translateY(-50%) translateX(20px)'),
+              transitionProperty: 'opacity, transform',
+              willChange: 'opacity, transform'
             }}
           >
             <h1 
@@ -184,10 +276,10 @@ export const HeroSection = ({ slides }: HeroSectionProps) => {
                 textShadow: '2px 2px 4px rgba(0,0,0,0.5)'
               }}
             >
-              {slide.title}
+              {getSlideTitle(slide)}
             </h1>
             <p 
-              className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 text-white/90 max-w-full md:max-w-2xl lg:max-w-3xl leading-relaxed"
+              className="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 md:mb-8 text-white/90 max-w-full md:max-w-2xl lg:max-w-3xl font-normal"
               style={{
                 fontFamily: "'Roboto', sans-serif",
                 fontWeight: 300,
@@ -195,17 +287,17 @@ export const HeroSection = ({ slides }: HeroSectionProps) => {
                 textShadow: '1px 1px 2px rgba(0,0,0,0.5)'
               }}
             >
-              {slide.subtitle}
+              {getSlideSubtitle(slide)}
             </p>
             <div className={`flex ${isMobile ? 'flex-col gap-3' : 'flex-row gap-4'} justify-start`}>
               <Button 
                 size={isMobile ? "default" : "lg"}
-                className={`bg-[#081748] text-white hover:bg-blue-800 font-bold ${
+                className={`bg-blue-900 text-white hover:bg-blue-800 font-bold ${
                   isMobile 
                     ? 'w-full px-6 py-4 text-base' 
                     : 'px-8 py-6 text-lg'
                 } transition-all group`}
-                onClick={() => navigate('/services')}
+                onClick={() => window.open('https://demo.oticsurveys.com/services', '_blank')}
                 style={{
                   fontFamily: "'Roboto', sans-serif",
                   fontWeight: 600,
@@ -265,30 +357,44 @@ export const HeroSection = ({ slides }: HeroSectionProps) => {
         </div>
       </div>
 
-      {/* Mobile Touch Indicators */}
-      {isMobile && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30">
-          <div className="flex items-center gap-2 text-white/70 text-xs">
-            <span>Swipe</span>
-            <div className="flex gap-1">
-              <div className="w-1 h-1 bg-white/70 rounded-full animate-pulse"></div>
-              <div className="w-1 h-1 bg-white/70 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-              <div className="w-1 h-1 bg-white/70 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Loading Progress Bar */}
       <div className="absolute bottom-0 left-0 right-0 h-1 z-30">
         <div 
-          className="h-full bg-white transition-all duration-300 ease-linear"
+          className="h-full bg-white transition-all duration-100 linear"
           style={{
-            width: `${(currentSlide + 1) / slides.length * 100}%`,
-            transition: 'width 5s linear'
+            width: `${progress}%`,
           }}
         />
       </div>
+
+      {/* Fallback auto-slide trigger - ensures slides keep moving */}
+      {slides.length > 1 && (
+        <div className="hidden">
+          <AutoSlideTrigger 
+            currentSlide={currentSlide}
+            goToNextSlide={goToNextSlide}
+            interval={5000}
+          />
+        </div>
+      )}
     </section>
   );
+};
+
+// Additional fallback component
+const AutoSlideTrigger = ({ 
+  currentSlide, 
+  goToNextSlide, 
+  interval 
+}: { 
+  currentSlide: number;
+  goToNextSlide: () => void;
+  interval: number;
+}) => {
+  useEffect(() => {
+    const timer = setInterval(goToNextSlide, interval);
+    return () => clearInterval(timer);
+  }, [currentSlide, goToNextSlide, interval]);
+
+  return null;
 };

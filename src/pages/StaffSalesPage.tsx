@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, FileText, Search, Eye, Edit } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { Button } from "../components/ui/button";
 import {
   Card,
@@ -29,7 +29,7 @@ interface Sale {
   staff_id?: string;
 }
 
-const API_URL = "https://otic-backend-production.up.railway.app/api";
+const API_URL = "zzzzz";
 
 export default function StaffSalesPage() {
   const { staffId } = useParams<{ staffId: string }>();

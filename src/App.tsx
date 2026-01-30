@@ -1,11 +1,12 @@
 import React from "react";
+import axios from "axios";
 import { Toaster } from "./components/ui/toaster";
 import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-
-import Dashboard from "./pages/StaffDashboard"; // Staff dashboard
+import { AuthProvider } from './hooks/useAuth';
+import DashboardStaff from "./pages/StaffDashboard"; // Staff dashboard
 import Tools from "./pages/Tools";
 import Payments from "./pages/Payments";
 import StaffPage from "./pages/StaffPage";
@@ -25,18 +26,25 @@ import About from "./pages/About";
 import Training from "./pages/Training";
 import CorsNetwork from "./pages/CorsNetwork";
 import CourseDetail from "./pages/CourseDetail";
-import Blog from "./pages/Blog";
-import BlogPost from "./pages/BlogPost";
-import Admin from "./pages/Admin";
-import AdminLogin from "./pages/AdminLogin";
 import CartPage from "./pages/CartPage";
+import ProductDemo from "./pages/ProductDemo";
+import ProductSupport from "./pages/ProductSupport";
 import { CurrencyProvider } from './context/CurrencyContext';
 import { CartProvider } from './context/CartContext'; 
 import ProductDetailPage from "./pages/ProductDetailPage";
 import MobileNavigation from "./components/MobileNavigation"; 
-import Header from "./components/Header"; // Import the main Header component
+import Header from "./components/Header"; 
+import Blog from "./pages/Blog";
+import BlogPost from "./pages/BlogPost";
+import StaffLogin from "./pages/StaffLogin";
+import { StaffLayout } from "./components/staff/StaffLayout";
+import Dashboard from "./pages/staff/Dashboard";
+import PostsList from "./pages/staff/PostsList";
+import PostEditor from "./pages/staff/PostEditor";
+import OrderConfirmation from "./pages/OrderConfirmation";
 
 const queryClient = new QueryClient();
+axios.defaults.withCredentials = true;
 
 // ✅ Secure route wrapper
 interface PrivateRouteProps {
@@ -67,27 +75,27 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
 
   return element;
 };
-
-// Component to conditionally show Header and MobileNavigation
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/dashboard') || 
                        location.pathname.startsWith('/admin') || 
                        location.pathname.startsWith('/staff') ||
+                       location.pathname.startsWith('/blog/dashboard')
                        location.pathname.startsWith('/tools') ||
                        location.pathname.startsWith('/payments') ||
                        location.pathname.startsWith('/settings') ||
                        location.pathname.startsWith('/sales') ||
                        location.pathname.startsWith('/customers');
+                       location.pathname.startsWith('/order-confirmation');
   
   return (
     <>
-      {/* Show main Header only on public website pages */}
+      {/* Show main Header only on public website pages, excluding admin routes */}
       {!isAdminRoute && <Header />}
       
       {children}
       
-      {/* Show MobileNavigation only on public website pages */}
+      {/* Show MobileNavigation only on public website pages, excluding admin routes */}
       {!isAdminRoute && <MobileNavigation />}
     </>
   );
@@ -95,14 +103,15 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <CurrencyProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AppLayout>
-              <Routes>
+    <AuthProvider>
+      <CurrencyProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppLayout>
+                <Routes>
                 {/* --- Public Routes --- */}
                 <Route path="/" element={<LandingPage />} />
                 <Route path="/login" element={<Login />} />
@@ -112,7 +121,7 @@ const App = () => (
                   path="/staff/dashboard"
                   element={
                     <PrivateRoute
-                      element={<Dashboard />}
+                      element={<DashboardStaff />}
                       allowedRoles={["staff", "admin"]}
                     />
                   }
@@ -216,12 +225,19 @@ const App = () => (
                 <Route path="/corsnetwork" element={<CorsNetwork />} />
                 <Route path="/buynow" element={<BuyNow />} />
                 <Route path="/contact" element={<Contact />} />
-                <Route path="/blog" element={<Blog />} />
                 <Route path="/cart" element={<CartPage />} />
-                <Route path="/blog/:slug" element={<BlogPost />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/product/:id" element={<ProductDetailPage />} />
+                <Route path="/product-demo" element={<ProductDemo />} />
+                <Route path="/product-support" element={<ProductSupport />} />
+                <Route path="/blog" element={<Blog />} />
+                <Route path="/blog/:slug" element={<BlogPost />} />
+                <Route path="/staff/login" element={<StaffLogin />} />
+                <Route path="/staff" element={<StaffLayout />}/>
+                <Route path="/blog/dashboard" element={<Dashboard />} />
+                <Route path="/staff/posts" element={<PostsList />} />
+                <Route path="/staff/posts/new" element={<PostEditor />} />
+                <Route path="/staff/posts/:id/edit" element={<PostEditor />} />
+                <Route path="/order-confirmation" element={<OrderConfirmation />} />
                 {/* --- Public Course Route --- */}
                 <Route path="/course/:courseId" element={<CourseDetail />} />
                 
@@ -230,12 +246,13 @@ const App = () => (
 
                 {/* --- Fallback redirect --- */}
                 <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AppLayout>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CartProvider>
-    </CurrencyProvider>
+                </Routes>
+              </AppLayout>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
+      </CurrencyProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

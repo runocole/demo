@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "https://otic-backend-production.up.railway.app/api";
+const API_URL = "https://gs.oticgs.com/api";
 // --- AUTH ---
 export const loginUser = async (email: string, password: string) => {
   try {

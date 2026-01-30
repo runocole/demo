@@ -44,7 +44,7 @@ export const ShoppingCartComponent = ({
 
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.08;
+  const tax = subtotal * 0.075;
   const total = subtotal + tax;
 
   const handleCheckout = () => {
@@ -320,7 +320,7 @@ export const ShoppingCartComponent = ({
                   <span className="font-semibold text-white">{getConvertedPrice(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-blue-300">Tax (8%)</span>
+                  <span className="text-blue-300">Tax (7.5%)</span>
                   <span className="font-semibold text-white">{getConvertedPrice(tax)}</span>
                 </div>
                 <Separator className="bg-blue-700" />

@@ -6,6 +6,7 @@ import {
   Settings,
   ShoppingCart,
   FileText,
+  Key,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
@@ -45,6 +46,7 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
   const menuByRole: Record<string, { title: string; url: string; icon: any }[]> = {
     admin: [
       { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+      { title: "Code Management", url: "/codes-management", icon: Key },
       { title: "Payments", url: "/payments", icon: DollarSign },
       { title: "Staff", url: "/staff", icon: Users },
       { title: "Inventory Summary", url: "/tools-summary", icon: FileText },
@@ -53,6 +55,7 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
     ],
     staff: [
       { title: "Dashboard", url: "/staff/dashboard", icon: LayoutDashboard },
+      { title: "Code Management", url: "/codes-management", icon: Key },
       { title: "Items", url: "/tools", icon: Package },
       { title: "Payments", url: "/payments", icon: DollarSign },
       { title: "Inventory Summary", url: "/tools-summary", icon: FileText }, 

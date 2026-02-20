@@ -4,14 +4,14 @@ import { Toaster as Sonner } from "./components/ui/sonner";
 import { TooltipProvider } from "./components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-
+import CustomerDashboard from "./pages/CustomerDashboard"; // Add this line
 import Dashboard from "./pages/StaffDashboard"; // Staff dashboard
 import Tools from "./pages/Tools";
 import Payments from "./pages/Payments";
 import StaffPage from "./pages/StaffPage";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
-import SalesPage from "./pages/SalesPage";
+import SalesPage from "./pages/Sales";
 import AdminDashboard from "./pages/DashboardPage";
 import CustomersPage from "./pages/CustomersPage";
 import ToolsSummary from "./pages/ToolsSummary";
@@ -33,7 +33,8 @@ import CartPage from "./pages/CartPage";
 import { CurrencyProvider } from './context/CurrencyContext';
 import { CartProvider } from './context/CartContext'; 
 import ProductDetailPage from "./pages/ProductDetailPage";
-import MobileNavigation from "./components/MobileNavigation"; 
+import MobileNavigation from "./components/MobileNavigation";
+import CodesManagement from "./pages/CodesManagement"; 
 
 const queryClient = new QueryClient();
 
@@ -163,6 +164,16 @@ const App = () => (
                 }
               />
 
+              <Route
+                path="/codes-management"
+                element={
+                  <PrivateRoute
+                    element={<CodesManagement />}
+                    allowedRoles={["staff", "admin"]}
+                  />
+                }
+              />
+
               {/* --- Admin Routes --- */}
               <Route
                 path="/dashboard"
@@ -179,6 +190,17 @@ const App = () => (
                   <PrivateRoute
                     element={<AdminSalesPage />}
                     allowedRoles={["admin"]}
+                  />
+                }
+              />
+
+              {/* --- Customer Routes --- */}
+              <Route
+                path="/customer/dashboard"
+                element={
+                  <PrivateRoute
+                    element={<CustomerDashboard />}
+                    allowedRoles={["customer",]} // Allow both 'customer' and 'CustomerDashboard' roles
                   />
                 }
               />

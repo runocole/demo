@@ -18,9 +18,11 @@ import {
   UserCheck, 
   RefreshCcw, 
   Loader2,
-  CheckCircle2
 } from "lucide-react";
 import { toast } from "../components/ui/use-toast";
+
+// 1. IMPORT YOUR NEW API FUNCTIONS HERE
+import { getReceiverCodes, saveReceiverCode } from "../services/api";
 
 interface ReceiverItem {
   serial: string;
@@ -39,19 +41,19 @@ const CodesManagement = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [savingSerial, setSavingSerial] = useState<string | null>(null);
 
-  // Local state for inline editing
   const [editValues, setEditValues] = useState<{ [key: string]: { code: string, duration: string } }>({});
 
+  // 2. UPDATE THIS FUNCTION
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/codes/management/');
-      const result = await response.json();
+      // Use your Axios function with auth headers!
+      const result = await getReceiverCodes();
+      
       setData(result);
       
-      // Sync edit state with fetched data
       const initialEdits: any = {};
-      [...result.in_stock, ...result.sold].forEach(item => {
+      [...result.in_stock, ...result.sold].forEach((item: ReceiverItem) => {
         initialEdits[item.serial] = { 
           code: item.current_code || "", 
           duration: item.duration || "unlimited" 
@@ -59,9 +61,10 @@ const CodesManagement = () => {
       });
       setEditValues(initialEdits);
     } catch (error) {
+      console.error("Fetch codes error:", error);
       toast({
-        title: "Error",
-        description: "Failed to fetch receiver data",
+        title: "Authentication Error",
+        description: "Failed to fetch receiver data. Make sure you are logged in.",
         variant: "destructive",
       });
     } finally {
@@ -78,30 +81,28 @@ const CodesManagement = () => {
     }));
   };
 
+  // 3. UPDATE THIS FUNCTION
   const saveCode = async (serial: string) => {
     setSavingSerial(serial);
     const { code, duration } = editValues[serial];
 
     try {
-      const response = await fetch('/api/codes/management/save/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ serial, code, duration })
-      });
+      // Use your Axios function here!
+      await saveReceiverCode(serial, code, duration);
 
-      if (response.ok) {
-        toast({
-          title: "Success",
-          description: `Code updated for Serial: ${serial}`,
-        });
-        // Optional: refresh data to ensure sync
-      } else {
-        throw new Error();
-      }
+      toast({
+        title: "Success",
+        description: `Code updated for Serial: ${serial}`,
+      });
+      
+      // Refresh the data to confirm it saved in the database
+      fetchData();
+      
     } catch (err) {
+      console.error("Save code error:", err);
       toast({
         title: "Update Failed",
-        description: "Could not save the activation code.",
+        description: "Could not save the activation code. Check console.",
         variant: "destructive",
       });
     } finally {

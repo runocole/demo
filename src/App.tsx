@@ -8,6 +8,7 @@ import CustomerDashboard from "./pages/CustomerDashboard"; // Add this line
 import Dashboard from "./pages/StaffDashboard"; // Staff dashboard
 import Tools from "./pages/Tools";
 import Payments from "./pages/Payments";
+import CustomerPayments from "./pages/CustomerPayments"; // Add this line
 import StaffPage from "./pages/StaffPage";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
@@ -203,6 +204,15 @@ const App = () => (
                     allowedRoles={["customer",]} // Allow both 'customer' and 'CustomerDashboard' roles
                   />
                 }
+              />
+              <Route 
+                path="/customer/payments" 
+                element={
+                  <PrivateRoute 
+                    element={<CustomerPayments />} 
+                    allowedRoles={["customer"]} 
+                  />
+                } 
               />
               
               {/* --- Public Website Routes --- */}

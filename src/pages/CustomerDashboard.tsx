@@ -1,67 +1,134 @@
+import { fetchCustomerOwingData, getSales, getReceiverCodes } from "../services/api";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { DashboardLayout } from "../components/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
-import { 
-  Package, 
-  CreditCard, 
-  Calendar, 
-  CheckCircle, 
-  AlertCircle, 
-  Lock, 
-  Copy, 
-  Activity 
-} from "lucide-react";
-import { Progress } from "../components/ui/progress";
-
-// ✅ UPDATE: Import the actual functions from your api.ts
-import { fetchCustomerOwingData, getSales } from "../services/api"; 
+import { Package, CreditCard, Calendar, CheckCircle, AlertCircle, Lock, Copy, Activity } from "lucide-react";
+import { Progress } from "../components/ui/progress"; 
 
 const CustomerDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [userName, setUserName] = useState("Customer");
   
-  // State for data
   const [financials, setFinancials] = useState<any>(null); 
-  const [sales, setSales] = useState<any[]>([]); 
+  const [equipmentList, setEquipmentList] = useState<any[]>([]);
 
   useEffect(() => {
-    // 1. Get User Name
+    let userEmail = "";
+    let userFullName = "";
+    let userPhone = ""; 
+    
     const userData = localStorage.getItem("user");
     if (userData) {
       try {
         const parsed = JSON.parse(userData);
         setUserName(parsed.name || "Customer");
-      } catch (e) {
-        console.error("Error parsing user data", e);
-      }
+        userFullName = (parsed.name || "").toLowerCase().trim();
+        userEmail = (parsed.email || "").toLowerCase().trim();
+        userPhone = (parsed.phone || "").trim(); 
+      } catch (e) {}
     }
 
-    // 2. Fetch Data (Updated Logic)
     const loadData = async () => {
       try {
         setLoading(true);
-
-        // ✅ Run both API calls in parallel
-        const [financialData, salesData] = await Promise.all([
-            fetchCustomerOwingData(), // Gets the owing/payment stats
-            getSales()                // Gets the list of purchased tools
+        const [financialData, salesData, codesData] = await Promise.all([
+            fetchCustomerOwingData(), 
+            getSales(),
+            getReceiverCodes() 
         ]);
 
-        // ✅ Set state with the actual responses
-        setFinancials(financialData);
+        // --- 1. SET UP FINANCIALS ---
+        const myFinancials = financialData?.customers?.find((c: any) => {
+            const matchEmail = c.email && String(c.email).toLowerCase().trim() === userEmail;
+            const matchName = c.name && String(c.name).toLowerCase().trim() === userFullName;
+            const matchPhone = c.phone && String(c.phone).trim() === userPhone;
+            return matchEmail || matchName || matchPhone;
+        });
+
+        const total = myFinancials?.totalSellingPrice || myFinancials?.total_selling_price || 0;
+        const owed = myFinancials?.amountLeft || myFinancials?.amount_left || 0;
         
-        // Handle case where sales might be paginated (response.results) or a flat array
-        if (Array.isArray(salesData)) {
-            setSales(salesData);
-        } else if (salesData?.results) {
-            setSales(salesData.results);
-        } else {
-            setSales([]);
-        }
+        setFinancials({
+            totalSellingPrice: total,
+            amountLeft: owed,
+            status: myFinancials?.status || "Up to date",
+            progress: total > 0 ? ((total - owed) / total) * 100 : 100
+        });
+        
+        // --- 2. SET UP SALES & EQUIPMENT ---
+        const availableCodes = codesData?.sold || [];
+        const allSales = salesData?.results || salesData || [];
+
+        const customerSales = allSales.filter((sale: any) => {
+            const matchName = sale.name && String(sale.name).toLowerCase().trim() === userFullName;
+            const matchPhone = sale.phone && String(sale.phone).trim() === userPhone;
+            return matchName || matchPhone;
+        });
+
+        let allEquipment: any[] = [];
+
+        customerSales.forEach((sale: any) => {
+            const isFullyPaid = 
+                sale.payment_status?.toLowerCase() === "completed" || 
+                sale.payment_status?.toLowerCase() === "fully-paid" ||
+                owed <= 0;
+
+            let itemsArray = [];
+            if (typeof sale.items === 'string') {
+                try { itemsArray = JSON.parse(sale.items); } catch(e) {}
+            } else if (Array.isArray(sale.items)) {
+                itemsArray = sale.items;
+            }
+
+            itemsArray.forEach((item: any) => {
+              const rawItemSerial = item.serial_number;
+              let serialsList: string[] = [];
+
+              // Parse Serial Numbers list (handles stringified arrays or actual arrays)
+              if (Array.isArray(rawItemSerial)) {
+                  serialsList = rawItemSerial.map(s => String(s).trim().toLowerCase());
+              } else if (typeof rawItemSerial === 'string') {
+                  if (rawItemSerial.startsWith('[')) {
+                      try {
+                          serialsList = JSON.parse(rawItemSerial).map((s: any) => String(s).trim().toLowerCase());
+                      } catch (e) {
+                          serialsList = [rawItemSerial.trim().toLowerCase()];
+                      }
+                  } else {
+                      serialsList = [rawItemSerial.trim().toLowerCase()];
+                  }
+              }
+
+              // 🎯 SEARCH FOR ALL CODES MATCHING THE SERIALS IN THIS ITEM
+              const matchingCodes = availableCodes.filter((c: any) => {
+                const codeSerial = String(c.serial || c.receiver_serial || "").trim().toLowerCase();
+                if (!codeSerial) return false;
+                
+                // Returns true if this specific code's serial is anywhere in the equipment's serial list
+                return serialsList.includes(codeSerial) || String(rawItemSerial || "").toLowerCase().includes(codeSerial);
+              });
+
+              // 🎯 JOIN MULTIPLE CODES WITH A SLASH
+              const combinedCodes = matchingCodes.length > 0 
+                ? matchingCodes.map((m: any) => m.current_code).join(" / ") 
+                : null;
+                
+              allEquipment.push({
+                  invoice: sale.invoice_number || sale.id,
+                  tool_name: item.equipment || item.tool_name || item.name || "Equipment",
+                  serial: item.serial_number,
+                  category: item.category || "Tool",
+                  is_fully_paid: isFullyPaid,
+                  current_code: combinedCodes // Now displays multiple codes if found
+              });
+          });
+        });
+
+        setEquipmentList(allEquipment);
 
       } catch (error) {
         console.error("Failed to load dashboard", error);
@@ -94,176 +161,105 @@ const CustomerDashboard = () => {
             <h1 className="text-3xl font-bold text-white tracking-tight">
               Hello, <span className="text-blue-400">{userName}</span>
             </h1>
-            <p className="text-slate-400 mt-1">
-              Manage your equipment and payments.
-            </p>
+            <p className="text-slate-400 mt-1">Manage your equipment and payments.</p>
           </div>
-          <Button 
-            onClick={() => navigate('/payments')} 
-            className="bg-green-600 hover:bg-green-700 text-white"
-          >
+          <Button onClick={() => navigate('/customer/payments')} className="bg-green-600 hover:bg-green-700 text-white">
             <CreditCard className="w-4 h-4 mr-2" />
-            Make a Payment
+            View Payment Plan
           </Button>
         </div>
 
         {/* Financial Overview Cards */}
-        {financials && (
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card className="bg-slate-900 border-slate-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">Total Purchase Value</CardTitle>
-                <Package className="h-4 w-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">
-                  ₦{financials.totalSellingPrice?.toLocaleString() || "0.00"}
-                </div>
-                <p className="text-xs text-slate-500 mt-1">Total value of equipment</p>
-              </CardContent>
-            </Card>
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="bg-slate-900 border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-400">Total Purchase Value</CardTitle>
+              <Package className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">₦{financials?.totalSellingPrice?.toLocaleString() || "0"}</div>
+            </CardContent>
+          </Card>
 
-            <Card className="bg-slate-900 border-slate-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">Outstanding Balance</CardTitle>
-                <AlertCircle className={`h-4 w-4 ${financials.amountLeft > 0 ? "text-red-500" : "text-green-500"}`} />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">
-                  ₦{financials.amountLeft?.toLocaleString() || "0.00"}
-                </div>
-                <Progress 
-                    value={financials.progress || 0} 
-                    className="h-2 mt-2 bg-slate-800" 
-                />
-                <p className="text-xs text-slate-500 mt-1">
-                    {financials.progress}% Paid
-                </p>
-              </CardContent>
-            </Card>
+          <Card className="bg-slate-900 border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-400">Outstanding Balance</CardTitle>
+              <AlertCircle className={`h-4 w-4 ${financials?.amountLeft > 0 ? "text-red-500" : "text-green-500"}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white">₦{financials?.amountLeft?.toLocaleString() || "0"}</div>
+              <Progress value={financials?.progress || 0} className="h-2 mt-2 bg-slate-800" />
+            </CardContent>
+          </Card>
 
-            <Card className="bg-slate-900 border-slate-800">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">Next Payment Due</CardTitle>
-                <Calendar className="h-4 w-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-white">
-                  {financials.dateNextInstallment 
-                    ? new Date(financials.dateNextInstallment).toLocaleDateString() 
-                    : "No Due Date"}
-                </div>
-                <p className="text-xs text-slate-500 mt-1">
-                  Status: <span className="capitalize text-blue-300">{financials.status}</span>
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+          <Card className="bg-slate-900 border-slate-800">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium text-slate-400">Status</CardTitle>
+              <Calendar className="h-4 w-4 text-orange-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-white capitalize">{financials?.status || "Up to date"}</div>
+              <p className="text-xs text-slate-500 mt-1 tracking-wide">Status based on current records</p>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Purchased Equipment List */}
         <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-white">My Equipment</h2>
-            
+            <h2 className="text-xl font-semibold text-white">My Equipment Portfolio</h2>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {sales.map((sale) => (
-                    // Logic: We map through sales, then items inside that sale
-                    sale.items.map((item: any) => {
-                        // Check if the sale is fully paid
-                        const isFullyPaid = sale.payment_status === "completed";
+                {equipmentList.map((item, index) => (
+                    <Card key={index} className="bg-[#0f1f3d] border-[#1b2d55] overflow-hidden">
+                        <CardHeader className="flex flex-row items-center justify-between pb-2 bg-[#142647]">
+                            <div className="space-y-1">
+                                <CardTitle className="text-lg font-semibold text-blue-100">{item.tool_name}</CardTitle>
+                                <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-300 bg-blue-500/10">
+                                    {item.category}
+                                </Badge>
+                            </div>
+                            {item.is_fully_paid ? (
+                                <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center"><CheckCircle className="h-5 w-5 text-green-500" /></div>
+                            ) : (
+                                <div className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center"><Lock className="h-5 w-5 text-red-500" /></div>
+                            )}
+                        </CardHeader>
+                        <CardContent className="pt-4 space-y-4">
+                            <div>
+                                <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">Serial Number</p>
+                                <p className="font-mono text-sm text-white bg-slate-900/50 p-2 rounded border border-slate-800">{item.serial}</p>
+                            </div>
 
-                        return (
-                            <Card key={item.id} className="bg-[#0f1f3d] border-[#1b2d55] overflow-hidden hover:border-blue-500/50 transition-colors">
-                                <CardHeader className="flex flex-row items-center justify-between pb-2 bg-[#142647]">
-                                    <div className="space-y-1">
-                                        <CardTitle className="text-lg font-semibold text-blue-100">
-                                            {item.equipment || "Unknown Tool"}
-                                        </CardTitle>
-                                        <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-300 bg-blue-500/10">
-                                            {item.category}
-                                        </Badge>
-                                    </div>
-                                    {isFullyPaid ? (
-                                        <div className="h-8 w-8 rounded-full bg-green-500/20 flex items-center justify-center">
-                                            <CheckCircle className="h-5 w-5 text-green-500" />
-                                        </div>
-                                    ) : (
-                                        <div className="h-8 w-8 rounded-full bg-red-500/20 flex items-center justify-center">
-                                            <Lock className="h-5 w-5 text-red-500" />
-                                        </div>
-                                    )}
-                                </CardHeader>
-                                
-                                <CardContent className="pt-4 space-y-4">
-                                    {/* Serial Number Section */}
-                                    <div>
-                                        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-1">
-                                            Serial Number
-                                        </p>
-                                        <p className="font-mono text-sm text-white bg-slate-900/50 p-2 rounded border border-slate-800">
-                                            {item.serial_number || "Pending Assignment"}
-                                        </p>
-                                    </div>
-
-                                    {/* Activation Code Section */}
-                                    <div className={`p-3 rounded-lg border ${
-                                        isFullyPaid 
-                                        ? "bg-green-950/30 border-green-900/50" 
-                                        : "bg-red-950/10 border-red-900/30"
-                                    }`}>
-                                        <div className="flex justify-between items-center mb-1">
-                                            <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">
-                                                Activation Code
-                                            </p>
-                                            {isFullyPaid && (
-                                                <Badge className="bg-green-600 text-[10px] h-5 px-1">Active</Badge>
-                                            )}
-                                        </div>
-                                        
-                                        {isFullyPaid ? (
-                                            <div className="flex justify-between items-center mt-1">
-                                                <code className="text-lg font-mono text-green-400 tracking-widest">
-                                                    {item.activation_code || "GEN-CODE-REQ"}
-                                                </code>
-                                                <button 
-                                                    className="text-slate-400 hover:text-white transition-colors"
-                                                    onClick={() => {
-                                                        if(item.activation_code) 
-                                                            navigator.clipboard.writeText(item.activation_code)
-                                                    }}
-                                                >
-                                                    <Copy className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center justify-center py-2 space-y-2 text-center">
-                                                <div className="text-lg font-bold text-slate-700 blur-[4px] select-none">
-                                                    XXXX-XXXX-XXXX
-                                                </div>
-                                                <p className="text-xs text-red-300">
-                                                    Complete payment to view
-                                                </p>
-                                            </div>
+                            <div className={`p-3 rounded-lg border ${item.is_fully_paid ? "bg-green-950/30 border-green-900/50" : "bg-red-950/10 border-red-900/30"}`}>
+                                <div className="flex justify-between items-center mb-1">
+                                    <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Activation Code(s)</p>
+                                </div>
+                                {item.is_fully_paid ? (
+                                    <div className="flex justify-between items-center mt-1">
+                                        <code className="text-md font-mono text-green-400 tracking-wider">
+                                            {item.current_code ? item.current_code : "PENDING GENERATION"}
+                                        </code>
+                                        {item.current_code && (
+                                            <button className="text-slate-400 hover:text-white ml-2" onClick={() => navigator.clipboard.writeText(item.current_code)}>
+                                                <Copy className="w-4 h-4" />
+                                            </button>
                                         )}
                                     </div>
-
-                                    {/* Invoice Info */}
-                                    <div className="pt-2 flex justify-between items-center border-t border-slate-800">
-                                        <span className="text-xs text-slate-500">Invoice: #{sale.invoice_number}</span>
-                                        <span className="text-xs text-slate-500">
-                                            {new Date(sale.date_sold).toLocaleDateString()}
-                                        </span>
+                                ) : (
+                                    <div className="text-center py-2">
+                                        <div className="text-lg font-bold text-slate-700 blur-[4px] select-none">XXXX-XXXX</div>
+                                        <p className="text-xs text-red-300">Requires full payment</p>
                                     </div>
-                                </CardContent>
-                            </Card>
-                        );
-                    })
+                                )}
+                            </div>
+                            <div className="pt-2 text-xs text-slate-500 border-t border-slate-800">Invoice Reference: {item.invoice}</div>
+                        </CardContent>
+                    </Card>
                 ))}
                 
-                {sales.length === 0 && (
+                {equipmentList.length === 0 && (
                     <div className="col-span-full py-12 text-center text-slate-500 bg-slate-900/50 rounded-lg border border-slate-800 border-dashed">
                         <Package className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                        <p>No equipment found.</p>
+                        <p>No equipment records found.</p>
                     </div>
                 )}
             </div>

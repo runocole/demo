@@ -27,9 +27,16 @@ export interface Supplier {
 // ----------------------------
 // AUTH HEADER
 // ----------------------------
-const authHeader = () => ({
-  Authorization: `Bearer ${localStorage.getItem("access")}`,
-});
+const authHeader = () => {
+  // Check for both common token names just in case!
+  const token = localStorage.getItem("access") || localStorage.getItem("token");
+  console.log("Token being sent:", token); // Add this line to debug
+  // If your Django backend uses standard DRF Tokens instead of JWT, 
+  // you might need to change "Bearer" to "Token" below.
+  return {
+    Authorization: `Bearer ${token}`, 
+  };
+};
 
 // ----------------------------
 // AUTH
@@ -379,4 +386,30 @@ export const deleteSupplier = async (id: string) => {
     headers: authHeader(),
   });
   return response.data;
+};
+
+// ----------------------------
+// CODE MANAGEMENT
+// ----------------------------
+export const getReceiverCodes = async () => {
+  const response = await axios.get(`${API_URL}/codes/management/`, {
+    headers: authHeader(),
+  });
+  return response.data;
+};
+
+export const saveReceiverCode = async (serial: string, code: string, duration: string) => {
+  const response = await axios.post(
+    `${API_URL}/codes/management/save/`,
+    { serial, code, duration },
+    { headers: authHeader() }
+  );
+  return response.data;
+};
+
+export const getMyCodes = async () => {
+  const response = await axios.get(`${API_URL}/codes/customer/`, {
+    headers: authHeader(),
+  });
+  return response.data; // This will return only codes belonging to the logged-in customer
 };

@@ -84,7 +84,7 @@ export function AppSidebar({ isOpen: externalIsOpen }: AppSidebarProps) {
             <div className="flex items-center gap-3">
               <img src={logo} alt="GEOSSO LOGO" className="h-8 w-8 object-contain" />
               <h2 className="font-bold text-xl text-white tracking-wide">
-                GEOSSOTECH
+                OTIC GEOSYSTEMS
               </h2>
             </div>
           ) : (

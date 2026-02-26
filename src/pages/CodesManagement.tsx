@@ -293,7 +293,7 @@ const CodesManagement = () => {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".csv"
+            accept=".csv,.xlsx,.xls"
             className="hidden"
             onChange={handleFileSelected}
           />
